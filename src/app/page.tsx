@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { Globe, CheckCircle, Star, TrendingUp, ArrowDown } from "lucide-react";
 
-/* ─── Starfield Canvas ─────────────────────────────────────────── */
-function Starfield() {
+/* ── Live Stock Chart Canvas ─────────────────────────────────── */
+function LiveChartCanvas() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current!;
@@ -18,253 +18,349 @@ function Starfield() {
     resize();
     window.addEventListener("resize", resize);
 
-    const stars = Array.from({ length: 220 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 1.4 + 0.2,
-      speed: Math.random() * 0.15 + 0.03,
-      opacity: Math.random() * 0.7 + 0.1,
-      pulse: Math.random() * Math.PI * 2,
-    }));
+    // Generate a random-walk price series
+    const makeSeries = (len: number, start: number, vol: number) => {
+      const pts = [start];
+      for (let i = 1; i < len; i++) {
+        pts.push(Math.max(20, pts[i - 1] + (Math.random() - 0.47) * vol));
+      }
+      return pts;
+    };
+
+    const LINES = [
+      { color: "#00ff88", glow: "#00ff88", series: makeSeries(120, 60, 4), yBase: 0.25, amp: 0.12, speed: 0.4 },
+      { color: "#6366f1", glow: "#818cf8", series: makeSeries(120, 80, 6), yBase: 0.45, amp: 0.18, speed: 0.55 },
+      { color: "#22d3ee", glow: "#22d3ee", series: makeSeries(120, 50, 3), yBase: 0.65, amp: 0.10, speed: 0.35 },
+      { color: "#f59e0b", glow: "#f59e0b", series: makeSeries(120, 70, 5), yBase: 0.35, amp: 0.14, speed: 0.45 },
+      { color: "#ef4444", glow: "#ef4444", series: makeSeries(120, 90, 7), yBase: 0.75, amp: 0.08, speed: 0.3 },
+    ];
+
+    let offset = 0;
 
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const t = Date.now() / 1000;
-      stars.forEach((s) => {
-        s.y += s.speed;
-        if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
-        const alpha = s.opacity * (0.7 + 0.3 * Math.sin(t + s.pulse));
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // subtle grid
+      ctx.strokeStyle = "rgba(99,102,241,0.04)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 80) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0; y < H; y += 60) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+
+      LINES.forEach((line) => {
+        const pts = line.series;
+        const len = pts.length;
+        const minVal = Math.min(...pts);
+        const maxVal = Math.max(...pts);
+        const range = maxVal - minVal || 1;
+
+        const baseY = H * line.yBase;
+        const amplitude = H * line.amp;
+
+        // push new point, shift series
+        pts.push(Math.max(20, pts[pts.length - 1] + (Math.random() - 0.47) * 4));
+        if (pts.length > 160) pts.shift();
+
+        const segW = W / (len - 1);
+        const shiftX = (offset * line.speed) % segW;
+
+        // glow pass
+        ctx.shadowColor = line.glow;
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.55;
         ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(180,180,255,${alpha})`;
-        ctx.fill();
+
+        for (let i = 0; i < len; i++) {
+          const x = i * segW - shiftX;
+          const norm = (pts[i] - minVal) / range;
+          const y = baseY + amplitude * (1 - norm * 2);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // bright top line
+        ctx.shadowBlur = 6;
+        ctx.lineWidth = 1.2;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        for (let i = 0; i < len; i++) {
+          const x = i * segW - shiftX;
+          const norm = (pts[i] - minVal) / range;
+          const y = baseY + amplitude * (1 - norm * 2);
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
       });
+
+      offset += 0.8;
       raf = requestAnimationFrame(draw);
     };
+
     draw();
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
   }, []);
 
   return (
-    <canvas
-      ref={ref}
-      style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.6 }}
-    />
+    <canvas ref={ref} style={{
+      position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.35,
+    }} />
   );
 }
 
-/* ─── App Mockup (mini rendered UI) ──────────────────────────── */
+/* ── Floating Ticker Badges ──────────────────────────────────── */
+const TICKERS = [
+  { sym: "RELIANCE", price: "₹2,847", chg: "+1.4%", bull: true },
+  { sym: "TCS", price: "₹3,612", chg: "+0.8%", bull: true },
+  { sym: "HDFCBANK", price: "₹1,723", chg: "-0.3%", bull: false },
+  { sym: "INFY", price: "₹1,489", chg: "+2.1%", bull: true },
+  { sym: "ADANIENT", price: "₹2,940", chg: "+3.2%", bull: true },
+  { sym: "WIPRO", price: "₹487", chg: "-1.1%", bull: false },
+  { sym: "ITC", price: "₹448", chg: "+0.5%", bull: true },
+  { sym: "TATAMOTORS", price: "₹896", chg: "+1.9%", bull: true },
+  { sym: "SBIN", price: "₹762", chg: "-0.7%", bull: false },
+  { sym: "BAJFINANCE", price: "₹7,240", chg: "+1.2%", bull: true },
+];
+
+function FloatingTickers() {
+  const [items, setItems] = useState<{ id: number; ticker: typeof TICKERS[0]; left: number; duration: number; delay: number }[]>([]);
+  const counter = useRef(0);
+
+  const spawn = useCallback(() => {
+    const t = TICKERS[Math.floor(Math.random() * TICKERS.length)];
+    setItems((prev) => [
+      ...prev.slice(-12),
+      { id: counter.current++, ticker: t, left: 5 + Math.random() * 88, duration: 8 + Math.random() * 6, delay: 0 },
+    ]);
+  }, []);
+
+  useEffect(() => {
+    spawn();
+    const iv = setInterval(spawn, 1800);
+    return () => clearInterval(iv);
+  }, [spawn]);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none", overflow: "hidden" }}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          style={{
+            position: "absolute",
+            left: `${item.left}%`,
+            bottom: "-60px",
+            animation: `floatUp ${item.duration}s ease-in forwards`,
+            display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(10,10,20,0.75)",
+            border: `1px solid ${item.ticker.bull ? "rgba(0,255,136,0.3)" : "rgba(239,68,68,0.3)"}`,
+            borderRadius: 8,
+            padding: "5px 10px",
+            backdropFilter: "blur(8px)",
+            whiteSpace: "nowrap",
+            fontSize: 11,
+          }}
+        >
+          <span style={{ color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>{item.ticker.sym}</span>
+          <span style={{ color: "#f0f0ff", fontWeight: 700 }}>{item.ticker.price}</span>
+          <span style={{ color: item.ticker.bull ? "#00ff88" : "#ef4444", fontWeight: 700 }}>{item.ticker.chg}</span>
+        </div>
+      ))}
+      <style>{`
+        @keyframes floatUp {
+          0%   { opacity: 0; transform: translateY(0); }
+          8%   { opacity: 1; }
+          85%  { opacity: 0.7; }
+          100% { opacity: 0; transform: translateY(-105vh); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ── App Mockup ──────────────────────────────────────────────── */
 function AppMockup() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setTick((t) => t + 1), 2000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const prices = ["₹3,240", "₹3,248", "₹3,231", "₹3,256", "₹3,243"];
+  const currentPrice = prices[tick % prices.length];
+
   return (
     <div style={{
-      width: 480, maxWidth: "90vw",
-      background: "rgba(12,12,24,0.95)",
-      border: "1px solid rgba(99,102,241,0.5)",
-      borderRadius: 20,
+      width: 460, maxWidth: "88vw",
+      background: "rgba(8,8,18,0.96)",
+      border: "1px solid rgba(99,102,241,0.45)",
+      borderRadius: 18,
       overflow: "hidden",
-      boxShadow: "0 0 80px rgba(99,102,241,0.25), 0 40px 120px rgba(0,0,0,0.8)",
-      fontFamily: "system-ui, sans-serif",
+      boxShadow: "0 0 100px rgba(99,102,241,0.2), 0 60px 140px rgba(0,0,0,0.9)",
+      fontSize: 13,
     }}>
       {/* Titlebar */}
-      <div style={{ background: "rgba(99,102,241,0.12)", padding: "12px 18px", borderBottom: "1px solid rgba(99,102,241,0.2)", display: "flex", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57" }} />
-        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
-        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
-        <div style={{ flex: 1, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.4)" }}>moonlight-ideas.vercel.app/analyze</div>
-      </div>
-
-      {/* Nav strip */}
-      <div style={{ padding: "10px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 20, height: 20, background: "#6366f1", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <TrendingUp size={11} color="white" />
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#f0f0ff" }}>MoonLight</span>
+      <div style={{ background: "rgba(99,102,241,0.1)", padding: "10px 16px", borderBottom: "1px solid rgba(99,102,241,0.18)", display: "flex", alignItems: "center", gap: 6 }}>
+        {["#ff5f57","#febc2e","#28c840"].map((c) => (
+          <div key={c} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />
+        ))}
+        <div style={{ flex: 1, textAlign: "center", fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+          moonlight-ideas.vercel.app/analyze
         </div>
-        <div style={{ fontSize: 10, color: "#6366f1", fontWeight: 600 }}>3 free analyses left</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00ff88", animation: "pulse 1.5s infinite" }} />
+          <span style={{ fontSize: 9, color: "#00ff88", fontWeight: 700 }}>LIVE</span>
+        </div>
       </div>
 
-      {/* Search row */}
-      <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 8 }}>
-        <div style={{ flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#f0f0ff", border: "1px solid rgba(99,102,241,0.3)" }}>
+      {/* Nav */}
+      <div style={{ padding: "8px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 18, height: 18, background: "#6366f1", borderRadius: 5, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <TrendingUp size={10} color="white" />
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#f0f0ff" }}>MoonLight</span>
+        </div>
+        <span style={{ fontSize: 9, color: "#6366f1", fontWeight: 600 }}>3 free analyses left</span>
+      </div>
+
+      {/* Search */}
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", gap: 6 }}>
+        <div style={{ flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 7, padding: "7px 10px", fontSize: 11, color: "#f0f0ff", border: "1px solid rgba(99,102,241,0.35)" }}>
           RELIANCE.NS
         </div>
-        <div style={{ background: "#6366f1", borderRadius: 8, padding: "8px 14px", fontSize: 11, color: "white", fontWeight: 600 }}>Analyze</div>
+        <div style={{ background: "#6366f1", borderRadius: 7, padding: "7px 14px", fontSize: 10, color: "white", fontWeight: 700, display: "flex", alignItems: "center" }}>
+          Analyze
+        </div>
       </div>
 
-      {/* Result card */}
-      <div style={{ padding: "16px 18px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+      {/* Result */}
+      <div style={{ padding: "14px 16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 2 }}>AI RESEARCH REPORT</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#f0f0ff" }}>Reliance Industries</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>RELIANCE.NS · NSE</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", marginBottom: 2 }}>AI RESEARCH REPORT</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#f0f0ff" }}>Reliance Industries</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)" }}>RELIANCE.NS · NSE</div>
           </div>
-          <div style={{ display: "flex", gap: 6, flexDirection: "column", alignItems: "flex-end" }}>
-            <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.4)", borderRadius: 999, padding: "3px 10px", fontSize: 10, fontWeight: 700, color: "#10b981" }}>BUY</div>
-            <div style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#6366f1", fontWeight: 600 }}>₹3,240 fair value</div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+            <div style={{ background: "rgba(0,255,136,0.12)", border: "1px solid rgba(0,255,136,0.35)", borderRadius: 999, padding: "2px 9px", fontSize: 9, fontWeight: 800, color: "#00ff88" }}>
+              STRONG BUY
+            </div>
+            <div style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 999, padding: "2px 9px", fontSize: 9, color: "#818cf8", fontWeight: 600, transition: "all 0.5s" }}>
+              Fair Value {currentPrice}
+            </div>
           </div>
         </div>
 
-        {/* DCF mini */}
-        <div style={{ background: "rgba(99,102,241,0.06)", borderRadius: 10, padding: "10px 12px", marginBottom: 10, border: "1px solid rgba(99,102,241,0.15)" }}>
-          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", marginBottom: 6, fontWeight: 600 }}>DCF VALUATION</div>
+        {/* DCF */}
+        <div style={{ background: "rgba(99,102,241,0.07)", borderRadius: 9, padding: "9px 11px", marginBottom: 8, border: "1px solid rgba(99,102,241,0.15)" }}>
+          <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", marginBottom: 5, fontWeight: 700, letterSpacing: "0.08em" }}>DCF VALUATION</div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            {[["Fair Value", "₹3,240"], ["Upside", "+14%"], ["WACC", "11.2%"]].map(([k, v]) => (
+            {[["Fair Value", currentPrice, "#f0f0ff"], ["Upside", "+14.2%", "#00ff88"], ["WACC", "11.2%", "#818cf8"]].map(([k, v, c]) => (
               <div key={k}>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)" }}>{k}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: k === "Upside" ? "#10b981" : "#f0f0ff" }}>{v}</div>
+                <div style={{ fontSize: 8, color: "rgba(255,255,255,0.3)" }}>{k}</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: c, transition: "all 0.5s" }}>{v}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Geopolitical section */}
-        <div style={{ background: "rgba(245,158,11,0.06)", borderRadius: 10, padding: "10px 12px", border: "1px solid rgba(245,158,11,0.15)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>🌍 GEOPOLITICAL RISK</div>
-            <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 999, padding: "2px 8px", fontSize: 9, color: "#10b981", fontWeight: 700 }}>LOW</div>
+        {/* Geo risk */}
+        <div style={{ background: "rgba(245,158,11,0.05)", borderRadius: 9, padding: "9px 11px", border: "1px solid rgba(245,158,11,0.15)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.35)", fontWeight: 700, letterSpacing: "0.08em" }}>🌍 GEOPOLITICAL RISK</div>
+            <div style={{ background: "rgba(0,255,136,0.12)", border: "1px solid rgba(0,255,136,0.3)", borderRadius: 999, padding: "2px 7px", fontSize: 8, color: "#00ff88", fontWeight: 700 }}>LOW</div>
           </div>
-          {[
-            { label: "US-India Trade", value: 85, color: "#10b981" },
-            { label: "China Exposure", value: 22, color: "#ef4444" },
-            { label: "PLI Benefit", value: 90, color: "#6366f1" },
-          ].map((bar) => (
-            <div key={bar.label} style={{ marginBottom: 5 }}>
+          {[{ l: "US-India Trade", v: 85, c: "#00ff88" }, { l: "China Exposure", v: 22, c: "#ef4444" }, { l: "PLI Benefit", v: 91, c: "#6366f1" }].map((b) => (
+            <div key={b.l} style={{ marginBottom: 5 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)" }}>{bar.label}</span>
-                <span style={{ fontSize: 9, color: bar.color }}>{bar.value}%</span>
+                <span style={{ fontSize: 8, color: "rgba(255,255,255,0.35)" }}>{b.l}</span>
+                <span style={{ fontSize: 8, color: b.c, fontWeight: 700 }}>{b.v}%</span>
               </div>
-              <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 999 }}>
-                <div style={{ height: "100%", width: `${bar.value}%`, background: bar.color, borderRadius: 999, opacity: 0.8 }} />
+              <div style={{ height: 3, background: "rgba(255,255,255,0.05)", borderRadius: 999 }}>
+                <div style={{ height: "100%", width: `${b.v}%`, background: b.c, borderRadius: 999, boxShadow: `0 0 6px ${b.c}` }} />
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
     </div>
   );
 }
 
-/* ─── Scroll-driven 3D Section ───────────────────────────────── */
-function ScrollMockup() {
+/* ── Scroll-driven 3D Reveal ─────────────────────────────────── */
+function ScrollReveal3D() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [progress, setProgress] = useState(0); // 0 → 1
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const onScroll = () => {
       const el = containerRef.current;
       if (!el) return;
-      const rect = el.getBoundingClientRect();
+      const scrolled = -el.getBoundingClientRect().top;
       const total = el.offsetHeight - window.innerHeight;
-      const scrolled = -rect.top;
       setProgress(Math.min(1, Math.max(0, scrolled / total)));
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Interpolate transforms
-  const rotX = 28 - 28 * progress;          // 28° → 0°
-  const rotY = -18 + 18 * progress;          // -18° → 0°
-  const scale = 0.78 + 0.22 * progress;      // 0.78 → 1.0
-  const translateY = 40 - 40 * progress;     // 40px → 0px
-  const shadowOpacity = 0.3 - 0.15 * progress;
+  const rotX = 26 * (1 - progress);
+  const rotY = -16 * (1 - progress);
+  const scale = 0.76 + 0.24 * progress;
+  const phase1 = Math.min(1, progress * 3);
+  const phase2 = Math.min(1, Math.max(0, (progress - 0.38) * 3));
+  const phase3 = Math.min(1, Math.max(0, (progress - 0.7) * 3));
 
-  // Text phases
-  const phase1 = Math.min(1, progress * 3);           // 0→0.33 scroll
-  const phase2 = Math.min(1, Math.max(0, (progress - 0.4) * 3)); // 0.4→0.73
-  const phase3 = Math.min(1, Math.max(0, (progress - 0.7) * 3)); // 0.7→1.0
+  const labels = [
+    { opacity: phase1 * (1 - phase2), tag: "SCROLL TO EXPLORE", tagColor: "#6366f1", title: "Your complete research\nreport. Instantly." },
+    { opacity: phase2 * (1 - phase3), tag: "WHAT ZERODHA NEVER SHOWS", tagColor: "#f59e0b", title: "Geopolitical risk.\nMapped to every stock." },
+    { opacity: phase3, tag: "INSTITUTIONAL GRADE", tagColor: "#00ff88", title: "Goldman Sachs methodology.\n60 seconds." },
+  ];
 
   return (
-    <div ref={containerRef} style={{ height: "320vh", position: "relative" }}>
+    <div ref={containerRef} style={{ height: "300vh", position: "relative", zIndex: 1 }}>
       <div style={{ position: "sticky", top: 0, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-        {/* Ambient glow */}
+        {/* Radial glow */}
         <div style={{
-          position: "absolute",
-          width: 600, height: 600,
-          background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)",
-          borderRadius: "50%",
-          transform: `scale(${0.8 + 0.4 * progress})`,
-          transition: "transform 0.1s",
-          pointerEvents: "none",
+          position: "absolute", width: 700, height: 700, borderRadius: "50%",
+          background: `radial-gradient(circle, rgba(99,102,241,${0.08 + 0.06 * progress}) 0%, transparent 70%)`,
+          transform: `scale(${0.7 + 0.6 * progress})`, pointerEvents: "none",
         }} />
 
-        {/* Floating label — phase 1 */}
-        <div style={{
-          position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)",
-          textAlign: "center",
-          opacity: phase1 * (1 - phase2),
-          transition: "opacity 0.3s",
-        }}>
-          <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.9rem)", color: "#6366f1", fontWeight: 700, letterSpacing: "0.15em", marginBottom: 8 }}>
-            SCROLL TO EXPLORE
+        {/* Phase labels */}
+        {labels.map((lb, i) => (
+          <div key={i} style={{ position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)", textAlign: "center", opacity: lb.opacity, transition: "opacity 0.25s", pointerEvents: "none", width: "90vw" }}>
+            <div style={{ fontSize: "0.72rem", color: lb.tagColor, fontWeight: 800, letterSpacing: "0.15em", marginBottom: 10 }}>{lb.tag}</div>
+            <div style={{ fontSize: "clamp(1.3rem, 3.5vw, 2rem)", fontWeight: 800, color: "#f0f0ff", lineHeight: 1.3, whiteSpace: "pre-line" }}>{lb.title}</div>
           </div>
-          <div style={{ fontSize: "clamp(1.2rem, 3vw, 1.8rem)", fontWeight: 800, color: "#f0f0ff", lineHeight: 1.3 }}>
-            Your complete research<br />report. Instantly.
-          </div>
-        </div>
+        ))}
 
-        {/* Floating label — phase 2 */}
-        <div style={{
-          position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)",
-          textAlign: "center",
-          opacity: phase2 * (1 - phase3),
-          transition: "opacity 0.3s",
-          whiteSpace: "nowrap",
-        }}>
-          <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.9rem)", color: "#f59e0b", fontWeight: 700, letterSpacing: "0.15em", marginBottom: 8 }}>
-            WHAT ZERODHA NEVER SHOWS
-          </div>
-          <div style={{ fontSize: "clamp(1.2rem, 3vw, 1.8rem)", fontWeight: 800, color: "#f0f0ff", lineHeight: 1.3 }}>
-            Geopolitical risk.<br />Mapped to every stock.
-          </div>
-        </div>
-
-        {/* Floating label — phase 3 */}
-        <div style={{
-          position: "absolute", top: "12%", left: "50%", transform: "translateX(-50%)",
-          textAlign: "center",
-          opacity: phase3,
-          transition: "opacity 0.3s",
-          whiteSpace: "nowrap",
-        }}>
-          <div style={{ fontSize: "clamp(0.75rem, 1.5vw, 0.9rem)", color: "#10b981", fontWeight: 700, letterSpacing: "0.15em", marginBottom: 8 }}>
-            INSTITUTIONAL GRADE
-          </div>
-          <div style={{ fontSize: "clamp(1.2rem, 3vw, 1.8rem)", fontWeight: 800, color: "#f0f0ff", lineHeight: 1.3 }}>
-            DCF valuation in 60 seconds.<br />Goldman Sachs methodology.
-          </div>
-        </div>
-
-        {/* The 3D Mockup */}
-        <div style={{
-          perspective: "1200px",
-          transformStyle: "preserve-3d",
-        }}>
+        {/* 3D Mockup */}
+        <div style={{ perspective: "1400px" }}>
           <div style={{
-            transform: `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(${scale}) translateY(${translateY}px)`,
-            transition: "transform 0.05s linear",
-            filter: `drop-shadow(0 ${30 * (1 - progress)}px ${60 * (1 - progress) + 20}px rgba(99,102,241,${shadowOpacity}))`,
+            transform: `rotateX(${rotX}deg) rotateY(${rotY}deg) scale(${scale})`,
+            transition: "transform 0.04s linear",
+            filter: `drop-shadow(0 ${30*(1-progress)}px ${50*(1-progress)+20}px rgba(99,102,241,${0.28-0.12*progress}))`,
           }}>
             <AppMockup />
           </div>
         </div>
 
-        {/* Bottom CTA appears at end */}
-        <div style={{
-          position: "absolute", bottom: "8%", left: "50%", transform: "translateX(-50%)",
-          opacity: phase3,
-          transition: "opacity 0.4s",
-          textAlign: "center",
-        }}>
+        {/* CTA at end */}
+        <div style={{ position: "absolute", bottom: "8%", left: "50%", transform: "translateX(-50%)", opacity: phase3, transition: "opacity 0.4s", textAlign: "center" }}>
           <Link href="/analyze">
-            <button style={{
-              background: "#6366f1", color: "white", border: "none", borderRadius: 10,
-              padding: "13px 32px", fontWeight: 700, fontSize: "1rem", cursor: "pointer",
-              boxShadow: "0 0 30px rgba(99,102,241,0.5)",
-            }}>
+            <button style={{ background: "#6366f1", border: "none", borderRadius: 10, padding: "13px 30px", color: "white", fontWeight: 700, fontSize: "1rem", cursor: "pointer", boxShadow: "0 0 30px rgba(99,102,241,0.5)" }}>
               Try it free →
             </button>
           </Link>
@@ -274,31 +370,23 @@ function ScrollMockup() {
   );
 }
 
-/* ─── Section reveal on scroll ───────────────────────────────── */
-function RevealSection({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+/* ── Reveal on scroll ────────────────────────────────────────── */
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [on, setOn] = useState(false);
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setVisible(true); },
-      { threshold: 0.15 }
-    );
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setOn(true); }, { threshold: 0.12 });
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
   }, []);
   return (
-    <div ref={ref} style={{
-      opacity: visible ? 1 : 0,
-      transform: visible ? "translateY(0)" : "translateY(40px)",
-      transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
-    }}>
+    <div ref={ref} style={{ opacity: on ? 1 : 0, transform: on ? "translateY(0)" : "translateY(36px)", transition: `opacity 0.7s ${delay}s, transform 0.7s ${delay}s` }}>
       {children}
     </div>
   );
 }
 
-/* ─── Comparison Table ───────────────────────────────────────── */
-const vsRows = [
+const VS_ROWS = [
   ["DCF Fair Value Estimate", true, false, false],
   ["Geopolitical Risk Analysis", true, false, false],
   ["US Tariff / China+1 Impact", true, false, false],
@@ -306,138 +394,135 @@ const vsRows = [
   ["Entry Zone + Stop Loss", true, false, false],
   ["Fed Rate Sensitivity", true, false, false],
   ["Investment Thesis", true, false, false],
-  ["Buy/Sell Signal", true, true, true],
+  ["Buy / Sell Signal", true, true, true],
   ["Price Charts", false, true, true],
-] as const;
+] as [string, boolean, boolean, boolean][];
 
-/* ─── Main Page ─────────────────────────────────────────────── */
+/* ── PAGE ────────────────────────────────────────────────────── */
 export default function Page() {
   return (
-    <div style={{ background: "#07070f", color: "#f0f0ff", minHeight: "100vh", overflowX: "hidden" }}>
-      <Starfield />
+    <div style={{ background: "#06060f", color: "#f0f0ff", minHeight: "100vh", overflowX: "hidden" }}>
+      <LiveChartCanvas />
+      <FloatingTickers />
 
-      {/* ── NAV ── */}
-      <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        padding: "1rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center",
-        background: "rgba(7,7,15,0.7)", backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(99,102,241,0.15)",
-      }}>
+      {/* NAV */}
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "0.9rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(6,6,15,0.75)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(99,102,241,0.12)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 30, height: 30, background: "#6366f1", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <TrendingUp size={16} color="white" />
+            <TrendingUp size={15} color="white" />
           </div>
-          <span style={{ fontWeight: 800, fontSize: "1.05rem" }}>MoonLight</span>
-          <span style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 999, padding: "2px 8px", fontSize: "0.7rem", color: "#6366f1", fontWeight: 700 }}>BETA</span>
+          <span style={{ fontWeight: 900, fontSize: "1.05rem" }}>MoonLight</span>
+          <span style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 999, padding: "2px 8px", fontSize: "0.68rem", color: "#818cf8", fontWeight: 700 }}>BETA</span>
         </div>
         <div style={{ display: "flex", gap: "2rem", alignItems: "center" }}>
-          <a href="#compare" style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none", fontSize: "0.875rem" }}>vs Zerodha</a>
-          <a href="#pricing" style={{ color: "rgba(255,255,255,0.5)", textDecoration: "none", fontSize: "0.875rem" }}>Pricing</a>
+          <a href="#compare" style={{ color: "rgba(255,255,255,0.45)", textDecoration: "none", fontSize: "0.875rem" }}>vs Zerodha</a>
+          <a href="#pricing" style={{ color: "rgba(255,255,255,0.45)", textDecoration: "none", fontSize: "0.875rem" }}>Pricing</a>
           <Link href="/analyze">
-            <button style={{ background: "#6366f1", border: "none", borderRadius: 8, padding: "8px 20px", color: "white", fontWeight: 600, cursor: "pointer", fontSize: "0.875rem" }}>
+            <button style={{ background: "#6366f1", border: "none", borderRadius: 8, padding: "8px 20px", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "0.875rem", boxShadow: "0 0 20px rgba(99,102,241,0.35)" }}>
               Try Free →
             </button>
           </Link>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "6rem 2rem 4rem" }}>
-        <RevealSection>
-          <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 999, padding: "5px 16px", fontSize: "0.75rem", fontWeight: 700, color: "#f59e0b", letterSpacing: "0.1em", marginBottom: "1.5rem", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <Globe size={12} /> GEOPOLITICS-AWARE · FIRST IN INDIA
-          </div>
-          <h1 style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontWeight: 900, lineHeight: 1.08, margin: "0 0 1.5rem", letterSpacing: "-0.02em" }}>
-            Zerodha shows<br />
-            you charts.<br />
-            <span style={{ color: "#6366f1", WebkitTextStroke: "0px" }}>MoonLight tells</span><br />
-            <span style={{ color: "#6366f1" }}>you why.</span>
-          </h1>
-          <p style={{ fontSize: "clamp(1rem, 2vw, 1.2rem)", color: "rgba(255,255,255,0.5)", maxWidth: 560, margin: "0 auto 2.5rem", lineHeight: 1.8 }}>
-            The only stock research tool in India that layers <span style={{ color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>geopolitical risk</span>, US tariffs, China+1 impact &amp; PLI tailwinds onto institutional-grade DCF valuations.
-          </p>
-          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/analyze">
-              <button style={{
-                background: "#6366f1", border: "none", borderRadius: 10, padding: "14px 32px",
-                color: "white", fontWeight: 700, cursor: "pointer", fontSize: "1.05rem",
-                boxShadow: "0 0 40px rgba(99,102,241,0.4)",
-              }}>
-                Analyze a Stock Free →
-              </button>
-            </Link>
-          </div>
-          <div style={{ marginTop: "1rem", color: "rgba(255,255,255,0.3)", fontSize: "0.8rem" }}>
-            3 free analyses · No credit card
-          </div>
-        </RevealSection>
+      {/* HERO */}
+      <section style={{ position: "relative", zIndex: 2, minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "7rem 2rem 5rem" }}>
+        {/* Live badge */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(0,255,136,0.07)", border: "1px solid rgba(0,255,136,0.25)", borderRadius: 999, padding: "6px 14px", fontSize: "0.72rem", fontWeight: 700, color: "#00ff88", letterSpacing: "0.08em", marginBottom: "1.75rem" }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00ff88", boxShadow: "0 0 8px #00ff88", animation: "pulse 1.5s infinite" }} />
+          LIVE MARKET DATA · GEOPOLITICS-AWARE · FIRST IN INDIA
+        </div>
+
+        <h1 style={{ fontSize: "clamp(2.6rem, 7.5vw, 5.2rem)", fontWeight: 900, lineHeight: 1.06, margin: "0 0 1.5rem", letterSpacing: "-0.03em" }}>
+          Zerodha shows<br />you charts.<br />
+          <span style={{ background: "linear-gradient(135deg,#6366f1,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            MoonLight tells
+          </span><br />
+          <span style={{ background: "linear-gradient(135deg,#6366f1,#22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            you why.
+          </span>
+        </h1>
+
+        <p style={{ fontSize: "clamp(0.95rem, 2vw, 1.15rem)", color: "rgba(255,255,255,0.45)", maxWidth: 540, margin: "0 auto 2.5rem", lineHeight: 1.8 }}>
+          The only stock research tool in India that layers{" "}
+          <span style={{ color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>geopolitical risk</span>,
+          US tariffs, China+1 impact &amp; PLI tailwinds onto institutional-grade DCF valuations.
+        </p>
+
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <Link href="/analyze">
+            <button style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", border: "none", borderRadius: 10, padding: "14px 32px", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "1rem", boxShadow: "0 0 40px rgba(99,102,241,0.45)", letterSpacing: "0.01em" }}>
+              Analyze a Stock Free →
+            </button>
+          </Link>
+          <a href="#compare">
+            <button style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 24px", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: "0.95rem" }}>
+              See vs Zerodha ↓
+            </button>
+          </a>
+        </div>
+
+        <p style={{ marginTop: "1rem", color: "rgba(255,255,255,0.22)", fontSize: "0.78rem" }}>
+          3 free analyses · No credit card required
+        </p>
 
         {/* Scroll indicator */}
-        <div style={{ position: "absolute", bottom: "2rem", left: "50%", transform: "translateX(-50%)", color: "rgba(255,255,255,0.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, fontSize: "0.7rem", animation: "bounce 2s infinite" }}>
-          <span>scroll</span>
-          <ArrowDown size={14} />
+        <div style={{ position: "absolute", bottom: "2.5rem", left: "50%", transform: "translateX(-50%)", color: "rgba(255,255,255,0.2)", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, fontSize: "0.68rem", animation: "bounce 2s infinite" }}>
+          scroll<ArrowDown size={13} />
         </div>
       </section>
 
-      {/* ── SCROLL 3D SECTION ── */}
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <ScrollMockup />
-      </div>
+      {/* 3D SCROLL REVEAL */}
+      <ScrollReveal3D />
 
-      {/* ── WHAT OTHERS MISS ── */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto", padding: "6rem 2rem" }}>
-        <RevealSection>
-          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 800, marginBottom: "0.75rem" }}>
+      {/* WHAT OTHERS MISS */}
+      <section style={{ position: "relative", zIndex: 2, maxWidth: 1000, margin: "0 auto", padding: "6rem 2rem" }}>
+        <Reveal>
+          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 800, marginBottom: "0.6rem" }}>
             Questions your broker never answers
           </h2>
-          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", marginBottom: "3rem", fontSize: "0.95rem" }}>
-            MoonLight answers all of these. In every analysis.
+          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", marginBottom: "3rem", fontSize: "0.9rem" }}>
+            MoonLight answers all of these. In every single analysis.
           </p>
-        </RevealSection>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.25rem" }}>
+        </Reveal>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: "1.25rem" }}>
           {[
-            { q: "Is your IT stock at risk from US tariffs on Indian services?", color: "#ef4444", delay: 0 },
-            { q: "Which pharma stocks benefit from US-China decoupling?", color: "#f59e0b", delay: 0.1 },
-            { q: "How does a Fed rate hike affect FII selling in your holdings?", color: "#6366f1", delay: 0.2 },
-            { q: "Which companies are PLI scheme winners in the next 2 years?", color: "#10b981", delay: 0.3 },
+            { q: "Is your IT stock at risk from US tariffs on Indian services?", c: "#ef4444", delay: 0 },
+            { q: "Which pharma stocks benefit from US-China decoupling?", c: "#f59e0b", delay: 0.1 },
+            { q: "How does a Fed rate hike affect FII selling in your holdings?", c: "#6366f1", delay: 0.2 },
+            { q: "Which companies are PLI scheme winners in the next 2 years?", c: "#00ff88", delay: 0.3 },
           ].map((item) => (
-            <RevealSection key={item.q} delay={item.delay}>
-              <div style={{
-                background: "rgba(255,255,255,0.02)", border: `1px solid ${item.color}30`,
-                borderRadius: 14, padding: "1.5rem", height: "100%",
-                backdropFilter: "blur(10px)",
-              }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: item.color, marginBottom: "1rem", boxShadow: `0 0 10px ${item.color}` }} />
-                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.9rem", lineHeight: 1.65, margin: "0 0 1rem" }}>{item.q}</p>
-                <div style={{ fontSize: "0.75rem", fontWeight: 700, color: item.color }}>MoonLight answers this ↗</div>
+            <Reveal key={item.q} delay={item.delay}>
+              <div style={{ background: "rgba(255,255,255,0.018)", border: `1px solid ${item.c}28`, borderRadius: 14, padding: "1.5rem", height: "100%", backdropFilter: "blur(12px)" }}>
+                <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.c, marginBottom: "1rem", boxShadow: `0 0 12px ${item.c}` }} />
+                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.875rem", lineHeight: 1.65, margin: "0 0 1rem" }}>{item.q}</p>
+                <div style={{ fontSize: "0.75rem", fontWeight: 700, color: item.c }}>MoonLight answers this ↗</div>
               </div>
-            </RevealSection>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ── COMPARISON ── */}
-      <section id="compare" style={{ position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "2rem 2rem 6rem" }}>
-        <RevealSection>
-          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 800, marginBottom: "0.75rem" }}>MoonLight vs the rest</h2>
-          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", marginBottom: "2.5rem", fontSize: "0.95rem" }}>
-            Other apps give you data. We give you insight.
-          </p>
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 16, overflow: "hidden", backdropFilter: "blur(10px)" }}>
+      {/* COMPARISON */}
+      <section id="compare" style={{ position: "relative", zIndex: 2, maxWidth: 760, margin: "0 auto", padding: "0 2rem 6rem" }}>
+        <Reveal>
+          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 800, marginBottom: "0.6rem" }}>MoonLight vs the rest</h2>
+          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Other apps give you data. We give you insight.</p>
+          <div style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(99,102,241,0.18)", borderRadius: 16, overflow: "hidden", backdropFilter: "blur(12px)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                  <th style={{ padding: "1rem 1.25rem", textAlign: "left", color: "rgba(255,255,255,0.35)", fontSize: "0.75rem", fontWeight: 600 }}>FEATURE</th>
-                  <th style={{ padding: "1rem", textAlign: "center", color: "#6366f1", fontSize: "0.85rem", fontWeight: 700 }}>MoonLight</th>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <th style={{ padding: "1rem 1.25rem", textAlign: "left", color: "rgba(255,255,255,0.3)", fontSize: "0.72rem", fontWeight: 600 }}>FEATURE</th>
+                  <th style={{ padding: "1rem", textAlign: "center", color: "#818cf8", fontSize: "0.85rem", fontWeight: 700 }}>MoonLight</th>
                   <th style={{ padding: "1rem", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "0.82rem" }}>Zerodha</th>
                   <th style={{ padding: "1rem", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "0.82rem" }}>Groww</th>
                 </tr>
               </thead>
               <tbody>
-                {vsRows.map(([feat, ml, z, g], i) => (
-                  <tr key={String(feat)} style={{ borderBottom: i < vsRows.length - 1 ? "1px solid rgba(255,255,255,0.04)" : undefined }}>
-                    <td style={{ padding: "0.8rem 1.25rem", fontSize: "0.85rem", color: "rgba(255,255,255,0.55)" }}>{feat}</td>
-                    <td style={{ textAlign: "center" }}>{ml ? <span style={{ color: "#10b981", fontWeight: 700, fontSize: "1rem" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.15)" }}>—</span>}</td>
+                {VS_ROWS.map(([feat, ml, z, g], i) => (
+                  <tr key={String(feat)} style={{ borderBottom: i < VS_ROWS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : undefined }}>
+                    <td style={{ padding: "0.8rem 1.25rem", fontSize: "0.84rem", color: "rgba(255,255,255,0.5)" }}>{feat}</td>
+                    <td style={{ textAlign: "center" }}>{ml ? <span style={{ color: "#00ff88", fontWeight: 700 }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.12)" }}>—</span>}</td>
                     <td style={{ textAlign: "center" }}>{z ? <span style={{ color: "rgba(255,255,255,0.4)" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.1)" }}>—</span>}</td>
                     <td style={{ textAlign: "center" }}>{g ? <span style={{ color: "rgba(255,255,255,0.4)" }}>✓</span> : <span style={{ color: "rgba(255,255,255,0.1)" }}>—</span>}</td>
                   </tr>
@@ -445,116 +530,104 @@ export default function Page() {
               </tbody>
             </table>
           </div>
-        </RevealSection>
+        </Reveal>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section style={{ position: "relative", zIndex: 1, maxWidth: 1000, margin: "0 auto", padding: "0 2rem 6rem" }}>
-        <RevealSection>
-          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 800, marginBottom: "2.5rem" }}>What investors are saying</h2>
-        </RevealSection>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.25rem" }}>
+      {/* TESTIMONIALS */}
+      <section style={{ position: "relative", zIndex: 2, maxWidth: 1000, margin: "0 auto", padding: "0 2rem 6rem" }}>
+        <Reveal>
+          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 800, marginBottom: "2.5rem" }}>What investors are saying</h2>
+        </Reveal>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(270px,1fr))", gap: "1.25rem" }}>
           {[
             { name: "Vikram S.", role: "Retail Investor, Mumbai", text: "I finally understood how US Fed decisions were killing my IT stocks. MoonLight flagged it before I lost more money.", delay: 0 },
-            { name: "Priya M.", role: "NISM Certified Advisor", text: "The China+1 analysis on manufacturing stocks is something no other free tool gives. My clients ask me how I know this stuff.", delay: 0.1 },
+            { name: "Priya M.", role: "NISM Certified Advisor", text: "The China+1 analysis on manufacturing stocks is something no other free tool gives. My clients ask me how I know this.", delay: 0.1 },
             { name: "Rohan K.", role: "MBA Student, Bangalore", text: "Used MoonLight to analyze Adani Ports for a case study. The geopolitical section alone was worth 10 pages of research.", delay: 0.2 },
           ].map((t) => (
-            <RevealSection key={t.name} delay={t.delay}>
-              <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "1.5rem", backdropFilter: "blur(10px)" }}>
+            <Reveal key={t.name} delay={t.delay}>
+              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "1.5rem", backdropFilter: "blur(12px)" }}>
                 <div style={{ display: "flex", gap: 2, marginBottom: "0.75rem" }}>
-                  {[...Array(5)].map((_, i) => <Star key={i} size={13} fill="#f59e0b" color="#f59e0b" />)}
+                  {[...Array(5)].map((_, i) => <Star key={i} size={12} fill="#f59e0b" color="#f59e0b" />)}
                 </div>
-                <p style={{ color: "rgba(255,255,255,0.55)", fontSize: "0.9rem", lineHeight: 1.65, margin: "0 0 1rem" }}>"{t.text}"</p>
-                <div style={{ fontWeight: 600, fontSize: "0.875rem" }}>{t.name}</div>
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.78rem" }}>{t.role}</div>
+                <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem", lineHeight: 1.65, margin: "0 0 1rem" }}>"{t.text}"</p>
+                <div style={{ fontWeight: 700, fontSize: "0.875rem" }}>{t.name}</div>
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.75rem" }}>{t.role}</div>
               </div>
-            </RevealSection>
+            </Reveal>
           ))}
         </div>
       </section>
 
-      {/* ── PRICING ── */}
-      <section id="pricing" style={{ position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "0 2rem 8rem" }}>
-        <RevealSection>
-          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem, 4vw, 2.2rem)", fontWeight: 800, marginBottom: "0.75rem" }}>Simple pricing</h2>
-          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", marginBottom: "2.5rem", fontSize: "0.95rem" }}>
-            Less than a cup of coffee a week.
-          </p>
+      {/* PRICING */}
+      <section id="pricing" style={{ position: "relative", zIndex: 2, maxWidth: 760, margin: "0 auto", padding: "0 2rem 8rem" }}>
+        <Reveal>
+          <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 800, marginBottom: "0.6rem" }}>Simple pricing</h2>
+          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Less than a cup of coffee a week.</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            {/* Free */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "2rem", backdropFilter: "blur(10px)" }}>
-              <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>FREE</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, marginBottom: "1.5rem" }}>₹0<span style={{ fontSize: "1rem", color: "rgba(255,255,255,0.3)", fontWeight: 400 }}>/mo</span></div>
-              {["3 full analyses/month", "DCF fair value", "Geopolitical risk section", "Entry zone + stop loss"].map(f => (
+            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "2rem", backdropFilter: "blur(12px)" }}>
+              <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>FREE</div>
+              <div style={{ fontSize: "2.2rem", fontWeight: 900, marginBottom: "1.5rem" }}>₹0<span style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.3)", fontWeight: 400 }}>/mo</span></div>
+              {["3 full analyses/month", "DCF fair value", "Geopolitical risk section", "Entry zone + stop loss"].map((f) => (
                 <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.7rem" }}>
-                  <CheckCircle size={14} color="#10b981" />
-                  <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.5)" }}>{f}</span>
+                  <CheckCircle size={14} color="#00ff88" />
+                  <span style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.45)" }}>{f}</span>
                 </div>
               ))}
               <Link href="/analyze">
-                <button style={{ width: "100%", marginTop: "1.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 9, padding: "12px", color: "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem" }}>
+                <button style={{ width: "100%", marginTop: "1.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, padding: "11px", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
                   Start Free
                 </button>
               </Link>
             </div>
-            {/* Pro */}
-            <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.5)", borderRadius: 16, padding: "2rem", backdropFilter: "blur(10px)", position: "relative" }}>
-              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#6366f1", borderRadius: 999, padding: "3px 14px", fontSize: "0.72rem", fontWeight: 700, whiteSpace: "nowrap", boxShadow: "0 0 20px rgba(99,102,241,0.5)" }}>
+            <div style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.45)", borderRadius: 16, padding: "2rem", backdropFilter: "blur(12px)", position: "relative" }}>
+              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#6366f1", borderRadius: 999, padding: "3px 14px", fontSize: "0.7rem", fontWeight: 700, whiteSpace: "nowrap", boxShadow: "0 0 20px rgba(99,102,241,0.5)" }}>
                 MOST POPULAR
               </div>
-              <div style={{ fontSize: "0.75rem", color: "#6366f1", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>PRO</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, marginBottom: "1.5rem" }}>₹299<span style={{ fontSize: "1rem", color: "rgba(255,255,255,0.3)", fontWeight: 400 }}>/mo</span></div>
-              {["Unlimited analyses", "Everything in Free", "PDF annual report upload", "Portfolio watchlist + alerts", "Sector macro dashboard"].map(f => (
+              <div style={{ fontSize: "0.72rem", color: "#818cf8", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>PRO</div>
+              <div style={{ fontSize: "2.2rem", fontWeight: 900, marginBottom: "1.5rem" }}>₹299<span style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.3)", fontWeight: 400 }}>/mo</span></div>
+              {["Unlimited analyses", "Everything in Free", "PDF annual report upload", "Portfolio watchlist + alerts", "Sector macro dashboard"].map((f) => (
                 <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.7rem" }}>
                   <CheckCircle size={14} color="#6366f1" />
-                  <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.55)" }}>{f}</span>
+                  <span style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.5)" }}>{f}</span>
                 </div>
               ))}
               <Link href="/analyze">
-                <button style={{ width: "100%", marginTop: "1.5rem", background: "#6366f1", border: "none", borderRadius: 9, padding: "12px", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.9rem", boxShadow: "0 0 20px rgba(99,102,241,0.3)" }}>
+                <button style={{ width: "100%", marginTop: "1.5rem", background: "#6366f1", border: "none", borderRadius: 9, padding: "11px", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", boxShadow: "0 0 20px rgba(99,102,241,0.35)" }}>
                   Go Pro — ₹299/mo →
                 </button>
               </Link>
             </div>
           </div>
-        </RevealSection>
+        </Reveal>
       </section>
 
-      {/* ── FINAL CTA ── */}
-      <section style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "5rem 2rem 6rem", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <RevealSection>
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <div style={{ width: 60, height: 60, background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
-              <Globe size={28} color="#6366f1" />
-            </div>
-            <h2 style={{ fontSize: "clamp(1.8rem, 4vw, 2.5rem)", fontWeight: 900, marginBottom: "1rem", lineHeight: 1.2 }}>
-              Stop investing blind<br />to global events.
-            </h2>
-            <p style={{ color: "rgba(255,255,255,0.4)", marginBottom: "2.5rem", lineHeight: 1.7 }}>
-              Every day without geopolitical context, you're leaving money on the table. 3 free analyses. No card needed.
-            </p>
-            <Link href="/analyze">
-              <button style={{
-                background: "#6366f1", border: "none", borderRadius: 12, padding: "16px 40px",
-                color: "white", fontWeight: 700, fontSize: "1.1rem", cursor: "pointer",
-                boxShadow: "0 0 50px rgba(99,102,241,0.4)",
-              }}>
-                Analyze Your First Stock →
-              </button>
-            </Link>
+      {/* FINAL CTA */}
+      <section style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "5rem 2rem 6rem", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <Reveal>
+          <div style={{ width: 56, height: 56, background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 1.5rem" }}>
+            <Globe size={26} color="#818cf8" />
           </div>
-        </RevealSection>
+          <h2 style={{ fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, marginBottom: "1rem", lineHeight: 1.2 }}>
+            Stop investing blind<br />to global events.
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.35)", marginBottom: "2.5rem", lineHeight: 1.7, maxWidth: 420, margin: "0 auto 2.5rem" }}>
+            Every day without geopolitical context, you're leaving money on the table.
+          </p>
+          <Link href="/analyze">
+            <button style={{ background: "linear-gradient(135deg,#6366f1,#4f46e5)", border: "none", borderRadius: 12, padding: "16px 40px", color: "white", fontWeight: 700, fontSize: "1.1rem", cursor: "pointer", boxShadow: "0 0 50px rgba(99,102,241,0.4)" }}>
+              Analyze Your First Stock →
+            </button>
+          </Link>
+        </Reveal>
       </section>
 
-      <footer style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "2rem", borderTop: "1px solid rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.2)", fontSize: "0.75rem" }}>
+      <footer style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "2rem", borderTop: "1px solid rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.18)", fontSize: "0.74rem" }}>
         © 2025 MoonLight · AI Stock Research · Not SEBI registered. For informational purposes only.
       </footer>
 
       <style>{`
-        @keyframes bounce {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(8px); }
-        }
+        @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)} }
+        @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:0.3} }
       `}</style>
     </div>
   );
