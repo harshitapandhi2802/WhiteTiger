@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY!, httpOptions: { apiVersion: "v1" } });
 
 export async function POST(req: NextRequest) {
   const { ticker, companyName } = await req.json();
@@ -65,12 +62,27 @@ One decisive paragraph for a retail Indian investor considering the global macro
 Be specific with numbers. Label estimates clearly. Write like a Goldman Sachs India research note.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
+    const apiKey = process.env.GEMINI_API_KEY;
+    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 2500, temperature: 0.7 },
+      }),
     });
 
-    const text = response.text ?? "";
+    if (!res.ok) {
+      const err = await res.text();
+      console.error("Gemini error:", err);
+      return NextResponse.json({ error: `Gemini API error: ${err}` }, { status: 500 });
+    }
+
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
     return NextResponse.json({ analysis: text, ticker, companyName });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
