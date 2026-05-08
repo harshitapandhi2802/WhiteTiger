@@ -66,7 +66,7 @@ One decisive paragraph. What should a retail Indian investor do right now, consi
 Rules: Be specific with numbers. Clearly label estimates. Write like a Goldman Sachs India research note, not a Wikipedia summary. The geopolitical section is your USP — make it genuinely insightful.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
 
