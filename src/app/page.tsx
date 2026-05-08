@@ -559,44 +559,103 @@ export default function Page() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" style={{ position: "relative", zIndex: 2, maxWidth: 760, margin: "0 auto", padding: "0 2rem 8rem" }}>
+      <section id="pricing" style={{ position: "relative", zIndex: 2, maxWidth: 1080, margin: "0 auto", padding: "0 2rem 8rem" }}>
         <Reveal>
           <h2 style={{ textAlign: "center", fontSize: "clamp(1.5rem,4vw,2.2rem)", fontWeight: 800, marginBottom: "0.6rem" }}>Simple pricing</h2>
-          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", marginBottom: "2.5rem", fontSize: "0.9rem" }}>Less than a cup of coffee a week.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "2rem", backdropFilter: "blur(12px)" }}>
-              <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>FREE</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, marginBottom: "1.5rem" }}>₹0<span style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.3)", fontWeight: 400 }}>/mo</span></div>
-              {["3 full analyses/month", "DCF fair value", "Geopolitical risk section", "Entry zone + stop loss"].map((f) => (
-                <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.7rem" }}>
-                  <CheckCircle size={14} color="#00ff88" />
-                  <span style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.45)" }}>{f}</span>
+          <p style={{ textAlign: "center", color: "rgba(255,255,255,0.35)", marginBottom: "3rem", fontSize: "0.9rem" }}>Start free. Scale as you grow.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: "1.25rem" }}>
+
+            {/* FREE */}
+            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "1.75rem", backdropFilter: "blur(12px)" }}>
+              <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.35)", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>FREE</div>
+              <div style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "0.25rem" }}>₹0</div>
+              <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", marginBottom: "1.5rem" }}>forever</div>
+              <div style={{ background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: 8, padding: "0.6rem", textAlign: "center", marginBottom: "1.25rem" }}>
+                <span style={{ fontSize: "1.4rem", fontWeight: 900, color: "#00ff88" }}>3</span>
+                <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", marginLeft: 4 }}>analyses / month</span>
+              </div>
+              {["DCF fair value", "Geopolitical risk section", "Entry zone + stop loss"].map((f) => (
+                <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.6rem" }}>
+                  <CheckCircle size={13} color="#00ff88" />
+                  <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.4)" }}>{f}</span>
                 </div>
               ))}
               <Link href="/analyze">
-                <button style={{ width: "100%", marginTop: "1.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, padding: "11px", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontWeight: 600, fontSize: "0.875rem" }}>
+                <button style={{ width: "100%", marginTop: "1.5rem", background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9, padding: "10px", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>
                   Start Free
                 </button>
               </Link>
             </div>
-            <div style={{ background: "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.45)", borderRadius: 16, padding: "2rem", backdropFilter: "blur(12px)", position: "relative" }}>
-              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#6366f1", borderRadius: 999, padding: "3px 14px", fontSize: "0.7rem", fontWeight: 700, whiteSpace: "nowrap", boxShadow: "0 0 20px rgba(99,102,241,0.5)" }}>
-                MOST POPULAR
+
+            {/* STARTER ₹199 */}
+            <div style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.25)", borderRadius: 16, padding: "1.75rem", backdropFilter: "blur(12px)" }}>
+              <div style={{ fontSize: "0.68rem", color: "#22d3ee", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>STARTER</div>
+              <div style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "0.25rem" }}>₹199</div>
+              <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", marginBottom: "1.5rem" }}>per month</div>
+              <div style={{ background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 8, padding: "0.6rem", textAlign: "center", marginBottom: "1.25rem" }}>
+                <span style={{ fontSize: "1.4rem", fontWeight: 900, color: "#22d3ee" }}>20</span>
+                <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", marginLeft: 4 }}>analyses / month</span>
               </div>
-              <div style={{ fontSize: "0.72rem", color: "#818cf8", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>PRO</div>
-              <div style={{ fontSize: "2.2rem", fontWeight: 900, marginBottom: "1.5rem" }}>₹299<span style={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.3)", fontWeight: 400 }}>/mo</span></div>
-              {["Unlimited analyses", "Everything in Free", "PDF annual report upload", "Portfolio watchlist + alerts", "Sector macro dashboard"].map((f) => (
-                <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.7rem" }}>
-                  <CheckCircle size={14} color="#6366f1" />
-                  <span style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.5)" }}>{f}</span>
+              {["Everything in Free", "PDF annual report upload", "Priority email support"].map((f) => (
+                <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.6rem" }}>
+                  <CheckCircle size={13} color="#22d3ee" />
+                  <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.4)" }}>{f}</span>
                 </div>
               ))}
               <Link href="/analyze">
-                <button style={{ width: "100%", marginTop: "1.5rem", background: "#6366f1", border: "none", borderRadius: 9, padding: "11px", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.875rem", boxShadow: "0 0 20px rgba(99,102,241,0.35)" }}>
-                  Go Pro — ₹299/mo →
+                <button style={{ width: "100%", marginTop: "1.5rem", background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.35)", borderRadius: 9, padding: "10px", color: "#22d3ee", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem" }}>
+                  Get Starter →
                 </button>
               </Link>
             </div>
+
+            {/* PRO ₹499 — MOST POPULAR */}
+            <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.5)", borderRadius: 16, padding: "1.75rem", backdropFilter: "blur(12px)", position: "relative", transform: "scale(1.03)", boxShadow: "0 0 40px rgba(99,102,241,0.2)" }}>
+              <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: "#6366f1", borderRadius: 999, padding: "3px 14px", fontSize: "0.68rem", fontWeight: 700, whiteSpace: "nowrap", boxShadow: "0 0 20px rgba(99,102,241,0.5)" }}>
+                MOST POPULAR
+              </div>
+              <div style={{ fontSize: "0.68rem", color: "#818cf8", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>PRO</div>
+              <div style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "0.25rem" }}>₹499</div>
+              <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", marginBottom: "1.5rem" }}>per month</div>
+              <div style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.3)", borderRadius: 8, padding: "0.6rem", textAlign: "center", marginBottom: "1.25rem" }}>
+                <span style={{ fontSize: "1.4rem", fontWeight: 900, color: "#818cf8" }}>100</span>
+                <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", marginLeft: 4 }}>analyses / month</span>
+              </div>
+              {["Everything in Starter", "Portfolio watchlist + alerts", "Sector macro dashboard", "Faster analysis queue"].map((f) => (
+                <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.6rem" }}>
+                  <CheckCircle size={13} color="#6366f1" />
+                  <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.45)" }}>{f}</span>
+                </div>
+              ))}
+              <Link href="/analyze">
+                <button style={{ width: "100%", marginTop: "1.5rem", background: "#6366f1", border: "none", borderRadius: 9, padding: "10px", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem", boxShadow: "0 0 20px rgba(99,102,241,0.4)" }}>
+                  Go Pro — ₹499/mo →
+                </button>
+              </Link>
+            </div>
+
+            {/* ELITE ₹999 */}
+            <div style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 16, padding: "1.75rem", backdropFilter: "blur(12px)" }}>
+              <div style={{ fontSize: "0.68rem", color: "#f59e0b", marginBottom: "0.5rem", fontWeight: 700, letterSpacing: "0.1em" }}>ELITE</div>
+              <div style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "0.25rem" }}>₹999</div>
+              <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.3)", marginBottom: "1.5rem" }}>per month</div>
+              <div style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, padding: "0.6rem", textAlign: "center", marginBottom: "1.25rem" }}>
+                <span style={{ fontSize: "1.4rem", fontWeight: 900, color: "#f59e0b" }}>300</span>
+                <span style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", marginLeft: 4 }}>analyses / month</span>
+              </div>
+              {["Everything in Pro", "API access", "Custom sector reports", "Dedicated support"].map((f) => (
+                <div key={f} style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.6rem" }}>
+                  <CheckCircle size={13} color="#f59e0b" />
+                  <span style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.4)" }}>{f}</span>
+                </div>
+              ))}
+              <Link href="/analyze">
+                <button style={{ width: "100%", marginTop: "1.5rem", background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)", borderRadius: 9, padding: "10px", color: "#f59e0b", cursor: "pointer", fontWeight: 700, fontSize: "0.85rem" }}>
+                  Go Elite →
+                </button>
+              </Link>
+            </div>
+
           </div>
         </Reveal>
       </section>
