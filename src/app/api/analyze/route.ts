@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export async function POST(req: NextRequest) {
   const { ticker, companyName } = await req.json();
@@ -66,24 +66,14 @@ One decisive paragraph. What should a retail Indian investor do right now, consi
 Rules: Be specific with numbers. Clearly label estimates. Write like a Goldman Sachs India research note, not a Wikipedia summary. The geopolitical section is your USP — make it genuinely insightful.`;
 
   try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2500,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
-    const content = message.content[0];
-    if (content.type !== "text") {
-      return NextResponse.json({ error: "Unexpected response format" }, { status: 500 });
-    }
-
-    return NextResponse.json({ analysis: content.text, ticker, companyName });
+    return NextResponse.json({ analysis: text, ticker, companyName });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Analysis error:", message);
-    return NextResponse.json(
-      { error: `Analysis failed: ${message}` },
-      { status: 500 }
-    );
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error("Analysis error:", msg);
+    return NextResponse.json({ error: `Analysis failed: ${msg}` }, { status: 500 });
   }
 }
