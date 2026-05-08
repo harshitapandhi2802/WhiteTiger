@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(req: NextRequest) {
   const { ticker, companyName } = await req.json();
@@ -40,36 +40,37 @@ Brief reasoning behind your DCF assumptions.
 - Free Cash Flow trend
 
 ## 🌍 Geopolitical & Macro Risk Analysis
-This is critical. Analyze the following for this specific company:
-- **US-India trade relations:** How do US tariffs, trade deals, or policy shifts affect this company's exports, imports, or valuation?
-- **China factor:** Is this company a China+1 beneficiary or threatened by Chinese competition/supply chain dependency? Be specific.
-- **India government policy:** How do PLI schemes, Make in India, Budget allocations, or SEBI regulations directly impact this company?
-- **Global macro:** How do US Fed rate decisions, crude oil prices, and USD/INR exchange rate affect this stock specifically?
-- **Geopolitical risk score:** Rate the geopolitical sensitivity as LOW / MEDIUM / HIGH with a 1-line reason.
+- **US-India trade relations:** How do US tariffs, trade deals, or policy shifts affect this company?
+- **China factor:** Is this company a China+1 beneficiary or threatened by Chinese competition?
+- **India government policy:** How do PLI schemes, Make in India, or Budget allocations impact this company?
+- **Global macro:** How do US Fed rate decisions, crude oil prices, and USD/INR affect this stock?
+- **Geopolitical risk score:** LOW / MEDIUM / HIGH with a 1-line reason.
 
 ## Key Catalysts (Next 12 months)
-3-4 specific near-term triggers — include both domestic and global events that could move the stock.
+3-4 specific near-term triggers including domestic and global events.
 
 ## Key Risks
-4-5 concrete risks — at least 2 must be geopolitical or macro risks specific to this company. No generic boilerplate.
+4-5 concrete risks — at least 2 must be geopolitical or macro risks.
 
 ## Smart Entry Strategy
 - **Ideal buy zone:** ₹[X] – ₹[Y]
 - **Stop loss:** ₹[Z]
 - **Target (12 months):** ₹[W]
-- **Position sizing note:** 1-2 lines on how much of a portfolio this deserves given its risk profile.
+- **Position sizing note:** 1-2 lines on portfolio allocation.
 
 ## Verdict
-One decisive paragraph. What should a retail Indian investor do right now, considering the global macro environment?
+One decisive paragraph for a retail Indian investor considering the global macro environment.
 
 ---
-Rules: Be specific with numbers. Clearly label estimates. Write like a Goldman Sachs India research note, not a Wikipedia summary. The geopolitical section is your USP — make it genuinely insightful.`;
+Be specific with numbers. Label estimates clearly. Write like a Goldman Sachs India research note.`;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+    });
 
+    const text = response.text ?? "";
     return NextResponse.json({ analysis: text, ticker, companyName });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
