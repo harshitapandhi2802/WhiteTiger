@@ -1,17 +1,65 @@
-// Simple cookie-based usage tracking for free tier (3 analyses/month)
-// In production, replace with DB-backed tracking per user account
-
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 5;
 const STORAGE_KEY = "ml_usage";
+const PLAN_KEY = "ml_plan";
 
 interface UsageData {
   count: number;
-  month: string; // "YYYY-MM"
+  month: string;
 }
+
+export interface PlanData {
+  plan: "free" | "starter" | "pro" | "elite";
+  limit: number;
+  paymentId?: string;
+  activatedAt?: string;
+  expiresAt?: string;
+}
+
+const PLAN_LIMITS: Record<string, number> = {
+  free: 5,
+  starter: 20,
+  pro: 100,
+  elite: 300,
+};
 
 function currentMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function getPlan(): PlanData {
+  if (typeof window === "undefined") return { plan: "free", limit: FREE_LIMIT };
+  try {
+    const raw = localStorage.getItem(PLAN_KEY);
+    if (!raw) return { plan: "free", limit: FREE_LIMIT };
+    const data: PlanData = JSON.parse(raw);
+    if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
+      localStorage.removeItem(PLAN_KEY);
+      return { plan: "free", limit: FREE_LIMIT };
+    }
+    return data;
+  } catch {
+    return { plan: "free", limit: FREE_LIMIT };
+  }
+}
+
+export function activatePlan(plan: string, paymentId: string): void {
+  if (typeof window === "undefined") return;
+  const now = new Date();
+  const expires = new Date(now);
+  expires.setDate(expires.getDate() + 30);
+
+  const data: PlanData = {
+    plan: plan as PlanData["plan"],
+    limit: PLAN_LIMITS[plan] || FREE_LIMIT,
+    paymentId,
+    activatedAt: now.toISOString(),
+    expiresAt: expires.toISOString(),
+  };
+  localStorage.setItem(PLAN_KEY, JSON.stringify(data));
+
+  const usage = getUsage();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ count: usage.count, month: currentMonth() }));
 }
 
 export function getUsage(): UsageData {
@@ -35,9 +83,15 @@ export function incrementUsage(): void {
 }
 
 export function canAnalyze(): boolean {
-  return getUsage().count < FREE_LIMIT;
+  const plan = getPlan();
+  return getUsage().count < plan.limit;
 }
 
 export function remainingAnalyses(): number {
-  return Math.max(0, FREE_LIMIT - getUsage().count);
+  const plan = getPlan();
+  return Math.max(0, plan.limit - getUsage().count);
+}
+
+export function getLimit(): number {
+  return getPlan().limit;
 }
