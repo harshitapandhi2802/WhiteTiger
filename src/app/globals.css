@@ -280,6 +280,9 @@ body {
   gap: 6px;
 }
 
+/* ── Spinning animation ── */
+.spinning { animation: spin 1s linear infinite; }
+
 /* ── Source badges ── */
 .source-badge {
   display: inline-flex;
@@ -294,7 +297,73 @@ body {
 .source-koyfin { background: #f3e8ff; color: #7c3aed; }
 .source-coindcx { background: #e8eeff; color: #2962ff; }
 
+/* ── Scrolling Ticker ── */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-wrap {
+  overflow: hidden;
+  background: linear-gradient(90deg, #0a0e17, #111827, #0a0e17);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+}
+.ticker-wrap::before, .ticker-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  z-index: 2;
+  pointer-events: none;
+}
+.ticker-wrap::before { left: 0; background: linear-gradient(90deg, #0a0e17, transparent); }
+.ticker-wrap::after { right: 0; background: linear-gradient(90deg, transparent, #0a0e17); }
+.ticker-track {
+  display: flex;
+  animation: ticker-scroll 45s linear infinite;
+  width: max-content;
+}
+.ticker-track:hover { animation-play-state: paused; }
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap;
+  cursor: default;
+}
+.ticker-item:hover { background: rgba(255,255,255,0.03); }
+
+/* ── Dashboard cards enhanced ── */
+.dash-card-gradient {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.dash-card-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+.dash-card-gradient.accent::before { background: linear-gradient(90deg, #2962ff, #448aff); }
+.dash-card-gradient.success::before { background: linear-gradient(90deg, #00c853, #69f0ae); }
+.dash-card-gradient.warning::before { background: linear-gradient(90deg, #ff9800, #ffb74d); }
+.dash-card-gradient.danger::before { background: linear-gradient(90deg, #f44336, #ef5350); }
+.dash-card-gradient.purple::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.dash-card-gradient.teal::before { background: linear-gradient(90deg, #00897b, #4db6ac); }
+
 /* ── Responsive ── */
+@media (max-width: 1200px) {
+  .intel-sidebar { display: none !important; }
+}
 @media (max-width: 768px) {
   .navbar { padding: 0 16px; }
   .dashboard-grid { grid-template-columns: 1fr !important; }
