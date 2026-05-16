@@ -1,31 +1,220 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   TrendingUp, Search, AlertCircle, Zap, ChevronDown, Shield, Globe,
   Package, Users, Anchor, BarChart3, Target, Activity, FileText,
   X, Check, Layers, Flame, Bitcoin, Coins, Droplets, Factory,
-  DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, RefreshCw
+  DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, RefreshCw, Building2
 } from "lucide-react";
 import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan } from "@/lib/usage";
-import { searchStocks, type StockEntry } from "@/lib/stocks";
+import { searchStocks, NSE_STOCKS, type StockEntry } from "@/lib/stocks";
 import { searchCommodities, MCX_COMMODITIES, COMMODITY_CATEGORIES, type CommodityEntry } from "@/lib/commodities";
 import { searchCrypto, CRYPTO_LIST, CRYPTO_CATEGORIES, type CryptoEntry } from "@/lib/crypto";
 import { searchCurrencies, CURRENCY_LIST, CURRENCY_CATEGORIES, type CurrencyEntry } from "@/lib/currencies";
 import { searchMutualFunds, MUTUAL_FUNDS, MF_CATEGORIES, type MutualFundEntry } from "@/lib/mutualfunds";
 import { searchBonds, BONDS_LIST, BOND_CATEGORIES, type BondEntry } from "@/lib/bonds";
-import { INTL_INDICES, INTL_STOCKS, INTL_REGIONS, getIndicesByRegion, getStocksForIndex } from "@/lib/international";
+import { INTL_INDICES, INTL_STOCKS, INTL_COUNTRIES, getIndicesByCountry, getStocksForIndex } from "@/lib/international";
 import { ScoreGauge, ScenarioTable, TagList, renderMarkdown, getRatingBadge, getOutlookBadge } from "@/components/DashboardWidgets";
-import { MiniSparkline, TradingViewChart, MarketTicker, ScrollingTicker, TradingViewTickerTape, LiveChartGrid } from "@/components/LiveCharts";
+import { MiniSparkline, TradingViewChart, MarketTicker, ScrollingTicker, MarketPulseBar, LiveChartGrid } from "@/components/LiveCharts";
 import { IntelligenceColumn } from "@/components/IntelligenceColumn";
+import { DerivativesPanel } from "@/components/DerivativesPanel";
+import { IndianDerivativesPage } from "@/components/IndianDerivatives";
+import { GlobalDerivativesTerminal } from "@/components/GlobalDerivatives";
+import { DerivativesAgentDashboard } from "@/components/DerivativesAgent";
+import { RealEstateDashboard } from "@/components/RealEstateDashboard";
+import { RealEstatePanel } from "@/components/RealEstatePanel";
+import FXIntelligenceDashboard from "@/components/FXIntelligenceDashboard";
+import FXPlatform from "@/components/fx/FXPlatform";
+import WealthAdvisoryDashboard from "@/components/WealthAdvisoryDashboard";
+import TaxIntelligenceDashboard from "@/components/TaxIntelligenceDashboard";
 
-type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international";
+type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
 type ResultView = "dashboard" | "report";
 
 declare global { interface Window { Razorpay: new (o: Record<string, unknown>) => { open: () => void }; } }
 
+/* ═══ Stock Sector Categories ═══ */
+const STOCK_SECTORS = ["All", "Banking", "IT", "FMCG", "Auto", "Pharma", "Oil & Gas", "Power", "Infrastructure", "Metals", "NBFC", "Telecom", "Insurance", "Defense", "Chemicals", "Consumer", "Cement", "Tech", "Renewable Energy", "Railways"];
+
+/* Top 50 stocks for the main dashboard — curated for visibility */
+const TOP_50_TICKERS = new Set([
+  "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "BHARTIARTL.NS", "SBIN.NS",
+  "ITC.NS", "HINDUNILVR.NS", "KOTAKBANK.NS", "LT.NS", "AXISBANK.NS", "ASIANPAINT.NS", "MARUTI.NS",
+  "TITAN.NS", "BAJFINANCE.NS", "SUNPHARMA.NS", "WIPRO.NS", "HCLTECH.NS", "TATAMOTORS.NS",
+  "ULTRACEMCO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "M&M.NS", "BAJAJFINSV.NS",
+  "TECHM.NS", "TATASTEEL.NS", "INDUSINDBK.NS", "ADANIENT.NS", "ADANIPORTS.NS", "ADANIGREEN.NS",
+  "GRASIM.NS", "CIPLA.NS", "DRREDDY.NS", "COALINDIA.NS", "EICHERMOT.NS", "BRITANNIA.NS",
+  "DIVISLAB.NS", "BAJAJ-AUTO.NS", "HEROMOTOCO.NS", "JSWSTEEL.NS", "SBILIFE.NS", "HDFCLIFE.NS",
+  "APOLLOHOSP.NS", "TATACONSUM.NS", "HINDALCO.NS", "BPCL.NS", "ONGC.NS", "ZOMATO.NS",
+]);
+
+/* ═══ Stock Card Component ═══ */
+function StockCard({ s, stockPrices }: { s: StockEntry; stockPrices: Record<string, { price: number; changePercent: number; name?: string }> }) {
+  const sym = s.ticker.replace(".NS", "");
+  const livePrice = stockPrices[sym];
+  const change = livePrice?.changePercent || 0;
+  const slug = sym.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  return (
+    <button key={s.ticker} onClick={() => { window.location.href = `/stocks/${slug}`; }} className="card fx-pair-card" style={{
+      padding: 0, textAlign: "left", cursor: "pointer",
+      border: "1px solid var(--border)", background: "#fff", overflow: "hidden", transition: "all 0.2s", position: "relative",
+    }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: change >= 0 ? "var(--success, #10b981)" : "var(--danger, #ef4444)" }} />
+      <div style={{ padding: "14px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)", marginBottom: 2 }}>{s.name}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: "0.66rem", color: "var(--text-muted)", fontWeight: 600 }}>{sym}</span>
+            <span className="badge badge-gray" style={{ padding: "1px 6px", fontSize: "0.56rem" }}>{s.sector}</span>
+          </div>
+        </div>
+        <MiniSparkline seed={s.ticker} positive={change >= 0} width={58} height={24} />
+      </div>
+      <div style={{ padding: "0 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {livePrice ? (
+          <>
+            <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--text-primary)" }}>₹{livePrice.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+            <span style={{
+              fontSize: "0.74rem", fontWeight: 700,
+              color: change >= 0 ? "var(--success)" : "var(--danger)",
+              background: change >= 0 ? "var(--success-bg)" : "var(--danger-bg)",
+              padding: "2px 7px", borderRadius: 5, display: "flex", alignItems: "center", gap: 2,
+            }}>
+              {change >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+              {Math.abs(change).toFixed(2)}%
+            </span>
+          </>
+        ) : (
+          <span style={{ fontSize: "0.78rem", color: "var(--accent)", fontWeight: 600 }}>View Analysis →</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+/* ═══ Stocks Explorer Component ═══ */
+function StocksExplorer({ stockPrices, forexPrices }: { stockPrices: Record<string, { price: number; changePercent: number; name?: string }>; forexPrices: Record<string, { rate: number; change24h: number }> }) {
+  const [showExplorer, setShowExplorer] = useState(false);
+  const [sectorFilter, setSectorFilter] = useState("All");
+  const [visibleCount, setVisibleCount] = useState(36);
+  const [explorerSearch, setExplorerSearch] = useState("");
+
+  const top50 = NSE_STOCKS.filter((s: StockEntry) => TOP_50_TICKERS.has(s.ticker));
+  const remaining = NSE_STOCKS.filter((s: StockEntry) => !TOP_50_TICKERS.has(s.ticker));
+
+  // Explorer filtering
+  const explorerBase = sectorFilter === "All" ? NSE_STOCKS : NSE_STOCKS.filter((s: StockEntry) => s.sector === sectorFilter);
+  const explorerFiltered = explorerSearch.trim()
+    ? explorerBase.filter((s: StockEntry) => s.name.toLowerCase().includes(explorerSearch.toLowerCase()) || s.ticker.toLowerCase().includes(explorerSearch.toLowerCase()))
+    : explorerBase;
+  const explorerVisible = explorerFiltered.slice(0, visibleCount);
+
+  return (
+    <div>
+      <MarketPulseBar tab="stocks" />
+
+      {/* Charts — clean 2x2 grid */}
+      <LiveChartGrid tab="stocks" />
+
+      <MarketTicker items={
+        Object.keys(stockPrices).length > 0
+          ? [
+              ...(stockPrices.NIFTY50 ? [{ label: "NIFTY 50", value: stockPrices.NIFTY50.price.toLocaleString("en-IN"), change: stockPrices.NIFTY50.changePercent }] : []),
+              ...(stockPrices.SENSEX ? [{ label: "SENSEX", value: stockPrices.SENSEX.price.toLocaleString("en-IN"), change: stockPrices.SENSEX.changePercent }] : []),
+              ...(stockPrices.BANKNIFTY ? [{ label: "BANK NIFTY", value: stockPrices.BANKNIFTY.price.toLocaleString("en-IN"), change: stockPrices.BANKNIFTY.changePercent }] : []),
+              ...(forexPrices.USDINR ? [{ label: "USD/INR", value: `₹${forexPrices.USDINR.rate.toFixed(2)}`, change: forexPrices.USDINR.change24h }] : []),
+            ]
+          : [{ label: "Loading...", value: "—" }]
+      } />
+
+      {/* ── Top 50 Stocks Section ── */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div>
+            <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>Market Leaders — NIFTY 50</h3>
+            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "3px 0 0" }}>Click any stock for full-screen AI analysis</p>
+          </div>
+          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 600 }}>{top50.length} stocks</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
+          {top50.map((s: StockEntry) => <StockCard key={s.ticker} s={s} stockPrices={stockPrices} />)}
+        </div>
+      </div>
+
+      {/* ── Explore All Stocks Button ── */}
+      <div style={{ margin: "24px 0 16px", textAlign: "center" }}>
+        <button onClick={() => { setShowExplorer(!showExplorer); setVisibleCount(36); setSectorFilter("All"); setExplorerSearch(""); }} style={{
+          padding: "14px 36px", borderRadius: 12, cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, transition: "all 0.3s",
+          background: showExplorer ? "var(--accent)" : "linear-gradient(135deg, #1a1d29, #2a2d3e)",
+          color: "#fff", border: "none",
+          boxShadow: showExplorer ? "0 4px 16px rgba(41,98,255,0.25)" : "0 2px 12px rgba(0,0,0,0.15)",
+          display: "inline-flex", alignItems: "center", gap: 8,
+        }}>
+          {showExplorer ? "▲ Close Explorer" : `▼ Explore All ${NSE_STOCKS.length}+ NSE Stocks`}
+        </button>
+      </div>
+
+      {/* ── Full Stock Explorer ── */}
+      {showExplorer && (
+        <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", marginBottom: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+          {/* Explorer Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div>
+              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>NSE Stock Universe</h3>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0" }}>{explorerFiltered.length} stocks found</p>
+            </div>
+            {/* Search */}
+            <div style={{ position: "relative" }}>
+              <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+              <input
+                value={explorerSearch}
+                onChange={e => { setExplorerSearch(e.target.value); setVisibleCount(36); }}
+                placeholder="Search stocks..."
+                style={{ paddingLeft: 32, padding: "8px 14px 8px 32px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.82rem", width: 240, outline: "none" }}
+              />
+            </div>
+          </div>
+
+          {/* Sector Filter */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 16 }}>
+            {STOCK_SECTORS.map(sec => (
+              <button key={sec} onClick={() => { setSectorFilter(sec); setVisibleCount(36); }} style={{
+                padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: "0.68rem", fontWeight: 600, transition: "all 0.2s",
+                background: sectorFilter === sec ? "var(--accent)" : "#f1f5f9",
+                color: sectorFilter === sec ? "#fff" : "var(--text-muted)",
+              }}>
+                {sec}
+              </button>
+            ))}
+          </div>
+
+          {/* Stock Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
+            {explorerVisible.map((s: StockEntry) => <StockCard key={s.ticker} s={s} stockPrices={stockPrices} />)}
+          </div>
+
+          {/* Load More */}
+          {visibleCount < explorerFiltered.length && (
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <button onClick={() => setVisibleCount(v => v + 48)} style={{
+                padding: "10px 28px", borderRadius: 8, border: "1px solid var(--border)", background: "#f8fafc",
+                cursor: "pointer", fontSize: "0.82rem", fontWeight: 600, color: "var(--accent)",
+              }}>
+                Load More ({explorerFiltered.length - visibleCount} remaining)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════ */
 export default function AnalyzePage() {
+  const router = useRouter();
   const [mainTab, setMainTab] = useState<MainTab>("stocks");
   const [resultView, setResultView] = useState<ResultView>("dashboard");
 
@@ -63,6 +252,7 @@ export default function AnalyzePage() {
   const [showCurrDrop, setShowCurrDrop] = useState(false);
   const [currIdx, setCurrIdx] = useState(-1);
   const [currCategory, setCurrCategory] = useState("All");
+  const [fxIntelPair, setFxIntelPair] = useState<CurrencyEntry | null>(null);
 
   // Mutual Fund state
   const [mfQuery, setMfQuery] = useState("");
@@ -254,6 +444,8 @@ export default function AnalyzePage() {
 
   // Clear results when switching tabs
   function switchMainTab(tab: MainTab) {
+    if (tab === "mutualfunds") { router.push("/mf-intelligence"); return; }
+    if (tab === "commodities") { router.push("/commodity-intelligence"); return; }
     setMainTab(tab);
     setAnalysis(""); setScores(null); setError("");
   }
@@ -267,7 +459,8 @@ export default function AnalyzePage() {
   }, []);
 
   function selectStock(s: StockEntry) {
-    setStockQuery(s.name); setStockTicker(s.ticker); setStockName(s.name); setShowStockDrop(false);
+    const slug = s.ticker.replace(".NS", "").replace(".BO", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
+    window.location.href = `/stocks/${slug}`;
   }
 
   /* ── Commodity search ── */
@@ -340,8 +533,9 @@ export default function AnalyzePage() {
     if (mainTab === "stocks") {
       const t = stockTicker || stockQuery.trim().toUpperCase();
       if (!t) return;
-      url = "/api/analyze";
-      body = { ticker: t, companyName: stockName || stockQuery };
+      const slug = t.replace(".NS", "").replace(".BO", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
+      window.location.href = `/stocks/${slug}`;
+      return;
     } else if (mainTab === "commodities") {
       const sym = commSymbol || commQuery.trim().toUpperCase();
       if (!sym) return;
@@ -479,6 +673,10 @@ export default function AnalyzePage() {
               { id: "mutualfunds" as MainTab, label: "MF", icon: <PiggyBank size={14} />, color: "#7c3aed" },
               { id: "debt" as MainTab, label: "Bonds", icon: <Shield size={14} />, color: "#00897b" },
               { id: "international" as MainTab, label: "Global", icon: <Globe size={14} />, color: "#0d47a1" },
+              { id: "realestate" as MainTab, label: "Real Estate", icon: <Building2 size={14} />, color: "#6d4c41" },
+              { id: "derivatives" as MainTab, label: "F&O", icon: <Layers size={14} />, color: "#d32f2f" },
+              { id: "wealth" as MainTab, label: "Wealth", icon: <Target size={14} />, color: "#1a237e" },
+              { id: "tax" as MainTab, label: "Tax", icon: <FileText size={14} />, color: "#0d47a1" },
             ]).map(t => (
               <button key={t.id} onClick={() => switchMainTab(t.id)} style={{
                 display: "flex", alignItems: "center", gap: 6,
@@ -507,7 +705,7 @@ export default function AnalyzePage() {
       </div>
 
       {/* ── Main Content ── */}
-      <div style={{ maxWidth: 1500, margin: "0 auto", padding: 24, display: "flex", gap: 20 }}>
+      <div style={{ maxWidth: 1920, margin: "0 auto", padding: 24, display: "flex", gap: 20 }}>
         {/* Left: Intelligence Column (desktop only) */}
         <div className="intel-sidebar" style={{ width: 300, minWidth: 280, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
@@ -593,7 +791,7 @@ export default function AnalyzePage() {
                   {showCommDrop && (
                     <div className="search-dropdown">
                       {commSuggestions.map((c, i) => (
-                        <div key={c.symbol + i} className={`search-item ${i === commIdx ? "active" : ""}`} onClick={() => selectCommodity(c)}>
+                        <div key={c.symbol + i} className={`search-item ${i === commIdx ? "active" : ""}`} onClick={() => { const slug = c.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); window.location.href = `/commodities/${slug}`; }}>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{c.name}</div>
                             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{c.category} · {c.unit}</div>
@@ -627,7 +825,7 @@ export default function AnalyzePage() {
             {/* Category filter + Browse grid */}
             {!analysis && !loading && (
               <div>
-                <TradingViewTickerTape tab="commodities" />
+                <MarketPulseBar tab="commodities" />
                 <LiveChartGrid tab="commodities" />
                 <MarketTicker items={
                   Object.keys(commodityPrices).length > 0
@@ -638,6 +836,64 @@ export default function AnalyzePage() {
                       }))
                     : [{ label: "Loading...", value: "—" }]
                 } />
+                <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                  {/* ── Commodity Market Intelligence Sidebar ── */}
+                  <div style={{ width: 270, minWidth: 270, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)", color: "#fff", border: "none" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff6d00", boxShadow: "0 0 8px #ff6d0080" }} />
+                        <span style={{ fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1.2 }}>Commodity Intelligence</span>
+                      </div>
+                      {[
+                        { label: "Brent Crude", value: "$74.85", sub: "OPEC+ cuts extended", color: "#ff6d00" },
+                        { label: "Gold Spot", value: "$2,415", sub: "Safe-haven demand", color: "#f9a825" },
+                        { label: "DXY Index", value: "103.8", sub: "Dollar strength moderate", color: "#ef5350" },
+                        { label: "Baltic Dry Index", value: "1,845", sub: "Freight normalizing", color: "#00e676" },
+                        { label: "US 10Y Yield", value: "4.25%", sub: "Range-bound", color: "#ff9800" },
+                      ].map((item, i) => (
+                        <div key={i} style={{ padding: "6px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.6)" }}>{item.label}</span>
+                            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: item.color }}>{item.value}</span>
+                          </div>
+                          <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.35)" }}>{item.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="card" style={{ padding: 14 }}>
+                      <div style={{ fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>Live Alerts</div>
+                      {[
+                        { icon: "🛢️", text: "OPEC+ extends cuts through Q3 2026", tag: "OPEC" },
+                        { icon: "📊", text: "EIA: Crude inventories draw 4.2M bbl", tag: "EIA" },
+                        { icon: "🌊", text: "Red Sea disruptions — freight +18%", tag: "RISK" },
+                        { icon: "🇨🇳", text: "China PMI 51.2 — expansion continues", tag: "DEMAND" },
+                        { icon: "⚡", text: "LME copper stocks at 15-year low", tag: "SUPPLY" },
+                      ].map((a, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, padding: "5px 0", borderBottom: i < 4 ? "1px solid var(--border-light)" : "none" }}>
+                          <span style={{ fontSize: "0.78rem" }}>{a.icon}</span>
+                          <div>
+                            <span style={{ fontSize: "0.55rem", fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "#e6510015", color: "#e65100" }}>{a.tag}</span>
+                            <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", lineHeight: 1.4, marginTop: 2 }}>{a.text}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="card" style={{ padding: 14 }}>
+                      <div style={{ fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>Commodity Heatmap</div>
+                      {[
+                        { name: "Crude Oil", chg: "+1.2%", c: "#2e7d32" }, { name: "Gold", chg: "+0.8%", c: "#2e7d32" },
+                        { name: "Silver", chg: "-0.5%", c: "#c62828" }, { name: "Copper", chg: "+2.1%", c: "#2e7d32" },
+                        { name: "Natural Gas", chg: "-1.8%", c: "#c62828" }, { name: "Aluminium", chg: "+0.4%", c: "#2e7d32" },
+                      ].map((ct, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: i < 5 ? "1px solid var(--border-light)" : "none" }}>
+                          <span style={{ fontSize: "0.68rem", fontWeight: 600 }}>{ct.name}</span>
+                          <span style={{ fontSize: "0.68rem", fontWeight: 800, color: ct.c }}>{ct.chg}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* ── Commodity Cards Grid ── */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
                   {COMMODITY_CATEGORIES.map(cat => (
                     <button key={cat} onClick={() => setCommCategory(cat)} style={{
@@ -649,50 +905,59 @@ export default function AnalyzePage() {
                     }}>{cat}</button>
                   ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
                   {filteredComm.map(c => {
                     const liveComm = commodityPrices[c.symbol] || commodityPrices[c.symbol.toUpperCase()];
                     const isPositive = liveComm ? liveComm.changePercent >= 0 : c.name.charCodeAt(0) % 3 !== 0;
+                    const catColor = c.category === "Energy" ? "#e65100" : c.category === "Precious Metals" ? "#f9a825" : c.category === "Base Metals" ? "#0d47a1" : c.category === "Agriculture" ? "#2e7d32" : "#7c3aed";
+                    const slug = c.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, "");
                     return (
-                      <button key={c.symbol + c.exchange} onClick={() => selectCommodity(c)} className="card" style={{
+                      <div key={c.symbol + c.exchange} onClick={() => { window.location.href = `/commodities/${slug}`; }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
-                        border: commSymbol === c.symbol ? "2px solid var(--accent)" : "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.2s",
+                        border: "1px solid var(--border)", background: "#fff", transition: "all 0.3s", position: "relative",
+                        borderTop: `3px solid ${catColor}`,
                       }}>
                         <div style={{ padding: "14px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: 3 }}>{c.name}</div>
+                            <div style={{ fontWeight: 800, fontSize: "0.9rem", marginBottom: 3, color: "var(--text-primary)" }}>{c.name}</div>
                             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                               <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 600 }}>{c.symbol}</span>
                               <span className="badge badge-gray" style={{ padding: "1px 6px", fontSize: "0.58rem" }}>{c.exchange}</span>
                             </div>
                           </div>
-                          <MiniSparkline seed={c.symbol + c.exchange} positive={isPositive} width={64} height={28} />
+                          <MiniSparkline seed={c.symbol + c.exchange} positive={isPositive} color={catColor} width={64} height={28} />
                         </div>
-                        <div style={{ padding: "0 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ padding: "4px 16px 8px" }}>
                           {liveComm ? (
-                            <>
-                              <span style={{ fontSize: "1rem", fontWeight: 800 }}>${liveComm.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
-                              <span style={{
-                                fontSize: "0.72rem", fontWeight: 700,
-                                color: isPositive ? "var(--success)" : "var(--danger)",
-                                background: isPositive ? "var(--success-bg)" : "var(--danger-bg)",
-                                padding: "2px 6px", borderRadius: 6,
-                              }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                              <span style={{ fontSize: "1.3rem", fontWeight: 900, color: "#1a1a2e" }}>${liveComm.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span>
+                              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: isPositive ? "#00c853" : "#ef5350" }}>
                                 {isPositive ? "▲" : "▼"} {Math.abs(liveComm.changePercent).toFixed(2)}%
                               </span>
-                            </>
+                            </div>
                           ) : (
-                            <>
-                              <span className="badge badge-purple" style={{ padding: "2px 8px", fontSize: "0.62rem" }}>{c.category}</span>
-                              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 500 }}>{c.unit}</span>
-                            </>
+                            <div style={{ display: "flex", gap: 10 }}>
+                              <div>
+                                <div style={{ fontSize: "0.52rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Category</div>
+                                <div style={{ fontSize: "0.85rem", fontWeight: 800, color: catColor }}>{c.category}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontSize: "0.52rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Unit</div>
+                                <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-muted)" }}>{c.unit}</div>
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </button>
+                        <div style={{ padding: "8px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-light)" }}>
+                          <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.58rem" }}>{c.category}</span>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: catColor }}>View Analysis →</span>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
+                  </div>{/* close commodity cards wrapper */}
+                </div>{/* close flex layout */}
               </div>
             )}
           </div>
@@ -760,7 +1025,7 @@ export default function AnalyzePage() {
             {/* Category filter + Browse grid */}
             {!analysis && !loading && (
               <div>
-                <TradingViewTickerTape tab="crypto" />
+                <MarketPulseBar tab="crypto" />
                 <LiveChartGrid tab="crypto" />
                 {/* Live market ticker */}
                 {Object.keys(cryptoPrices).length > 0 && (
@@ -895,7 +1160,7 @@ export default function AnalyzePage() {
 
             {!analysis && !loading && (
               <div>
-                <TradingViewTickerTape tab="currency" />
+                <MarketPulseBar tab="currency" />
                 <LiveChartGrid tab="currency" />
                 {/* Forex Market Ticker */}
                 {Object.keys(forexPrices).length > 0 ? (
@@ -909,6 +1174,13 @@ export default function AnalyzePage() {
                 ) : (
                   <MarketTicker items={[{ label: "Loading forex rates...", value: "—" }]} />
                 )}
+                {/* FX Intelligence Platform */}
+                <FXPlatform
+                  pair={currSelected?.pair || "USD/INR"}
+                  base={currSelected?.base || "USD"}
+                  quote={currSelected?.quote || "INR"}
+                />
+
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {CURRENCY_CATEGORIES.map(cat => (
@@ -925,34 +1197,51 @@ export default function AnalyzePage() {
                     <RefreshCw size={12} className={forexLoading ? "spinning" : ""} /> Refresh Rates
                   </button>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
                   {filteredCurr.map(c => {
                     const fxPrice = forexPrices[c.symbol];
                     const isPositive = fxPrice ? fxPrice.change24h >= 0 : c.name.charCodeAt(0) % 2 === 0;
+                    const changeVal = fxPrice ? fxPrice.change24h : (isPositive ? 0.12 : -0.08);
+                    const currSymbolDisplay = c.quote === "INR" ? "₹" : c.quote === "JPY" ? "¥" : c.quote === "Index" ? "" : "$";
                     return (
-                      <button key={c.symbol} onClick={() => selectCurrency(c)} className="card" style={{
+                      <button key={c.symbol} onClick={() => { selectCurrency(c); setFxIntelPair(c); window.location.href = `/currency/${c.symbol.toLowerCase()}`; }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
                         border: currSymbol === c.symbol ? "2px solid var(--accent)" : "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.2s",
+                        background: "#fff", transition: "all 0.3s", position: "relative",
                       }}>
-                        <div style={{ padding: "14px 16px 6px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div>
-                            <div style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--accent)", marginBottom: 2 }}>{c.pair}</div>
-                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{c.name}</div>
+                        {/* Top accent bar */}
+                        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${isPositive ? "#00c853" : "#ef5350"}, ${isPositive ? "#00c85360" : "#ef535060"}, transparent)` }} />
+
+                        <div style={{ padding: "16px 16px 8px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div>
+                              <div style={{ fontWeight: 900, fontSize: "1.1rem", color: "var(--accent)", marginBottom: 1 }}>{c.pair}</div>
+                              <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{c.name}</div>
+                            </div>
+                            <MiniSparkline seed={c.symbol} positive={isPositive} width={72} height={30} />
                           </div>
-                          <MiniSparkline seed={c.symbol} positive={isPositive} width={64} height={28} />
+
+                          {/* Rate Display — large and prominent */}
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+                            <span style={{ fontSize: "1.4rem", fontWeight: 900, color: "#1a1a2e", letterSpacing: -0.5 }}>
+                              {fxPrice ? `${currSymbolDisplay}${fxPrice.rate.toFixed(c.quote === "JPY" ? 2 : c.pair === "DXY" ? 2 : 4)}` : "—"}
+                            </span>
+                            <span style={{
+                              fontSize: "0.72rem", fontWeight: 700,
+                              color: isPositive ? "#00c853" : "#ef5350",
+                              display: "flex", alignItems: "center", gap: 2,
+                            }}>
+                              {isPositive ? "▲" : "▼"} {Math.abs(changeVal).toFixed(2)}%
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ padding: "4px 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          {fxPrice ? (
-                            <>
-                              <span style={{ fontSize: "1rem", fontWeight: 800 }}>
-                                {c.quote === "INR" ? "₹" : c.quote === "JPY" ? "¥" : "$"}{fxPrice.rate.toFixed(c.quote === "JPY" ? 2 : 4)}
-                              </span>
-                              <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.62rem" }}>{c.category}</span>
-                            </>
-                          ) : (
-                            <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.62rem" }}>{c.category}</span>
-                          )}
+
+                        {/* Bottom: Category + View Link */}
+                        <div style={{ padding: "6px 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.6rem" }}>{c.category}</span>
+                          <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: 3 }}>
+                            View Analysis →
+                          </span>
                         </div>
                       </button>
                     );
@@ -986,7 +1275,7 @@ export default function AnalyzePage() {
                   {showMfDrop && (
                     <div className="search-dropdown">
                       {mfSuggestions.map((f, i) => (
-                        <div key={f.symbol} className={`search-item ${i === mfIdx ? "active" : ""}`} onClick={() => selectMf(f)}>
+                        <div key={f.symbol} className={`search-item ${i === mfIdx ? "active" : ""}`} onClick={() => { const slug = f.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); window.location.href = `/mf-intelligence/${slug}`; }}>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{f.name}</div>
                             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{f.amc} · {f.category}</div>
@@ -1018,7 +1307,7 @@ export default function AnalyzePage() {
 
             {!analysis && !loading && (
               <div>
-                <TradingViewTickerTape tab="mutualfunds" />
+                <MarketPulseBar tab="mutualfunds" />
                 <LiveChartGrid tab="mutualfunds" />
                 <MarketTicker items={
                   Object.keys(stockPrices).length > 0
@@ -1030,6 +1319,78 @@ export default function AnalyzePage() {
                       ]
                     : [{ label: "Loading...", value: "—" }]
                 } />
+                <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                  {/* ── Market Intelligence Sidebar ── */}
+                  <div style={{ width: 280, minWidth: 280, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)", color: "#fff", border: "none" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00e676", boxShadow: "0 0 8px #00e67680", animation: "pulse 2s infinite" }} />
+                        <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1.2 }}>Market Intelligence</span>
+                      </div>
+                      {[
+                        { label: "RBI Policy Rate", value: "6.50%", sub: "Accommodative stance", color: "#00e676" },
+                        { label: "SIP Monthly Inflow", value: "₹25,323 Cr", sub: "All-time high", color: "#00e676" },
+                        { label: "FII Net Flow (MTD)", value: "-₹4,215 Cr", sub: "Selling pressure", color: "#ef5350" },
+                        { label: "DII Net Flow (MTD)", value: "+₹8,920 Cr", sub: "Strong buying", color: "#00e676" },
+                      ].map((item, i) => (
+                        <div key={i} style={{ padding: "8px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.6)" }}>{item.label}</span>
+                            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: item.color }}>{item.value}</span>
+                          </div>
+                          <div style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{item.sub}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="card" style={{ padding: 14 }}>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>Sector Momentum</div>
+                      {[
+                        { sector: "Banking & Finance", trend: "Bullish", pct: "+2.8%", color: "#00c853" },
+                        { sector: "IT & Technology", trend: "Neutral", pct: "+0.4%", color: "#ff9800" },
+                        { sector: "Pharma & Health", trend: "Bullish", pct: "+1.9%", color: "#00c853" },
+                        { sector: "Auto & Ancillary", trend: "Bearish", pct: "-1.2%", color: "#ef5350" },
+                        { sector: "FMCG & Consumer", trend: "Neutral", pct: "+0.6%", color: "#ff9800" },
+                        { sector: "Metals & Mining", trend: "Bullish", pct: "+3.1%", color: "#00c853" },
+                      ].map((s, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: i < 5 ? "1px solid var(--border-light)" : "none" }}>
+                          <span style={{ fontSize: "0.72rem", fontWeight: 600 }}>{s.sector}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: s.color }}>{s.pct}</span>
+                            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: s.color, background: `${s.color}15`, padding: "1px 6px", borderRadius: 4 }}>{s.trend}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="card" style={{ padding: 14 }}>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>AI Insights</div>
+                      {[
+                        { icon: "🎯", text: "Large-cap funds showing resilience amid global uncertainty" },
+                        { icon: "📈", text: "Flexi-cap category AUM crossed ₹4L Cr milestone" },
+                        { icon: "⚡", text: "Sectoral funds gaining traction — Infra & Energy leading" },
+                        { icon: "🛡️", text: "Debt fund yields attractive post rate pause signal" },
+                      ].map((insight, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, padding: "6px 0", borderBottom: i < 3 ? "1px solid var(--border-light)" : "none" }}>
+                          <span style={{ fontSize: "0.82rem" }}>{insight.icon}</span>
+                          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", lineHeight: 1.4 }}>{insight.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="card" style={{ padding: 14 }}>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>Market Sentiment</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                        <div style={{ flex: 1, height: 8, borderRadius: 4, background: "linear-gradient(90deg, #ef5350 0%, #ff9800 35%, #00c853 100%)", position: "relative" }}>
+                          <div style={{ position: "absolute", left: "68%", top: -3, width: 14, height: 14, borderRadius: "50%", background: "#fff", border: "3px solid #00c853", transform: "translateX(-50%)" }} />
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.62rem", color: "var(--text-muted)" }}>
+                        <span>Fear</span>
+                        <span style={{ fontWeight: 800, color: "#00c853" }}>Greed (68)</span>
+                        <span>Extreme Greed</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* ── Fund Cards Grid ── */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
                   {MF_CATEGORIES.map(cat => (
                     <button key={cat} onClick={() => setMfCategory(cat)} style={{
@@ -1043,44 +1404,68 @@ export default function AnalyzePage() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
                   {filteredMf.map(f => {
-                    const riskColor = f.riskLevel === "Low" ? "#00c853" : f.riskLevel === "Moderate" ? "#ff9800" : "#f44336";
+                    const riskColor = f.riskLevel === "Low" ? "#00c853" : f.riskLevel === "Moderate" ? "#ff9800" : f.riskLevel === "High" ? "#f44336" : "#d32f2f";
                     const isPositive = f.riskLevel !== "Very High";
                     const mfKey = f.symbol.replace(/[^A-Z0-9_]/gi, "_").toUpperCase();
                     const liveMf = mfPrices[mfKey];
+                    const fundSlug = f.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, "");
                     return (
-                      <button key={f.symbol} onClick={() => selectMf(f)} className="card" style={{
+                      <div key={f.symbol} onClick={() => { window.location.href = `/mf-intelligence/${fundSlug}`; }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
-                        border: mfSymbol === f.symbol ? "2px solid var(--accent)" : "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.2s",
+                        border: "1px solid var(--border)",
+                        background: "#fff", transition: "all 0.3s", position: "relative",
                         borderTop: `3px solid ${riskColor}`,
                       }}>
-                        <div style={{ padding: "12px 16px 6px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: 3, lineHeight: 1.3 }}>{f.name}</div>
-                            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{f.amc}</div>
+                        <div style={{ padding: "14px 16px 8px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontWeight: 800, fontSize: "0.88rem", marginBottom: 2, lineHeight: 1.3, color: "var(--text-primary)" }}>{f.name}</div>
+                              <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{f.amc}</div>
+                            </div>
+                            <MiniSparkline seed={f.symbol} positive={isPositive} color={riskColor} width={64} height={28} />
                           </div>
-                          <MiniSparkline seed={f.symbol} positive={isPositive} color={riskColor} width={56} height={24} />
+                          <div style={{ display: "flex", gap: 12, alignItems: "baseline", marginBottom: 6 }}>
+                            {liveMf ? (
+                              <>
+                                <div>
+                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>NAV</div>
+                                  <div style={{ fontSize: "1.35rem", fontWeight: 900, color: "#1a1a2e", lineHeight: 1.1 }}>₹{liveMf.nav.toFixed(2)}</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Date</div>
+                                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-muted)", lineHeight: 1.1 }}>{liveMf.date}</div>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div>
+                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Category</div>
+                                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--accent)", lineHeight: 1.1 }}>{f.category}</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Risk</div>
+                                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: riskColor, lineHeight: 1.1 }}>{f.riskLevel}</div>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ padding: "6px 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          {liveMf ? (
-                            <>
-                              <span style={{ fontSize: "0.92rem", fontWeight: 800 }}>NAV ₹{liveMf.nav.toFixed(2)}</span>
-                              <span style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>{liveMf.date}</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.62rem" }}>{f.category}</span>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: riskColor }} />
-                                <span style={{ fontSize: "0.72rem", fontWeight: 700, color: riskColor }}>{f.riskLevel} Risk</span>
-                              </div>
-                            </>
-                          )}
+                        <div style={{ padding: "8px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-light)" }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.58rem" }}>{f.category}</span>
+                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <div style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor }} />
+                              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: riskColor }}>{f.riskLevel}</span>
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--accent)" }}>View Analysis →</span>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
+                  </div>{/* close fund cards grid wrapper */}
+                </div>{/* close flex layout */}
               </div>
             )}
           </div>
@@ -1143,7 +1528,7 @@ export default function AnalyzePage() {
 
             {!analysis && !loading && (
               <div>
-                <TradingViewTickerTape tab="debt" />
+                <MarketPulseBar tab="debt" />
                 <LiveChartGrid tab="debt" />
                 <MarketTicker items={[
                   { label: "INDIA 10Y", value: "Live", change: 0 },
@@ -1167,33 +1552,36 @@ export default function AnalyzePage() {
                   {filteredDebt.map(b => {
                     const ratingColor = b.rating === "Sovereign" ? "#00897b" : b.rating === "AAA" ? "#2962ff" : b.rating === "AA+" ? "#7c3aed" : "#ff9800";
                     return (
-                      <button key={b.symbol} onClick={() => selectDebt(b)} className="card" style={{
+                      <div key={b.symbol} onClick={() => { window.location.href = `/bonds/${b.symbol.toLowerCase()}`; }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
-                        border: debtSymbol === b.symbol ? "2px solid #00897b" : "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.2s",
-                        borderLeft: `4px solid ${ratingColor}`,
+                        border: "1px solid var(--border)",
+                        background: "#fff", transition: "all 0.2s", position: "relative",
+                        borderTop: `3px solid ${ratingColor}`,
                       }}>
-                        <div style={{ padding: "12px 16px 6px" }}>
-                          <div style={{ fontWeight: 700, fontSize: "0.88rem", marginBottom: 4, lineHeight: 1.3 }}>{b.name}</div>
-                          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 6 }}>{b.issuer} · {b.tenure}</div>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                            <div style={{ background: "rgba(0,137,123,0.08)", padding: "4px 10px", borderRadius: 6 }}>
-                              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Yield </span>
-                              <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "#00897b" }}>{b.yieldApprox}</span>
+                        <div style={{ padding: "14px 16px 8px" }}>
+                          <div style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
+                          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginBottom: 8 }}>{b.issuer} · {b.tenure}</div>
+                          <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginBottom: 8 }}>
+                            <div>
+                              <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Yield</div>
+                              <div style={{ fontSize: "1.4rem", fontWeight: 900, color: "#00897b", lineHeight: 1.1 }}>{b.yieldApprox}</div>
                             </div>
-                            <div style={{ background: "rgba(0,137,123,0.08)", padding: "4px 10px", borderRadius: 6 }}>
-                              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Coupon </span>
-                              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{b.coupon}</span>
+                            <div>
+                              <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Coupon</div>
+                              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>{b.coupon}</div>
                             </div>
                           </div>
                         </div>
-                        <div style={{ padding: "6px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.62rem" }}>{b.category}</span>
-                          <span style={{ fontSize: "0.72rem", fontWeight: 700, color: ratingColor, display: "flex", alignItems: "center", gap: 4 }}>
-                            <Shield size={10} /> {b.rating}
-                          </span>
+                        <div style={{ padding: "8px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-light)" }}>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.58rem" }}>{b.category}</span>
+                            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: ratingColor, display: "flex", alignItems: "center", gap: 3 }}>
+                              <Shield size={10} /> {b.rating}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#00897b" }}>View Analysis →</span>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -1205,26 +1593,51 @@ export default function AnalyzePage() {
         {/* ── International Markets Tab ── */}
         {mainTab === "international" && (
           <div>
-            <TradingViewTickerTape tab="international" />
+            <MarketPulseBar tab="international" />
             <LiveChartGrid tab="international" />
 
-            {/* Region Filter */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              {INTL_REGIONS.map(r => (
-                <button key={r} onClick={() => { setIntlRegion(r); setIntlExpandedIndex(null); }} style={{
-                  padding: "8px 20px", borderRadius: 24, border: "1px solid",
-                  borderColor: intlRegion === r ? "#1a73e8" : "var(--border)",
-                  background: intlRegion === r ? "linear-gradient(135deg, #1a73e8, #4285f4)" : "#fff",
-                  color: intlRegion === r ? "#fff" : "var(--text-muted)",
-                  fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
-                  boxShadow: intlRegion === r ? "0 2px 8px rgba(26,115,232,0.3)" : "none",
-                }}>{r === "All" ? "🌍 All Regions" : r === "Americas" ? "🌎 Americas" : r === "Europe" ? "🌍 Europe" : "🌏 Asia-Pacific"}</button>
-              ))}
+            {/* Section Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <div>
+                <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
+                  🏆 Top 25 Stock Markets by Market Capitalization
+                </h2>
+                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "4px 0 0", fontWeight: 500 }}>
+                  Ranked by total market cap · Click any country to see top stocks
+                </p>
+              </div>
             </div>
 
-            {/* Index Cards */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {getIndicesByRegion(intlRegion).map(idx => {
+            {/* Country Filter Pills */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap", overflowX: "auto", paddingBottom: 4 }}>
+              <button onClick={() => { setIntlRegion("All"); setIntlExpandedIndex(null); }} style={{
+                padding: "6px 16px", borderRadius: 20, border: "1px solid",
+                borderColor: intlRegion === "All" ? "#1a73e8" : "var(--border)",
+                background: intlRegion === "All" ? "linear-gradient(135deg, #1a73e8, #4285f4)" : "#fff",
+                color: intlRegion === "All" ? "#fff" : "var(--text-muted)",
+                fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+                boxShadow: intlRegion === "All" ? "0 2px 8px rgba(26,115,232,0.3)" : "none",
+                whiteSpace: "nowrap",
+              }}>🌍 All (25)</button>
+              {INTL_COUNTRIES.map(c => {
+                const idx = INTL_INDICES.find(i => i.country === c);
+                return (
+                  <button key={c} onClick={() => { setIntlRegion(c); setIntlExpandedIndex(null); }} style={{
+                    padding: "6px 14px", borderRadius: 20, border: "1px solid",
+                    borderColor: intlRegion === c ? "#1a73e8" : "var(--border)",
+                    background: intlRegion === c ? "linear-gradient(135deg, #1a73e8, #4285f4)" : "#fff",
+                    color: intlRegion === c ? "#fff" : "var(--text-secondary)",
+                    fontSize: "0.73rem", fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+                    boxShadow: intlRegion === c ? "0 2px 8px rgba(26,115,232,0.3)" : "none",
+                    display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
+                  }}>{idx?.flag} {c}</button>
+                );
+              })}
+            </div>
+
+            {/* Country-wise Index Cards */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {getIndicesByCountry(intlRegion).map(idx => {
                 const p = intlPrices[idx.yahooSymbol];
                 const isExpanded = intlExpandedIndex === idx.symbol;
                 const stocks = getStocksForIndex(idx.symbol);
@@ -1247,11 +1660,23 @@ export default function AnalyzePage() {
                       border: "none", cursor: "pointer", transition: "background 0.2s",
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <span style={{ fontSize: "1.6rem" }}>{idx.flag}</span>
+                        <div style={{ position: "relative" }}>
+                          <span style={{ fontSize: "1.6rem" }}>{idx.flag}</span>
+                          <span style={{
+                            position: "absolute", top: -6, right: -10,
+                            fontSize: "0.55rem", fontWeight: 800, color: "#fff",
+                            background: idx.rank <= 3 ? "linear-gradient(135deg, #f59e0b, #d97706)" : idx.rank <= 10 ? "#2962ff" : "#607d8b",
+                            borderRadius: 6, padding: "1px 5px", lineHeight: 1.4,
+                            border: "1.5px solid #fff",
+                          }}>#{idx.rank}</span>
+                        </div>
                         <div style={{ textAlign: "left" }}>
                           <div style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text-primary)" }}>{idx.name}</div>
-                          <div style={{ fontSize: "0.74rem", color: "var(--text-muted)", fontWeight: 500, marginTop: 2 }}>
+                          <div style={{ fontSize: "0.74rem", color: "var(--text-muted)", fontWeight: 500, marginTop: 2, display: "flex", alignItems: "center", gap: 6 }}>
                             {idx.country} · {idx.symbol}
+                            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#2962ff", background: "rgba(41,98,255,0.08)", padding: "1px 6px", borderRadius: 4 }}>
+                              MCap {idx.marketCap}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1883,83 +2308,68 @@ export default function AnalyzePage() {
 
         {/* Empty state — Stocks */}
         {!analysis && !loading && !error && mainTab === "stocks" && (
-          <div>
-            <TradingViewTickerTape tab="stocks" />
-            {/* Live Running Charts */}
-            <LiveChartGrid tab="stocks" />
-            <MarketTicker items={
-              Object.keys(stockPrices).length > 0
-                ? [
-                    ...(stockPrices.NIFTY50 ? [{ label: "NIFTY 50", value: stockPrices.NIFTY50.price.toLocaleString("en-IN"), change: stockPrices.NIFTY50.changePercent }] : []),
-                    ...(stockPrices.SENSEX ? [{ label: "SENSEX", value: stockPrices.SENSEX.price.toLocaleString("en-IN"), change: stockPrices.SENSEX.changePercent }] : []),
-                    ...(stockPrices.BANKNIFTY ? [{ label: "BANK NIFTY", value: stockPrices.BANKNIFTY.price.toLocaleString("en-IN"), change: stockPrices.BANKNIFTY.changePercent }] : []),
-                    ...(forexPrices.USDINR ? [{ label: "USD/INR", value: `₹${forexPrices.USDINR.rate.toFixed(2)}`, change: forexPrices.USDINR.change24h }] : []),
-                  ]
-                : [{ label: "Loading...", value: "—" }]
-            } />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-              {[
-                { name: "Reliance Industries", ticker: "RELIANCE.NS", sector: "Energy" },
-                { name: "TCS", ticker: "TCS.NS", sector: "IT" },
-                { name: "HDFC Bank", ticker: "HDFCBANK.NS", sector: "Banking" },
-                { name: "Infosys", ticker: "INFY.NS", sector: "IT" },
-                { name: "ICICI Bank", ticker: "ICICIBANK.NS", sector: "Banking" },
-                { name: "Bharti Airtel", ticker: "BHARTIARTL.NS", sector: "Telecom" },
-                { name: "SBI", ticker: "SBIN.NS", sector: "Banking" },
-                { name: "ITC", ticker: "ITC.NS", sector: "FMCG" },
-                { name: "Wipro", ticker: "WIPRO.NS", sector: "IT" },
-                { name: "Asian Paints", ticker: "ASIANPAINT.NS", sector: "Consumer" },
-                { name: "HUL", ticker: "HINDUNILVR.NS", sector: "FMCG" },
-                { name: "Adani Ports", ticker: "ADANIPORTS.NS", sector: "Infrastructure" },
-              ].map(s => {
-                const sym = s.ticker.replace(".NS", "");
-                const livePrice = stockPrices[sym];
-                const change = livePrice?.changePercent || 0;
-                return (
-                  <button key={s.ticker} onClick={() => { setStockQuery(s.name); setStockTicker(s.ticker); setStockName(s.name); }} className="card" style={{
-                    padding: 0, textAlign: "left", cursor: "pointer",
-                    border: stockTicker === s.ticker ? "2px solid var(--accent)" : "1px solid var(--border)",
-                    background: "#fff", overflow: "hidden", transition: "all 0.2s",
-                  }}>
-                    <div style={{ padding: "14px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)", marginBottom: 2 }}>{livePrice?.name || s.name}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 600 }}>{sym}</span>
-                          <span className="badge badge-gray" style={{ padding: "1px 6px", fontSize: "0.58rem" }}>{s.sector}</span>
-                        </div>
-                      </div>
-                      <MiniSparkline seed={s.ticker} positive={change >= 0} width={64} height={28} />
-                    </div>
-                    <div style={{ padding: "0 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      {livePrice ? (
-                        <>
-                          <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary)" }}>₹{livePrice.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
-                          <span style={{
-                            fontSize: "0.78rem", fontWeight: 700,
-                            color: change >= 0 ? "var(--success)" : "var(--danger)",
-                            background: change >= 0 ? "var(--success-bg)" : "var(--danger-bg)",
-                            padding: "2px 8px", borderRadius: 6,
-                            display: "flex", alignItems: "center", gap: 2,
-                          }}>
-                            {change >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                            {Math.abs(change).toFixed(2)}%
-                          </span>
-                        </>
-                      ) : (
-                        <div className="shimmer" style={{ width: 100, height: 18, borderRadius: 4 }} />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.78rem", marginTop: 16 }}>
-              Showing top stocks — search above for 120+ NSE stocks with institutional-grade AI analysis
-            </p>
-          </div>
+          <StocksExplorer stockPrices={stockPrices} forexPrices={forexPrices} />
         )}
+
+        {/* ══════ DERIVATIVES (F&O) TAB ══════ */}
+        {/* ══════ REAL ESTATE TAB ══════ */}
+        {mainTab === "realestate" && (
+          <RealEstateDashboard />
+        )}
+
+        {mainTab === "wealth" && (
+          <WealthAdvisoryDashboard />
+        )}
+
+        {mainTab === "tax" && (
+          <TaxIntelligenceDashboard />
+        )}
+
+        {mainTab === "derivatives" && (
+  <div>
+    {/* AI Derivatives Agent */}
+    <DerivativesAgentDashboard />
+
+    {/* Global Derivatives Terminal */}
+    <div style={{ marginTop: 24 }}>
+      <GlobalDerivativesTerminal />
+    </div>
+
+    {/* NSE India Option Chain */}
+    <div style={{ marginTop: 24 }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10, marginBottom: 12,
+        padding: "14px 20px", background: "#fff", borderRadius: "12px 12px 0 0",
+        borderBottom: "3px solid #1a237e", border: "1px solid var(--border)",
+      }}>
+        <span style={{ fontSize: "1.4rem" }}>🇮🇳</span>
+        <div>
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>NSE India — Live Option Chain</h2>
+          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Real-time NSE F&O data with institutional analytics</span>
+        </div>
       </div>
+      <IndianDerivativesPage />
+    </div>
+  </div>
+)}
+
+      </div>
+
+        {/* Right: Contextual Intelligence Panel (desktop only) */}
+        {mainTab === "realestate" && (
+        <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
+          <div style={{ position: "sticky", top: 20 }}>
+            <RealEstatePanel />
+          </div>
+        </div>
+        )}
+        {mainTab !== "derivatives" && mainTab !== "realestate" && (
+        <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
+          <div style={{ position: "sticky", top: 20 }}>
+            <DerivativesPanel tab={mainTab} />
+          </div>
+        </div>
+        )}
 
       {/* ── Upgrade Modal ── */}
       {showUpgrade && (

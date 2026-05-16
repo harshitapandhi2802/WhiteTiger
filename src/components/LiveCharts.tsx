@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 /* ── Deterministic SVG Sparkline ── */
 export function MiniSparkline({
@@ -69,7 +69,7 @@ export function TradingViewChart({
   type,
 }: {
   symbol: string;
-  type: "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international";
+  type: "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
 }) {
   const tvSymbol = useMemo(() => {
     if (type === "international") return symbol;
@@ -205,214 +205,207 @@ export function ScrollingTicker({
   );
 }
 
-/* ── TradingView Ticker Tape Widget (live real-time prices) ──
-   IMPORTANT: Only use symbol codes verified to work in the ticker-tape widget.
-   Many MCX:, TVC:, SP:, DJ:, INDEX: codes DON'T work and show red error icons.
-   Verified working exchanges: NSE:, BSE:, BINANCE:, FX:, FX_IDC:, OANDA:, CAPITALCOM:, FOREXCOM:, CURRENCYCOM:
+/* ── Market Pulse Bar — scrolling intelligence headlines like CNBC lower-third ──
+   Replaces the old TradingView ticker tape which was redundant with the top ScrollingTicker.
+   Shows: tab-relevant key macro context + live intelligence headlines
 */
-const TV_SYMBOL_SETS: Record<string, { symbols: { proName: string; title: string }[] }> = {
-  stocks: {
-    symbols: [
-      { proName: "NSE:NIFTY", title: "NIFTY 50" },
-      { proName: "BSE:SENSEX", title: "SENSEX" },
-      { proName: "NSE:BANKNIFTY", title: "BANK NIFTY" },
-      { proName: "NSE:RELIANCE", title: "Reliance" },
-      { proName: "NSE:TCS", title: "TCS" },
-      { proName: "NSE:HDFCBANK", title: "HDFC Bank" },
-      { proName: "NSE:INFY", title: "Infosys" },
-      { proName: "NSE:ICICIBANK", title: "ICICI Bank" },
-      { proName: "NSE:BHARTIARTL", title: "Airtel" },
-      { proName: "NSE:SBIN", title: "SBI" },
-      { proName: "NSE:ITC", title: "ITC" },
-      { proName: "NSE:TATAMOTORS", title: "Tata Motors" },
-      { proName: "FX_IDC:USDINR", title: "USD/INR" },
-    ],
-  },
-  commodities: {
-    symbols: [
-      { proName: "OANDA:XAUUSD", title: "Gold" },
-      { proName: "OANDA:XAGUSD", title: "Silver" },
-      { proName: "OANDA:WTICOUSD", title: "Crude Oil (WTI)" },
-      { proName: "OANDA:BCOUSD", title: "Brent Crude" },
-      { proName: "OANDA:NATGASUSD", title: "Natural Gas" },
-      { proName: "OANDA:XCUUSD", title: "Copper" },
-      { proName: "OANDA:XPTUSD", title: "Platinum" },
-      { proName: "OANDA:XPDUSD", title: "Palladium" },
-      { proName: "OANDA:WHEATUSD", title: "Wheat" },
-      { proName: "FX_IDC:USDINR", title: "USD/INR" },
-    ],
-  },
-  crypto: {
-    symbols: [
-      { proName: "BINANCE:BTCUSDT", title: "Bitcoin" },
-      { proName: "BINANCE:ETHUSDT", title: "Ethereum" },
-      { proName: "BINANCE:SOLUSDT", title: "Solana" },
-      { proName: "BINANCE:BNBUSDT", title: "BNB" },
-      { proName: "BINANCE:XRPUSDT", title: "XRP" },
-      { proName: "BINANCE:DOGEUSDT", title: "Dogecoin" },
-      { proName: "BINANCE:ADAUSDT", title: "Cardano" },
-      { proName: "BINANCE:AVAXUSDT", title: "Avalanche" },
-      { proName: "BINANCE:DOTUSDT", title: "Polkadot" },
-      { proName: "BINANCE:SUIUSDT", title: "SUI" },
-    ],
-  },
-  currency: {
-    symbols: [
-      { proName: "FX_IDC:USDINR", title: "USD/INR" },
-      { proName: "FX_IDC:EURINR", title: "EUR/INR" },
-      { proName: "FX_IDC:GBPINR", title: "GBP/INR" },
-      { proName: "FX:EURUSD", title: "EUR/USD" },
-      { proName: "FX:GBPUSD", title: "GBP/USD" },
-      { proName: "FX:USDJPY", title: "USD/JPY" },
-      { proName: "FX:AUDUSD", title: "AUD/USD" },
-      { proName: "FX:USDCHF", title: "USD/CHF" },
-    ],
-  },
-  mutualfunds: {
-    symbols: [
-      { proName: "NSE:NIFTY", title: "NIFTY 50" },
-      { proName: "BSE:SENSEX", title: "SENSEX" },
-      { proName: "NSE:BANKNIFTY", title: "BANK NIFTY" },
-      { proName: "OANDA:XAUUSD", title: "Gold" },
-      { proName: "FX_IDC:USDINR", title: "USD/INR" },
-      { proName: "NSE:RELIANCE", title: "Reliance" },
-      { proName: "NSE:TCS", title: "TCS" },
-      { proName: "NSE:HDFCBANK", title: "HDFC Bank" },
-    ],
-  },
-  debt: {
-    symbols: [
-      { proName: "CAPITALCOM:US10Y", title: "US 10Y Yield" },
-      { proName: "CAPITALCOM:US02Y", title: "US 2Y Yield" },
-      { proName: "OANDA:XAUUSD", title: "Gold" },
-      { proName: "NSE:NIFTY", title: "NIFTY 50" },
-      { proName: "BSE:SENSEX", title: "SENSEX" },
-      { proName: "FX_IDC:USDINR", title: "USD/INR" },
-      { proName: "FX:EURUSD", title: "EUR/USD" },
-    ],
-  },
-  international: {
-    symbols: [
-      { proName: "OANDA:SPX500USD", title: "S&P 500" },
-      { proName: "OANDA:NAS100USD", title: "NASDAQ 100" },
-      { proName: "OANDA:UK100GBP", title: "FTSE 100" },
-      { proName: "OANDA:DE30EUR", title: "DAX 30" },
-      { proName: "OANDA:JP225USD", title: "Nikkei 225" },
-      { proName: "OANDA:HK33HKD", title: "Hang Seng" },
-      { proName: "OANDA:AU200AUD", title: "ASX 200" },
-      { proName: "NSE:NIFTY", title: "NIFTY 50" },
-      { proName: "FX_IDC:USDINR", title: "USD/INR" },
-      { proName: "FX:EURUSD", title: "EUR/USD" },
-    ],
-  },
+
+const PULSE_CONTEXT: Record<string, { icon: string; label: string; items: string[] }> = {
+  stocks: { icon: "📊", label: "EQUITY PULSE", items: [
+    "FII/DII flows drive near-term NIFTY direction — watch institutional activity closely",
+    "India VIX below 14 signals low volatility regime — favorable for bulls",
+    "Advance-Decline ratio key to confirming broad market participation",
+    "Banking sector weight at 35% of NIFTY — HDFC Bank, ICICI Bank lead moves",
+    "Q4 earnings season underway — IT sector margins under scrutiny",
+    "RBI policy stance remains data-dependent — next MPC meeting critical",
+  ]},
+  commodities: { icon: "🛢️", label: "COMMODITY PULSE", items: [
+    "OPEC+ production cuts support crude oil above $80/bbl through H2",
+    "Central bank gold buying at record pace — China and India lead demand",
+    "Silver outperforms gold on solar panel industrial demand surge",
+    "Natural gas volatility rises on seasonal weather pattern shifts",
+    "Copper supply tightening — Chilean mine disruptions add upward pressure",
+    "MCX volumes up 22% YoY reflecting growing institutional participation",
+  ]},
+  crypto: { icon: "₿", label: "CRYPTO PULSE", items: [
+    "Bitcoin ETF daily inflows averaging $200M — institutional accumulation phase",
+    "Ethereum L2 ecosystem processing 15M daily transactions across Arbitrum and Base",
+    "BTC dominance at 54% — altcoin season signals emerging below 50%",
+    "India crypto TDS collections up 60% YoY — retail participation growing",
+    "Post-halving supply shock historically takes 12-18 months for full price impact",
+    "On-chain data shows exchange balances at 5-year lows — bullish signal",
+  ]},
+  currency: { icon: "💱", label: "FOREX PULSE", items: [
+    "RBI actively managing USD/INR in 83-84 range — forex reserves at $645B",
+    "DXY trajectory key for EM currencies — Fed rate path drives direction",
+    "Carry trade positions in JPY pairs at $18B — unwind risk elevated",
+    "EUR/USD range-bound as ECB vs Fed policy divergence narrows",
+    "Forward premiums declining — reduced hedging demand from importers",
+    "Capital account flows turning positive — NRI deposits and FDI improving",
+  ]},
+  mutualfunds: { icon: "📈", label: "MF PULSE", items: [
+    "Monthly SIP flows crossed ₹20,000 crore — 8.5 crore active accounts",
+    "Only 35% of large-cap active funds beat NIFTY 50 over 3 years",
+    "Passive fund AUM grows 45% YoY — index investing gaining traction",
+    "SEBI mandates stress testing for small-cap and mid-cap schemes",
+    "Multi-asset allocation funds deliver 14-18% YTD — top performer category",
+    "Debt fund inflows surge as credit spreads compress to 5-year lows",
+  ]},
+  debt: { icon: "🏦", label: "FIXED INCOME PULSE", items: [
+    "India 10Y G-Sec at 7.05% — JP Morgan index inclusion driving FPI flows",
+    "RBI OMO purchases inject liquidity amid tightening system conditions",
+    "AAA corporate bond spreads at 35bps over G-Sec — lowest since 2019",
+    "US 10Y at 4.35% — September rate cut probability at 65%",
+    "SDL auctions see strong 2.5x bid-to-cover — state borrowing on track",
+    "Duration strategy favored as rate cut cycle approaches",
+  ]},
+  international: { icon: "🌍", label: "GLOBAL PULSE", items: [
+    "S&P 500 at record highs — AI sector driving 60% of YTD gains",
+    "China stimulus package worth $42B boosts Hang Seng 8% in May",
+    "ECB signals June rate cut — DAX at all-time high near 18,900",
+    "Japan Nikkei corrects on yen intervention fears — BOJ policy key",
+    "Global fund managers' EM allocation at 18-month high — India tops",
+    "US-China tech export tensions create semiconductor supply uncertainty",
+  ]},
 };
 
-export function TradingViewTickerTape({
+export function MarketPulseBar({
   tab,
 }: {
   tab: "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international";
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const loadedRef = useRef<string>("");
+  const ctx = PULSE_CONTEXT[tab] || PULSE_CONTEXT.stocks;
+  const [headlines, setHeadlines] = useState<string[]>(ctx.items);
+  const fetchedTab = useRef("");
 
+  // Try to fetch live intelligence headlines
   useEffect(() => {
-    if (!containerRef.current || loadedRef.current === tab) return;
-    loadedRef.current = tab;
-    containerRef.current.innerHTML = "";
-
-    const symbols = TV_SYMBOL_SETS[tab]?.symbols || TV_SYMBOL_SETS.stocks.symbols;
-
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.async = true;
-    script.type = "text/javascript";
-    script.textContent = JSON.stringify({
-      symbols,
-      showSymbolLogo: true,
-      isTransparent: false,
-      displayMode: "adaptive",
-      colorTheme: "dark",
-      locale: "en",
-    });
-
-    const wrapper = document.createElement("div");
-    wrapper.className = "tradingview-widget-container";
-    const inner = document.createElement("div");
-    inner.className = "tradingview-widget-container__widget";
-    wrapper.appendChild(inner);
-    wrapper.appendChild(script);
-    containerRef.current.appendChild(wrapper);
+    if (fetchedTab.current === tab) return;
+    fetchedTab.current = tab;
+    fetch(`/api/intelligence?tab=${tab}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.articles?.length) {
+          setHeadlines(d.articles.map((a: { category: string; headline: string }) =>
+            `[${a.category}] ${a.headline}`
+          ));
+        }
+      })
+      .catch(() => { /* keep fallback */ });
   }, [tab]);
 
+  const doubled = [...headlines, ...headlines];
+
   return (
-    <div
-      ref={containerRef}
-      style={{
-        borderRadius: 10,
-        overflow: "hidden",
-        marginBottom: 16,
-      }}
-    />
+    <div style={{
+      background: "linear-gradient(90deg, #1a1d29, #0f1923)",
+      borderRadius: 10,
+      overflow: "hidden",
+      marginBottom: 16,
+      position: "relative",
+    }}>
+      {/* Label badge */}
+      <div style={{
+        position: "absolute", left: 0, top: 0, bottom: 0, zIndex: 2,
+        display: "flex", alignItems: "center",
+        background: "linear-gradient(90deg, #1a1d29 80%, transparent)",
+        paddingLeft: 14, paddingRight: 20,
+      }}>
+        <span style={{
+          fontSize: "0.65rem", fontWeight: 800, color: "#fff",
+          background: "linear-gradient(135deg, #2962ff, #448aff)",
+          padding: "4px 10px", borderRadius: 5,
+          letterSpacing: 0.8, whiteSpace: "nowrap",
+          display: "flex", alignItems: "center", gap: 5,
+        }}>
+          {ctx.icon} {ctx.label}
+        </span>
+      </div>
+      {/* Scrolling headlines */}
+      <div style={{ overflow: "hidden", padding: "10px 0", marginLeft: 160 }}>
+        <div style={{
+          display: "flex", gap: 0,
+          animation: "pulseScroll 60s linear infinite",
+          whiteSpace: "nowrap",
+        }}>
+          {doubled.map((h, i) => (
+            <span key={i} style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              paddingRight: 40, flexShrink: 0,
+            }}>
+              <span style={{
+                width: 5, height: 5, borderRadius: "50%",
+                background: i % 3 === 0 ? "#00e676" : i % 3 === 1 ? "#ffab00" : "#448aff",
+                flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: "0.76rem", color: "rgba(255,255,255,0.85)",
+                fontWeight: 500, letterSpacing: 0.2,
+              }}>
+                {h}
+              </span>
+            </span>
+          ))}
+        </div>
+      </div>
+      <style>{`
+        @keyframes pulseScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+    </div>
   );
 }
 
-/* ── Live Chart Grid — grid of TradingView iframe charts that ACTUALLY work ── */
+/* ── Live Chart Grid — grid of TradingView iframe charts ──
+   IMPORTANT: Only use symbols verified to work in free TradingView widgetembed.
+   NSE: individual stocks & indices DO NOT work (premium only).
+   Verified working: BSE:SENSEX, TVC:GOLD, TVC:SILVER, TVC:USOIL, TVC:UKOIL, OANDA:*, BINANCE:*, FX:*, FX_IDC:*
+   Note: CAPITALCOM:NIFTY50 is BROKEN — use BSE:SENSEX instead for Indian market index.
+*/
 const CHART_SETS: Record<string, { symbol: string; label: string }[]> = {
   stocks: [
-    { symbol: "NSE:NIFTY", label: "NIFTY 50" },
     { symbol: "BSE:SENSEX", label: "SENSEX" },
-    { symbol: "NSE:BANKNIFTY", label: "BANK NIFTY" },
-    { symbol: "NSE:RELIANCE", label: "Reliance" },
-    { symbol: "NSE:TCS", label: "TCS" },
-    { symbol: "NSE:HDFCBANK", label: "HDFC Bank" },
+    { symbol: "FX_IDC:USDINR", label: "USD/INR" },
+    { symbol: "TVC:GOLD", label: "Gold" },
+    { symbol: "OANDA:SPX500USD", label: "S&P 500" },
   ],
   commodities: [
     { symbol: "TVC:GOLD", label: "Gold" },
     { symbol: "TVC:SILVER", label: "Silver" },
-    { symbol: "TVC:USOIL", label: "Crude Oil" },
+    { symbol: "TVC:USOIL", label: "Crude Oil (WTI)" },
     { symbol: "TVC:UKOIL", label: "Brent Crude" },
-    { symbol: "NYMEX:NG1!", label: "Natural Gas" },
-    { symbol: "COMEX:HG1!", label: "Copper" },
   ],
   crypto: [
     { symbol: "BINANCE:BTCUSDT", label: "Bitcoin" },
     { symbol: "BINANCE:ETHUSDT", label: "Ethereum" },
     { symbol: "BINANCE:SOLUSDT", label: "Solana" },
-    { symbol: "BINANCE:BNBUSDT", label: "BNB" },
     { symbol: "BINANCE:XRPUSDT", label: "XRP" },
-    { symbol: "BINANCE:DOGEUSDT", label: "Dogecoin" },
   ],
   currency: [
     { symbol: "FX_IDC:USDINR", label: "USD/INR" },
     { symbol: "FX_IDC:EURINR", label: "EUR/INR" },
-    { symbol: "FX_IDC:GBPINR", label: "GBP/INR" },
     { symbol: "FX:EURUSD", label: "EUR/USD" },
     { symbol: "FX:GBPUSD", label: "GBP/USD" },
-    { symbol: "FX:USDJPY", label: "USD/JPY" },
   ],
   mutualfunds: [
-    { symbol: "NSE:NIFTY", label: "NIFTY 50" },
     { symbol: "BSE:SENSEX", label: "SENSEX" },
-    { symbol: "NSE:BANKNIFTY", label: "BANK NIFTY" },
     { symbol: "TVC:GOLD", label: "Gold" },
     { symbol: "FX_IDC:USDINR", label: "USD/INR" },
-    { symbol: "CBOE:TNX", label: "US 10Y Yield" },
+    { symbol: "OANDA:SPX500USD", label: "S&P 500" },
   ],
   debt: [
-    { symbol: "CBOE:TNX", label: "US 10Y Yield" },
-    { symbol: "CBOE:IRX", label: "US 13W Yield" },
     { symbol: "TVC:GOLD", label: "Gold" },
-    { symbol: "NSE:NIFTY", label: "NIFTY 50" },
-    { symbol: "FX_IDC:USDINR", label: "USD/INR" },
     { symbol: "BSE:SENSEX", label: "SENSEX" },
+    { symbol: "FX_IDC:USDINR", label: "USD/INR" },
+    { symbol: "FX:EURUSD", label: "EUR/USD" },
   ],
   international: [
     { symbol: "OANDA:SPX500USD", label: "S&P 500" },
     { symbol: "OANDA:NAS100USD", label: "NASDAQ 100" },
-    { symbol: "XETR:DAX", label: "DAX" },
-    { symbol: "TVC:NI225", label: "Nikkei 225" },
-    { symbol: "TVC:HSI", label: "Hang Seng" },
-    { symbol: "NSE:NIFTY", label: "NIFTY 50" },
+    { symbol: "OANDA:UK100GBP", label: "FTSE 100" },
+    { symbol: "OANDA:JP225USD", label: "Nikkei 225" },
   ],
 };
 
@@ -422,41 +415,103 @@ export function LiveChartGrid({
   tab: "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international";
 }) {
   const charts = CHART_SETS[tab] || CHART_SETS.stocks;
+  const [fullscreenChart, setFullscreenChart] = useState<{ symbol: string; label: string } | null>(null);
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-      gap: 12,
-      marginBottom: 20,
-    }}>
-      {charts.map(c => {
-        const url = `https://s.tradingview.com/widgetembed/?frameElementId=tv_${encodeURIComponent(c.symbol)}&symbol=${encodeURIComponent(c.symbol)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=f7f8fa&theme=light&style=2&timezone=Asia%2FKolkata&withdateranges=1&showFloatingTooltip=1&locale=en&hidevolume=1`;
-        return (
-          <div key={c.symbol} style={{
-            borderRadius: 12, overflow: "hidden",
-            border: "1px solid var(--border)",
-            boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
-            background: "#fff",
-          }}>
-            <div style={{
-              padding: "10px 16px",
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              borderBottom: "1px solid var(--border)",
-              background: "linear-gradient(135deg, #fafbfc, #f5f6f8)",
-            }}>
-              <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)" }}>{c.label}</span>
-              <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "var(--text-muted)", background: "rgba(0,0,0,0.04)", padding: "2px 8px", borderRadius: 4 }}>LIVE</span>
+    <>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gap: 16,
+        marginBottom: 24,
+      }}>
+        {charts.map(c => {
+          const url = `https://s.tradingview.com/widgetembed/?frameElementId=tv_${encodeURIComponent(c.symbol)}&symbol=${encodeURIComponent(c.symbol)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=f7f8fa&theme=light&style=2&timezone=Asia%2FKolkata&withdateranges=1&showFloatingTooltip=1&locale=en`;
+          return (
+            <div key={c.symbol} style={{
+              borderRadius: 14, overflow: "hidden",
+              border: "1px solid var(--border)",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+              background: "#fff",
+              transition: "box-shadow 0.2s, transform 0.2s",
+              cursor: "pointer",
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.1)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)"; }}
+            >
+              <div style={{
+                padding: "10px 16px",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                borderBottom: "1px solid var(--border)",
+                background: "linear-gradient(135deg, #fafbfc, #f5f6f8)",
+              }}>
+                <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text-primary)" }}>{c.label}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: "0.62rem", fontWeight: 600, color: "#10b981", background: "rgba(16,185,129,0.08)", padding: "2px 8px", borderRadius: 4, display: "flex", alignItems: "center", gap: 3 }}>
+                    <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981", animation: "livePulse 2s ease infinite" }} /> LIVE
+                  </span>
+                  <button onClick={(e) => { e.stopPropagation(); setFullscreenChart(c); }} style={{
+                    background: "none", border: "1px solid var(--border)", borderRadius: 4, cursor: "pointer",
+                    padding: "2px 6px", fontSize: "0.6rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3,
+                  }} title="Expand chart">
+                    ⛶ Expand
+                  </button>
+                </div>
+              </div>
+              <iframe
+                src={url}
+                style={{ width: "100%", height: 340, border: "none", display: "block" }}
+                loading="lazy"
+                sandbox="allow-scripts allow-same-origin allow-popups"
+              />
             </div>
+          );
+        })}
+      </div>
+
+      {/* ── Fullscreen Chart Modal ── */}
+      {fullscreenChart && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 999, background: "rgba(0,0,0,0.7)",
+          backdropFilter: "blur(8px)", display: "flex", flexDirection: "column",
+          animation: "fadeInModal 0.25s ease",
+        }} onClick={() => setFullscreenChart(null)}>
+          <div style={{
+            background: "#fff", margin: 20, borderRadius: 16, overflow: "hidden",
+            flex: 1, display: "flex", flexDirection: "column",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.3)",
+          }} onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{
+              padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center",
+              borderBottom: "1px solid var(--border)", background: "linear-gradient(135deg, #fafbfc, #f5f6f8)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: "1.1rem", fontWeight: 800 }}>{fullscreenChart.label}</span>
+                <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#10b981", background: "rgba(16,185,129,0.08)", padding: "3px 10px", borderRadius: 5 }}>LIVE</span>
+                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{fullscreenChart.symbol}</span>
+              </div>
+              <button onClick={() => setFullscreenChart(null)} style={{
+                background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "6px 14px",
+                cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 4,
+              }}>
+                ✕ Close
+              </button>
+            </div>
+            {/* Full Chart */}
             <iframe
-              src={url}
-              style={{ width: "100%", height: 260, border: "none", display: "block" }}
-              loading="lazy"
+              src={`https://s.tradingview.com/widgetembed/?frameElementId=tv_fs_${encodeURIComponent(fullscreenChart.symbol)}&symbol=${encodeURIComponent(fullscreenChart.symbol)}&interval=D&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f7f8fa&theme=light&style=1&timezone=Asia%2FKolkata&withdateranges=1&showFloatingTooltip=1&locale=en&studies=MASimple%407%7CMASimple%4025%7CRSI%407&allow_symbol_change=1`}
+              style={{ width: "100%", flex: 1, border: "none", display: "block", minHeight: 500 }}
               sandbox="allow-scripts allow-same-origin allow-popups"
             />
           </div>
-        );
-      })}
-    </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+    </>
   );
 }
