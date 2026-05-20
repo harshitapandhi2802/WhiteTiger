@@ -3,6 +3,8 @@ import { useState, useMemo, useCallback } from "react";
 import {
   calculatePersonalTax, calculateInvestmentTax, calculateGST,
   generateTaxCopilot, TAX_POLICY_UPDATES, TAX_NAV_SECTIONS, formatINR,
+  getDaysUntil, TAX_CALENDAR_EVENTS, TAX_NEWS_FEED, INVESTMENT_TAX_FLOWS,
+  generateTaxSavingInsights, getSlabComparisonData, OFFICIAL_TAX_SOURCES,
   type PersonalTaxInput, type InvestmentTaxInput, type GSTInput,
   type PersonalTaxReport, type InvestmentTaxReport, type GSTReport,
   type TaxCopilotNarrative, type TaxSection, type RegimeComparison,
@@ -148,8 +150,23 @@ export default function TaxIntelligenceDashboard() {
   // Policy filter
   const [policyFilter, setPolicyFilter] = useState("All");
 
+  // Live Dashboard State
+  const [calendarFilter, setCalendarFilter] = useState<"All" | "ITR" | "GST" | "TDS" | "Advance Tax" | "Audit">("All");
+  const [newsFilter, setNewsFilter] = useState("All");
+  const [expandedFlow, setExpandedFlow] = useState<string | null>(null);
+  const [liveDashTab, setLiveDashTab] = useState<"news" | "calendar" | "slabs" | "flows" | "insights" | "sources">("news");
+
   // Copilot
   const copilot = useMemo(() => generateTaxCopilot(personalReport, investReport), [personalReport, investReport]);
+
+  const savingInsights = useMemo(() => generateTaxSavingInsights(personalReport, investReport), [personalReport, investReport]);
+  const slabComparison = useMemo(() => getSlabComparisonData(), []);
+  const upcomingEvents = useMemo(() =>
+    TAX_CALENDAR_EVENTS
+      .map(e => ({ ...e, daysLeft: getDaysUntil(e.date) }))
+      .filter(e => e.daysLeft > -7)
+      .sort((a, b) => a.daysLeft - b.daysLeft),
+    []);
 
   const handlePersonalCalc = useCallback(() => {
     const r = calculatePersonalTax(personalInput);
@@ -917,6 +934,483 @@ export default function TaxIntelligenceDashboard() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+         LIVE TAX INTELLIGENCE DASHBOARD — Always Visible Below
+         ═══════════════════════════════════════════════════════════════ */}
+      <div style={{ borderTop: "2px solid var(--border)", background: "linear-gradient(180deg, #f8f9ff 0%, #fff 100%)" }}>
+        {/* Dashboard Header */}
+        <div style={{
+          padding: "20px 28px 0", display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: "1.4rem" }}>📡</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}>
+                Live Tax Intelligence Dashboard
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 4,
+                  padding: "2px 10px", borderRadius: 20, fontSize: "0.55rem", fontWeight: 700,
+                  background: "rgba(0,200,83,0.08)", color: "#00c853",
+                }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#00c853", animation: "tax-pulse 2s infinite" }} />
+                  LIVE
+                </span>
+              </h3>
+              <p style={{ margin: "2px 0 0", fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                Real-time tax updates · Official sources · AI-powered insights
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Sub-Nav */}
+        <div style={{ display: "flex", gap: 4, padding: "12px 28px", overflowX: "auto" }}>
+          {([
+            { id: "news" as const, label: "Tax News Feed", icon: "📰" },
+            { id: "calendar" as const, label: "Tax Calendar", icon: "📅" },
+            { id: "slabs" as const, label: "Slab Comparison", icon: "📊" },
+            { id: "flows" as const, label: "Investment Tax Flows", icon: "🔄" },
+            { id: "insights" as const, label: "AI Saving Tips", icon: "💡" },
+            { id: "sources" as const, label: "Official Sources", icon: "🏛️" },
+          ]).map(tab => (
+            <button key={tab.id} onClick={() => setLiveDashTab(tab.id)} style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "7px 14px", borderRadius: 10, whiteSpace: "nowrap",
+              border: liveDashTab === tab.id ? "1.5px solid #0d47a1" : "1px solid var(--border)",
+              background: liveDashTab === tab.id ? "linear-gradient(135deg, #0d47a1, #1565c0)" : "#fff",
+              color: liveDashTab === tab.id ? "#fff" : "var(--text-muted)",
+              fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", transition: "all 0.2s",
+              boxShadow: liveDashTab === tab.id ? "0 2px 10px rgba(13,71,161,0.2)" : "none",
+            }}>
+              <span style={{ fontSize: "0.8rem" }}>{tab.icon}</span> {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ padding: "0 28px 24px", minHeight: 300 }}>
+
+          {/* ═══ TAX NEWS FEED ═══ */}
+          {liveDashTab === "news" && (
+            <div>
+              {/* Filter */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                {["All", "Income Tax", "GST", "Capital Gains", "RBI", "Budget", "SEBI", "Crypto"].map(cat => (
+                  <button key={cat} onClick={() => setNewsFilter(cat)} style={{
+                    padding: "5px 12px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, cursor: "pointer",
+                    border: newsFilter === cat ? "1.5px solid #0d47a1" : "1px solid var(--border)",
+                    background: newsFilter === cat ? "#e3f2fd" : "#fff",
+                    color: newsFilter === cat ? "#0d47a1" : "var(--text-muted)",
+                  }}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {TAX_NEWS_FEED
+                  .filter(n => newsFilter === "All" || n.category === newsFilter)
+                  .map((news, i) => {
+                    const impC = news.impact === "Positive" ? "#00c853" : news.impact === "Negative" ? "#c62828" : "#ff9800";
+                    return (
+                      <div key={i} style={{
+                        padding: "16px 20px", borderRadius: 14, background: "#fff",
+                        border: "1px solid var(--border)", borderLeft: `4px solid ${impC}`,
+                        transition: "all 0.2s",
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 800, fontSize: "0.88rem", lineHeight: 1.4, marginBottom: 4 }}>{news.title}</div>
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                              <span style={{ fontSize: "0.85rem" }}>{news.sourceIcon}</span>
+                              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)" }}>{news.source}</span>
+                              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>·</span>
+                              <span style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{news.timestamp}</span>
+                              <span style={{ padding: "1px 8px", borderRadius: 6, fontSize: "0.55rem", fontWeight: 700, background: `${impC}10`, color: impC }}>
+                                {news.impact === "Positive" ? "📈" : news.impact === "Negative" ? "📉" : "➡️"} {news.impact}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 10 }}>
+                          {news.summary}
+                        </div>
+                        {/* AI "What This Means" */}
+                        <div style={{
+                          padding: "10px 14px", borderRadius: 10,
+                          background: "linear-gradient(135deg, rgba(41,98,255,0.04), rgba(124,58,237,0.04))",
+                          border: "1px solid rgba(41,98,255,0.08)",
+                        }}>
+                          <div style={{ fontSize: "0.58rem", fontWeight: 800, color: "#7c3aed", textTransform: "uppercase", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>
+                            <span>🤖</span> AI: What This Means For You
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#1a73e8", lineHeight: 1.6 }}>
+                            {news.aiExplanation}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ TAX CALENDAR ═══ */}
+          {liveDashTab === "calendar" && (
+            <div>
+              {/* Filter */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                {(["All", "ITR", "GST", "TDS", "Advance Tax", "Audit"] as const).map(cat => (
+                  <button key={cat} onClick={() => setCalendarFilter(cat)} style={{
+                    padding: "5px 12px", borderRadius: 20, fontSize: "0.65rem", fontWeight: 700, cursor: "pointer",
+                    border: calendarFilter === cat ? "1.5px solid #c62828" : "1px solid var(--border)",
+                    background: calendarFilter === cat ? "#ffebee" : "#fff",
+                    color: calendarFilter === cat ? "#c62828" : "var(--text-muted)",
+                  }}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Urgent Banner */}
+              {upcomingEvents.filter(e => e.daysLeft <= 30 && e.daysLeft > 0).length > 0 && (
+                <div style={{
+                  padding: "12px 18px", borderRadius: 12, marginBottom: 16,
+                  background: "linear-gradient(135deg, #c62828, #e53935)", color: "#fff",
+                  display: "flex", alignItems: "center", gap: 10,
+                }}>
+                  <span style={{ fontSize: "1.3rem" }}>⏰</span>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: "0.88rem" }}>
+                      {upcomingEvents.filter(e => e.daysLeft <= 30 && e.daysLeft > 0).length} deadline(s) within 30 days!
+                    </div>
+                    <div style={{ fontSize: "0.68rem", opacity: 0.8 }}>
+                      Don&#39;t miss these — penalties apply for late compliance
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {upcomingEvents
+                  .filter(e => calendarFilter === "All" || e.category === calendarFilter)
+                  .map((event, i) => {
+                    const urgentColor = event.daysLeft <= 7 ? "#c62828" : event.daysLeft <= 30 ? "#e65100" : event.daysLeft <= 90 ? "#ff9800" : "#00c853";
+                    const priorityC = event.priority === "Critical" ? "#c62828" : event.priority === "High" ? "#e65100" : "#ff9800";
+                    return (
+                      <div key={i} style={{
+                        padding: "14px 18px", borderRadius: 12, background: "#fff",
+                        border: "1px solid var(--border)", borderLeft: `4px solid ${urgentColor}`,
+                        display: "flex", alignItems: "flex-start", gap: 14,
+                      }}>
+                        {/* Countdown Circle */}
+                        <div style={{
+                          minWidth: 60, height: 60, borderRadius: 12,
+                          background: `${urgentColor}08`, border: `2px solid ${urgentColor}`,
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 900, color: urgentColor, lineHeight: 1 }}>
+                            {event.daysLeft <= 0 ? "!" : event.daysLeft}
+                          </div>
+                          <div style={{ fontSize: "0.5rem", fontWeight: 700, color: urgentColor }}>
+                            {event.daysLeft <= 0 ? "OVERDUE" : event.daysLeft === 1 ? "DAY" : "DAYS"}
+                          </div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                            <span style={{ fontSize: "1.1rem" }}>{event.icon}</span>
+                            <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>{event.title}</span>
+                            <span style={{ padding: "1px 8px", borderRadius: 6, fontSize: "0.52rem", fontWeight: 800, background: `${priorityC}10`, color: priorityC }}>
+                              {event.priority}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 4 }}>
+                            📆 {new Date(event.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                            <span style={{ marginLeft: 8, padding: "1px 6px", borderRadius: 4, fontSize: "0.55rem", fontWeight: 700, background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
+                              {event.category}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{event.description}</div>
+                          <div style={{ fontSize: "0.65rem", color: "#c62828", marginTop: 4 }}>⚠️ Penalty: {event.penalty}</div>
+                          {mode === "beginner" && (
+                            <div style={{ marginTop: 6, padding: "6px 10px", borderRadius: 6, background: "rgba(41,98,255,0.04)", fontSize: "0.68rem", color: "#1a73e8", lineHeight: 1.5 }}>
+                              🎓 {event.beginnerTip}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ SLAB COMPARISON VISUALIZATION ═══ */}
+          {liveDashTab === "slabs" && (
+            <div>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: "0 0 6px" }}>📊 Old vs New Regime — Tax Slab Comparison</h3>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 16 }}>
+                FY 2025-26 · Visual comparison of tax rates at each income slab
+              </p>
+
+              {mode === "beginner" && (
+                <div style={{ padding: "10px 16px", borderRadius: 10, marginBottom: 16, background: "rgba(41,98,255,0.04)", border: "1px solid rgba(41,98,255,0.08)", fontSize: "0.78rem", color: "#1a73e8", lineHeight: 1.6 }}>
+                  🎓 <strong>How to read:</strong> Blue bars = old regime rates, Green bars = new regime rates. Where green is shorter, the new regime charges less tax. Most people below ₹12L pay zero under the new regime!
+                </div>
+              )}
+
+              {/* Bar Chart */}
+              <div style={{ padding: "16px 20px", borderRadius: 14, background: "#fff", border: "1px solid var(--border)", marginBottom: 20 }}>
+                {slabComparison.map((slab, i) => (
+                  <div key={i} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 700, minWidth: 120 }}>{slab.slab}</span>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        {slab.difference < 0 && (
+                          <span style={{ fontSize: "0.6rem", fontWeight: 800, color: "#00c853", padding: "1px 6px", borderRadius: 4, background: "#e8f5e9" }}>
+                            ↓ {Math.abs(slab.difference)}% less
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#0d47a1", minWidth: 28 }}>Old</span>
+                      <div style={{ flex: 1, height: 14, background: "#e8eaf6", borderRadius: 7, overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%", borderRadius: 7, transition: "width 1s ease",
+                          width: `${(slab.oldRate / 30) * 100}%`,
+                          background: "linear-gradient(90deg, #0d47a1, #1976d2)",
+                        }} />
+                      </div>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#0d47a1", minWidth: 30, textAlign: "right" }}>{slab.oldRate}%</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 3 }}>
+                      <span style={{ fontSize: "0.55rem", fontWeight: 700, color: "#00833a", minWidth: 28 }}>New</span>
+                      <div style={{ flex: 1, height: 14, background: "#e8f5e9", borderRadius: 7, overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%", borderRadius: 7, transition: "width 1s ease",
+                          width: `${(slab.newRate / 30) * 100}%`,
+                          background: "linear-gradient(90deg, #00c853, #69f0ae)",
+                        }} />
+                      </div>
+                      <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#00833a", minWidth: 30, textAlign: "right" }}>{slab.newRate}%</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Legend */}
+                <div style={{ display: "flex", gap: 16, marginTop: 16, padding: "10px 14px", borderRadius: 8, background: "var(--bg-secondary)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 4, background: "linear-gradient(90deg, #0d47a1, #1976d2)" }} />
+                    <span style={{ fontSize: "0.68rem", fontWeight: 700 }}>Old Regime</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 4, background: "linear-gradient(90deg, #00c853, #69f0ae)" }} />
+                    <span style={{ fontSize: "0.68rem", fontWeight: 700 }}>New Regime (FY 2025-26)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Takeaways */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+                {[
+                  { icon: "🏆", title: "Income ≤ ₹12L", detail: "Zero tax under new regime (Section 87A rebate)", color: "#00c853" },
+                  { icon: "⚖️", title: "₹5L – ₹12L Range", detail: "New regime has much lower rates (5-10% vs 20-30%)", color: "#2962ff" },
+                  { icon: "📋", title: "Above ₹24L", detail: "Both regimes charge 30% — old regime wins if you have large deductions", color: "#e65100" },
+                  { icon: "💡", title: "Break-even Point", detail: "New regime wins unless old regime deductions exceed ~₹3.75L", color: "#7c3aed" },
+                ].map((tip, i) => (
+                  <div key={i} style={{ padding: "14px 18px", borderRadius: 12, background: `${tip.color}04`, border: `1px solid ${tip.color}15` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                      <span style={{ fontSize: "1.1rem" }}>{tip.icon}</span>
+                      <span style={{ fontWeight: 800, fontSize: "0.82rem", color: tip.color }}>{tip.title}</span>
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{tip.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ INVESTMENT TAX FLOW EXPLAINERS ═══ */}
+          {liveDashTab === "flows" && (
+            <div>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: "0 0 6px" }}>🔄 Investment Tax — How Each Asset is Taxed</h3>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 16 }}>
+                Visual step-by-step flow showing exactly how tax works for each investment type
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {INVESTMENT_TAX_FLOWS.map((flow, fi) => {
+                  const isOpen = expandedFlow === flow.assetClass;
+                  return (
+                    <div key={fi} style={{
+                      borderRadius: 14, overflow: "hidden", background: "#fff",
+                      border: isOpen ? `2px solid ${flow.color}` : "1px solid var(--border)",
+                      transition: "all 0.3s",
+                    }}>
+                      <button onClick={() => setExpandedFlow(isOpen ? null : flow.assetClass)} style={{
+                        width: "100%", padding: "16px 20px", display: "flex", alignItems: "center", gap: 12,
+                        background: isOpen ? `${flow.color}05` : "transparent", border: "none", cursor: "pointer", textAlign: "left",
+                      }}>
+                        <span style={{ fontSize: "1.5rem" }}>{flow.icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 800, fontSize: "0.92rem" }}>{flow.assetClass}</div>
+                          <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{flow.taxSummary}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: "0.68rem", fontWeight: 700, color: flow.color, padding: "3px 10px", borderRadius: 8, background: `${flow.color}08` }}>
+                            {flow.exemption || "No exemption"}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: "1.2rem", transition: "transform 0.3s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", color: "var(--text-muted)", marginLeft: 8 }}>▾</span>
+                      </button>
+                      {isOpen && (
+                        <div style={{ padding: "0 20px 20px" }}>
+                          {/* Flow Steps */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 14 }}>
+                            {flow.steps.map((step, si) => (
+                              <div key={si} style={{ display: "flex", alignItems: "stretch", gap: 12 }}>
+                                {/* Connector line + dot */}
+                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 20 }}>
+                                  <div style={{ width: 12, height: 12, borderRadius: "50%", background: step.color, border: "3px solid #fff", boxShadow: `0 0 0 2px ${step.color}`, zIndex: 1, flexShrink: 0 }} />
+                                  {si < flow.steps.length - 1 && (
+                                    <div style={{ width: 2, flex: 1, background: `linear-gradient(${step.color}, ${flow.steps[si + 1].color})` }} />
+                                  )}
+                                </div>
+                                <div style={{ padding: "2px 0 16px", flex: 1 }}>
+                                  <div style={{ fontWeight: 800, fontSize: "0.82rem", color: step.color, marginBottom: 2 }}>{step.label}</div>
+                                  <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{step.detail}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Pro Tip */}
+                          <div style={{
+                            padding: "10px 14px", borderRadius: 10,
+                            background: `${flow.color}06`, border: `1px solid ${flow.color}15`,
+                          }}>
+                            <div style={{ fontSize: "0.6rem", fontWeight: 800, color: flow.color, textTransform: "uppercase", marginBottom: 3 }}>💡 Pro Tip</div>
+                            <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{flow.proTip}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ AI TAX SAVING INSIGHTS ═══ */}
+          {liveDashTab === "insights" && (
+            <div>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: "0 0 6px" }}>💡 AI Tax Saving Insights</h3>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 16 }}>
+                Personalized strategies to legally minimize your tax outgo
+              </p>
+
+              {!personalReport && (
+                <div style={{ padding: "12px 18px", borderRadius: 10, marginBottom: 16, background: "rgba(255,152,0,0.04)", border: "1px solid rgba(255,152,0,0.12)", fontSize: "0.78rem", color: "#e65100", lineHeight: 1.6 }}>
+                  💡 <strong>Tip:</strong> Calculate your personal tax first (Income Tax tab) for personalized saving recommendations!
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12 }}>
+                {savingInsights.map((insight, i) => {
+                  const diffC = insight.difficulty === "Easy" ? "#00c853" : insight.difficulty === "Medium" ? "#ff9800" : "#7c3aed";
+                  return (
+                    <div key={i} style={{
+                      padding: "18px 22px", borderRadius: 14, background: "#fff",
+                      border: "1px solid var(--border)", borderTop: `3px solid ${insight.color}`,
+                      transition: "all 0.2s",
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: "1.4rem" }}>{insight.icon}</span>
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: "0.88rem" }}>{insight.title}</div>
+                            <div style={{ display: "flex", gap: 6, marginTop: 3 }}>
+                              <span style={{ padding: "1px 8px", borderRadius: 6, fontSize: "0.55rem", fontWeight: 700, background: `${diffC}10`, color: diffC }}>
+                                {insight.difficulty}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{
+                          padding: "4px 12px", borderRadius: 8,
+                          background: "linear-gradient(135deg, #00c853, #69f0ae)", color: "#fff",
+                          fontSize: "0.72rem", fontWeight: 800,
+                        }}>
+                          {insight.potentialSaving}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 8 }}>
+                        {insight.description}
+                      </div>
+                      {mode === "beginner" && (
+                        <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(41,98,255,0.04)", border: "1px solid rgba(41,98,255,0.08)", fontSize: "0.72rem", color: "#1a73e8", lineHeight: 1.5 }}>
+                          🎓 {insight.beginnerTip}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ OFFICIAL SOURCES ═══ */}
+          {liveDashTab === "sources" && (
+            <div>
+              <h3 style={{ fontSize: "0.95rem", fontWeight: 800, margin: "0 0 6px" }}>🏛️ Official Government Tax Portals</h3>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: 16 }}>
+                Direct links to authentic tax information from Indian government sources
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+                {OFFICIAL_TAX_SOURCES.map((src, i) => (
+                  <div key={i} style={{
+                    padding: "18px 22px", borderRadius: 14, background: "#fff",
+                    border: "1px solid var(--border)", borderTop: `3px solid ${src.color}`,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <div style={{
+                        width: 42, height: 42, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
+                        background: `${src.color}08`, fontSize: "1.5rem",
+                      }}>
+                        {src.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: "0.92rem" }}>{src.name}</div>
+                        <div style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>{src.description}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                      {src.services.map((svc, si) => (
+                        <span key={si} style={{
+                          padding: "3px 8px", borderRadius: 6, fontSize: "0.58rem", fontWeight: 700,
+                          background: `${src.color}06`, color: src.color,
+                        }}>
+                          {svc}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{
+                      padding: "8px 12px", borderRadius: 8, background: "var(--bg-secondary)",
+                      fontSize: "0.68rem", fontWeight: 700, color: src.color,
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}>
+                      🔗 {src.url}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
 
       {/* ═══ FOOTER ═══ */}

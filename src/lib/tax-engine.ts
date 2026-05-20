@@ -662,6 +662,286 @@ export const TAX_NAV_SECTIONS: { id: TaxSection; label: string; icon: string; de
 ];
 
 // ═══════════════════════════════════════════════════════════════
+// LIVE TAX CALENDAR — Upcoming Deadlines & Countdown
+// ═══════════════════════════════════════════════════════════════
+
+export interface TaxCalendarEvent {
+  title: string;
+  date: string;       // ISO date string e.g. "2026-07-31"
+  category: "ITR" | "GST" | "TDS" | "Advance Tax" | "Audit";
+  icon: string;
+  description: string;
+  penalty: string;
+  beginnerTip: string;
+  priority: "Critical" | "High" | "Medium";
+}
+
+export const TAX_CALENDAR_EVENTS: TaxCalendarEvent[] = [
+  { title: "Advance Tax — 1st Instalment (15%)", date: "2026-06-15", category: "Advance Tax", icon: "💳", description: "Pay 15% of estimated annual tax liability as first instalment", penalty: "Interest under Section 234C if not paid on time", beginnerTip: "If your total tax for the year will exceed ₹10,000, you must pay advance tax in 4 instalments. The first 15% is due by June 15.", priority: "Critical" },
+  { title: "ITR Filing Deadline — Individuals", date: "2026-07-31", category: "ITR", icon: "📄", description: "Last date to file Income Tax Return for FY 2025-26 (AY 2026-27) for individuals and HUFs not requiring audit", penalty: "Late fee ₹5,000 (₹1,000 if income < ₹5L) under Section 234F + interest under 234A", beginnerTip: "This is the most important tax deadline! File your return by July 31 to avoid penalties. You can file online on the Income Tax portal.", priority: "Critical" },
+  { title: "GSTR-3B — Monthly Filing", date: "2026-06-20", category: "GST", icon: "🏪", description: "Monthly GST return with summary of outward/inward supplies and tax payment", penalty: "₹50/day late fee (₹20 for nil return) + 18% interest on outstanding tax", beginnerTip: "If you're GST registered, file GSTR-3B every month by the 20th. It's your main monthly GST return.", priority: "High" },
+  { title: "TDS Payment — Q1", date: "2026-07-07", category: "TDS", icon: "✂️", description: "Deposit TDS deducted during April–June quarter to the government", penalty: "1.5% per month interest + penalty under Section 271C", beginnerTip: "If you deduct TDS from payments (rent, salary, contractor fees), you must deposit it to the government by the 7th of next month.", priority: "High" },
+  { title: "Advance Tax — 2nd Instalment (45%)", date: "2026-09-15", category: "Advance Tax", icon: "💳", description: "Pay 45% of estimated annual tax (cumulative) as second instalment", penalty: "Interest under Section 234C", beginnerTip: "By September 15, you should have paid 45% of your annual estimated tax. This is cumulative — subtract what you already paid in June.", priority: "Critical" },
+  { title: "TDS Return — Q1 (Form 26Q/24Q)", date: "2026-07-31", category: "TDS", icon: "📊", description: "File quarterly TDS return for April–June deductions", penalty: "₹200/day late fee under Section 234E (max = TDS amount)", beginnerTip: "After depositing TDS, you file a quarterly return summarizing all deductions. This helps the government track who paid what.", priority: "Medium" },
+  { title: "GSTR-9 Annual Return", date: "2026-12-31", category: "GST", icon: "📋", description: "Annual GST return consolidating all monthly returns for FY 2025-26", penalty: "₹200/day (max 0.5% of turnover)", beginnerTip: "This is your yearly GST summary. It combines all your monthly GSTR-3B and GSTR-1 filings into one annual return.", priority: "High" },
+  { title: "Advance Tax — 3rd Instalment (75%)", date: "2026-12-15", category: "Advance Tax", icon: "💳", description: "Pay 75% of estimated annual tax (cumulative) as third instalment", penalty: "Interest under Section 234C", beginnerTip: "By December 15, you should have paid 75% of your annual tax. Most salaried people don't need to worry — TDS covers this.", priority: "High" },
+  { title: "Advance Tax — Final Instalment (100%)", date: "2027-03-15", category: "Advance Tax", icon: "💳", description: "Pay remaining 100% of estimated annual tax liability", penalty: "Interest under Sections 234B and 234C", beginnerTip: "Final advance tax instalment. After this, any shortfall attracts interest when you file your return.", priority: "Critical" },
+  { title: "Tax Audit Report (44AB)", date: "2026-10-07", category: "Audit", icon: "🔍", description: "Deadline for filing Tax Audit Report for businesses with turnover above thresholds", penalty: "0.5% of turnover or ₹1.5L, whichever is less (Section 271B)", beginnerTip: "If your business turnover crosses certain limits (₹1Cr for regular, ₹10Cr for digital payments), a CA must audit your books.", priority: "High" },
+  { title: "Belated ITR Filing (with penalty)", date: "2026-12-31", category: "ITR", icon: "⏰", description: "Last date to file belated/revised return for FY 2025-26", penalty: "₹5,000 late fee + loss of carry-forward of certain losses", beginnerTip: "Missed July 31? You can still file until December 31 — but you'll pay a ₹5,000 penalty and lose some benefits.", priority: "Medium" },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE TAX NEWS & INTELLIGENCE FEED
+// ═══════════════════════════════════════════════════════════════
+
+export interface TaxNewsFeedItem {
+  title: string;
+  source: string;
+  sourceUrl: string;
+  sourceIcon: string;
+  timestamp: string;
+  category: "Income Tax" | "GST" | "Capital Gains" | "RBI" | "Budget" | "SEBI" | "Crypto";
+  summary: string;
+  aiExplanation: string;
+  impact: "Positive" | "Negative" | "Neutral";
+}
+
+export const TAX_NEWS_FEED: TaxNewsFeedItem[] = [
+  { title: "CBDT Extends ITR Filing Deadline for Audit Cases to Oct 15", source: "Income Tax India", sourceUrl: "https://incometaxindia.gov.in", sourceIcon: "🏛️", timestamp: "2 hours ago", category: "Income Tax", summary: "CBDT has extended the deadline for filing ITR in audit cases from September 30 to October 7, providing relief to businesses.", aiExplanation: "If you run a business that requires a tax audit, you now get 7 extra days to file. This doesn't affect salaried individuals — their deadline remains July 31.", impact: "Positive" },
+  { title: "GST Council Considering 3-Slab Rationalization", source: "GST Portal", sourceUrl: "https://www.gst.gov.in", sourceIcon: "🏪", timestamp: "5 hours ago", category: "GST", summary: "The GST Council is actively discussing merging the 12% and 18% slabs into a unified 15-16% rate to simplify compliance.", aiExplanation: "If this happens, most services currently at 18% (IT, financial services) would become cheaper. But goods at 12% (processed food) might get costlier. Net effect depends on what you buy/sell.", impact: "Neutral" },
+  { title: "RBI Cuts Repo Rate to 5.75% — 3rd Cut in 2025", source: "RBI", sourceUrl: "https://www.rbi.org.in", sourceIcon: "🏦", timestamp: "1 day ago", category: "RBI", summary: "RBI reduces repo rate by 25 bps to 5.75%, signaling continued easing cycle. Home loan EMIs expected to decrease.", aiExplanation: "Lower repo rate = lower interest rates. Your home loan EMI will decrease. BUT fixed deposits and savings account interest rates will also drop. If you have a home loan, this is great news!", impact: "Positive" },
+  { title: "New Capital Gains Tax Rules Effective from FY 2025-26", source: "CBDT", sourceUrl: "https://incometaxindia.gov.in", sourceIcon: "📈", timestamp: "1 day ago", category: "Capital Gains", summary: "STCG on equity now 20% (up from 15%), LTCG now 12.5% (up from 10%). Exemption limit raised to ₹1.25 lakh.", aiExplanation: "You'll pay slightly more tax on stock profits. Short-term gains tax jumped from 15% to 20%. Long-term went from 10% to 12.5%, but the tax-free limit increased from ₹1L to ₹1.25L. Hold stocks longer to save!", impact: "Negative" },
+  { title: "SEBI Tightens F&O Rules — Lot Size and Margin Changes", source: "SEBI", sourceUrl: "https://www.sebi.gov.in", sourceIcon: "⚡", timestamp: "2 days ago", category: "SEBI", summary: "SEBI has increased minimum lot sizes for index options and raised margin requirements to curb retail speculation.", aiExplanation: "SEBI is making F&O trading harder for small traders. Higher lot sizes mean you need more capital. This is to protect retail investors who were losing money — 93% of F&O traders lose according to SEBI data.", impact: "Neutral" },
+  { title: "Budget 2025: Income Up to ₹12L Tax-Free Under New Regime", source: "Ministry of Finance", sourceUrl: "https://www.indiabudget.gov.in", sourceIcon: "🏛️", timestamp: "3 days ago", category: "Budget", summary: "Union Budget 2025-26 makes income up to ₹12 lakh tax-free under the new regime through enhanced Section 87A rebate.", aiExplanation: "Big win for the middle class! If you earn up to ₹12 lakh, you pay ZERO income tax under the new regime. This is the default regime now — you don't even need to opt in.", impact: "Positive" },
+  { title: "Crypto TDS Compliance — IT Dept Sends Notices", source: "Income Tax India", sourceUrl: "https://incometaxindia.gov.in", sourceIcon: "₿", timestamp: "4 days ago", category: "Crypto", summary: "IT Department is sending notices to crypto exchanges and traders for non-compliance with 1% TDS under Section 194S.", aiExplanation: "If you traded crypto and didn't ensure 1% TDS was deducted, expect a notice. Most major exchanges (WazirX, CoinDCX) do this automatically, but P2P trades are your responsibility.", impact: "Negative" },
+  { title: "New e-Filing Portal 3.0 Launched with AI Assistance", source: "Income Tax India", sourceUrl: "https://incometaxindia.gov.in", sourceIcon: "🤖", timestamp: "5 days ago", category: "Income Tax", summary: "The Income Tax Department has launched an upgraded e-filing portal with AI-assisted form filling and real-time validation.", aiExplanation: "Filing your ITR just got easier! The new portal uses AI to pre-fill your return from Form 16, AIS, and TIS data. It can also suggest the best regime for you. Give it a try at incometax.gov.in.", impact: "Positive" },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// INVESTMENT TAX FLOW EXPLAINERS — Visual Step-by-Step
+// ═══════════════════════════════════════════════════════════════
+
+export interface InvestmentTaxFlowStep {
+  label: string;
+  detail: string;
+  color: string;
+}
+
+export interface InvestmentTaxFlow {
+  assetClass: string;
+  icon: string;
+  color: string;
+  steps: InvestmentTaxFlowStep[];
+  taxSummary: string;
+  exemption: string;
+  proTip: string;
+}
+
+export const INVESTMENT_TAX_FLOWS: InvestmentTaxFlow[] = [
+  {
+    assetClass: "Equity Stocks", icon: "📈", color: "#0d47a1",
+    steps: [
+      { label: "Buy Stocks", detail: "No tax when buying. STT (0.1%) charged on purchase.", color: "#00c853" },
+      { label: "Hold Period?", detail: "Critical decision: < 12 months = Short Term, > 12 months = Long Term", color: "#ff9800" },
+      { label: "STCG → 20% Tax", detail: "Short-term gains taxed at flat 20% (Section 111A)", color: "#ef5350" },
+      { label: "LTCG → 12.5% Tax", detail: "Long-term gains taxed at 12.5% above ₹1.25L exemption (Section 112A)", color: "#2962ff" },
+    ],
+    taxSummary: "STCG 20% | LTCG 12.5% above ₹1.25L",
+    exemption: "First ₹1.25L LTCG per year is tax-free",
+    proTip: "Hold for 1+ year to drop from 20% to 12.5%. Harvest ₹1.25L gains annually tax-free.",
+  },
+  {
+    assetClass: "Mutual Funds (Equity)", icon: "📊", color: "#7c3aed",
+    steps: [
+      { label: "Invest in Equity MF", detail: "No entry tax. SIP or lumpsum — no tax difference.", color: "#00c853" },
+      { label: "Holding < 12 months", detail: "Redemption within 12 months = Short-Term Capital Gains", color: "#ff9800" },
+      { label: "STCG → 20% Tax", detail: "Same as direct equity — taxed at 20%", color: "#ef5350" },
+      { label: "LTCG → 12.5% Tax", detail: "After 12 months, 12.5% tax on gains above ₹1.25L (shared with stock LTCG)", color: "#2962ff" },
+    ],
+    taxSummary: "Same as stocks: STCG 20% | LTCG 12.5%",
+    exemption: "₹1.25L LTCG shared between stocks + equity MFs",
+    proTip: "SIP investors: each SIP instalment has its own 12-month clock. Don't redeem early!",
+  },
+  {
+    assetClass: "Debt Mutual Funds", icon: "🏦", color: "#e65100",
+    steps: [
+      { label: "Invest in Debt MF", detail: "Liquid, ultra-short, corporate bond funds, etc.", color: "#00c853" },
+      { label: "Any Holding Period", detail: "Since April 2023, no LTCG benefit — taxed at slab regardless", color: "#ff9800" },
+      { label: "Taxed at Slab Rate", detail: "Gains added to your income and taxed at your slab rate (up to 30%)", color: "#ef5350" },
+      { label: "No Indexation", detail: "Indexation benefit removed for funds bought after 01/04/2023", color: "#c62828" },
+    ],
+    taxSummary: "At income slab rates (up to 30%+cess)",
+    exemption: "None — fully taxable",
+    proTip: "Consider arbitrage funds (taxed as equity) or tax-free bonds for better after-tax returns.",
+  },
+  {
+    assetClass: "F&O / Derivatives", icon: "⚡", color: "#d32f2f",
+    steps: [
+      { label: "Trade F&O", detail: "Options/Futures on NSE/BSE. STT on sell side.", color: "#ff9800" },
+      { label: "Classified as Business", detail: "F&O income is non-speculative business income — not capital gains!", color: "#ef5350" },
+      { label: "Taxed at Slab Rates", detail: "Added to your total income and taxed at applicable slab rate", color: "#c62828" },
+      { label: "Requires ITR-3", detail: "Must file ITR-3 + maintain books. Tax audit if turnover > limits.", color: "#7c3aed" },
+    ],
+    taxSummary: "Business income — slab rates (up to 30%+cess)",
+    exemption: "Losses carry forward 8 years (non-speculative)",
+    proTip: "Track turnover carefully. Audit threshold: ₹10Cr (if 95%+ digital). Keep all trade logs.",
+  },
+  {
+    assetClass: "Cryptocurrency", icon: "₿", color: "#ff6f00",
+    steps: [
+      { label: "Buy Crypto", detail: "1% TDS on purchase value (Section 194S)", color: "#ff9800" },
+      { label: "Sell / Trade", detail: "Any sale, swap, or use triggers taxable event", color: "#ef5350" },
+      { label: "Flat 30% Tax", detail: "Gains taxed at flat 30% under Section 115BBH — no slab benefit", color: "#c62828" },
+      { label: "No Loss Offset", detail: "Cannot offset crypto losses against any other income or crypto gains", color: "#b71c1c" },
+    ],
+    taxSummary: "Flat 30% + 4% cess + 1% TDS",
+    exemption: "Only cost of acquisition deductible",
+    proTip: "Harshest tax regime in India. Each token is treated separately — BTC loss can't offset ETH gain.",
+  },
+  {
+    assetClass: "Dividends", icon: "💰", color: "#00695c",
+    steps: [
+      { label: "Receive Dividend", detail: "Company/MF pays dividend to your account", color: "#00c853" },
+      { label: "10% TDS Deducted", detail: "If dividend > ₹5,000/year from a company, 10% TDS applies", color: "#ff9800" },
+      { label: "Added to Income", detail: "Full dividend amount added to your gross taxable income", color: "#ef5350" },
+      { label: "Taxed at Slab", detail: "Pay tax at your marginal slab rate (minus TDS already deducted)", color: "#c62828" },
+    ],
+    taxSummary: "At income slab rates (up to 30%+cess)",
+    exemption: "None since April 2020 (DDT abolished)",
+    proTip: "High-income earners: switch from dividend to growth option in MFs to defer tax.",
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// AI TAX SAVING INSIGHTS GENERATOR
+// ═══════════════════════════════════════════════════════════════
+
+export interface TaxSavingInsight {
+  title: string;
+  icon: string;
+  potentialSaving: string;
+  difficulty: "Easy" | "Medium" | "Advanced";
+  description: string;
+  beginnerTip: string;
+  color: string;
+}
+
+export function generateTaxSavingInsights(personal: PersonalTaxReport | null, invest: InvestmentTaxReport | null): TaxSavingInsight[] {
+  const insights: TaxSavingInsight[] = [];
+
+  // Always show some general insights
+  insights.push({
+    title: "Maximize Section 80C Fully", icon: "🎯", potentialSaving: "Up to ₹46,800/year", difficulty: "Easy",
+    description: "Invest the full ₹1.5L in ELSS, PPF, or NPS to claim maximum 80C deduction under old regime.",
+    beginnerTip: "If you're in the 30% bracket and invest ₹1.5L in ELSS, you save ₹46,800 in taxes every year!",
+    color: "#00c853",
+  });
+
+  insights.push({
+    title: "Claim NPS Extra ₹50K (80CCD1B)", icon: "🏆", potentialSaving: "Up to ₹15,600/year", difficulty: "Easy",
+    description: "NPS offers ₹50,000 additional deduction beyond 80C limit. Available even under new regime for employer contributions.",
+    beginnerTip: "This is free money! ₹50K extra deduction means ₹15,600 saved at 30% slab — on top of your 80C limit.",
+    color: "#2962ff",
+  });
+
+  insights.push({
+    title: "Tax-Loss Harvesting Before March 31", icon: "📉", potentialSaving: "Varies with portfolio", difficulty: "Advanced",
+    description: "Sell loss-making stocks to book capital losses, then offset against capital gains. Losses can be carried forward 8 years.",
+    beginnerTip: "If you have stocks losing money AND stocks making money, sell the losers to reduce tax on the winners. Buy them back after 1 day.",
+    color: "#7c3aed",
+  });
+
+  insights.push({
+    title: "Harvest ₹1.25L LTCG Annually", icon: "💎", potentialSaving: "Up to ₹15,625/year", difficulty: "Medium",
+    description: "Sell and rebuy equity holdings every year to book up to ₹1.25L in tax-free LTCG. Resets your cost basis higher.",
+    beginnerTip: "Each year, sell enough stocks to book ₹1.25L profit (tax-free!), then buy them back. Over time, this saves lakhs.",
+    color: "#00695c",
+  });
+
+  insights.push({
+    title: "Health Insurance for Family (80D)", icon: "🏥", potentialSaving: "Up to ₹31,200/year", difficulty: "Easy",
+    description: "Get health insurance for self (₹25K deduction) + parents (₹50K if senior) = total ₹75K deduction possible.",
+    beginnerTip: "₹75K deduction for health insurance = ₹23,400 saved at 30% slab. Plus you get actual health coverage!",
+    color: "#e65100",
+  });
+
+  if (personal && personal.grossIncome > 1500000) {
+    insights.push({
+      title: "Home Loan Double Benefit", icon: "🏠", potentialSaving: "Up to ₹1,06,600/year", difficulty: "Medium",
+      description: "Home loan interest (Sec 24: ₹2L) + principal (Sec 80C: ₹1.5L) = ₹3.5L total deduction under old regime.",
+      beginnerTip: "If you have or plan to get a home loan, the combined deduction of ₹3.5L can save over ₹1 lakh in taxes annually!",
+      color: "#0d47a1",
+    });
+  }
+
+  if (invest && invest.items.some(i => i.category.includes("Dividend") && i.amount > 200000)) {
+    insights.push({
+      title: "Switch to Growth Option in MFs", icon: "🔄", potentialSaving: "Defer tax until redemption", difficulty: "Easy",
+      description: "Dividend option forces annual tax. Growth option defers all tax until you sell — potentially at lower LTCG rates.",
+      beginnerTip: "Instead of getting dividends (taxed at your slab = up to 30%), choose growth option and let money compound. Pay only 12.5% LTCG when you eventually sell.",
+      color: "#ff6f00",
+    });
+  }
+
+  insights.push({
+    title: "Use New Regime If Deductions < ₹3.75L", icon: "⚖️", potentialSaving: "Varies", difficulty: "Easy",
+    description: "If your total deductions (80C+80D+HRA+home loan) are less than ~₹3.75L, the new regime's lower slab rates save more.",
+    beginnerTip: "Quick rule: if you don't have a home loan and your deductions are small, the new regime is almost always better!",
+    color: "#1565c0",
+  });
+
+  return insights;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REGIME COMPARISON VISUALIZATION DATA
+// ═══════════════════════════════════════════════════════════════
+
+export interface SlabVisualization {
+  slab: string;
+  oldRate: number;
+  newRate: number;
+  difference: number;
+}
+
+export function getSlabComparisonData(): SlabVisualization[] {
+  return [
+    { slab: "Up to ₹2.5L", oldRate: 0, newRate: 0, difference: 0 },
+    { slab: "₹2.5L – ₹4L", oldRate: 5, newRate: 0, difference: -5 },
+    { slab: "₹4L – ₹5L", oldRate: 5, newRate: 5, difference: 0 },
+    { slab: "₹5L – ₹8L", oldRate: 20, newRate: 5, difference: -15 },
+    { slab: "₹8L – ₹10L", oldRate: 20, newRate: 10, difference: -10 },
+    { slab: "₹10L – ₹12L", oldRate: 30, newRate: 10, difference: -20 },
+    { slab: "₹12L – ₹16L", oldRate: 30, newRate: 15, difference: -15 },
+    { slab: "₹16L – ₹20L", oldRate: 30, newRate: 20, difference: -10 },
+    { slab: "₹20L – ₹24L", oldRate: 30, newRate: 25, difference: -5 },
+    { slab: "Above ₹24L", oldRate: 30, newRate: 30, difference: 0 },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OFFICIAL TAX SOURCES — Government Portal Links
+// ═══════════════════════════════════════════════════════════════
+
+export interface OfficialTaxSource {
+  name: string;
+  url: string;
+  icon: string;
+  color: string;
+  description: string;
+  services: string[];
+}
+
+export const OFFICIAL_TAX_SOURCES: OfficialTaxSource[] = [
+  { name: "Income Tax India", url: "https://incometaxindia.gov.in", icon: "🏛️", color: "#0d47a1", description: "Official Income Tax e-Filing Portal", services: ["ITR Filing", "AIS/TIS", "Form 26AS", "Refund Status", "Tax Calculator"] },
+  { name: "GST Portal", url: "https://www.gst.gov.in", icon: "🏪", color: "#e65100", description: "Goods & Services Tax Network", services: ["GSTR Filing", "E-Way Bills", "ITC Matching", "GST Calculator", "Taxpayer Search"] },
+  { name: "CBDT", url: "https://www.incometaxindia.gov.in/pages/about-us/central-board-of-direct-taxes.aspx", icon: "⚖️", color: "#1565c0", description: "Central Board of Direct Taxes", services: ["Circulars", "Notifications", "Tax Treaties", "Forms"] },
+  { name: "RBI", url: "https://www.rbi.org.in", icon: "🏦", color: "#00695c", description: "Reserve Bank of India", services: ["Repo Rate", "Forex Rates", "NRI Taxation", "FEMA Guidelines"] },
+  { name: "SEBI", url: "https://www.sebi.gov.in", icon: "📊", color: "#7c3aed", description: "Securities Exchange Board of India", services: ["STT Rates", "F&O Rules", "MF Regulations", "Investor Protection"] },
+  { name: "India Budget", url: "https://www.indiabudget.gov.in", icon: "📜", color: "#c62828", description: "Union Budget Documents", services: ["Budget Speech", "Finance Bill", "Memorandum", "Tax Proposals"] },
+];
+
+// ═══════════════════════════════════════════════════════════════
 // FORMAT HELPERS
 // ═══════════════════════════════════════════════════════════════
 
@@ -670,4 +950,11 @@ export function formatINR(amount: number): string {
   if (Math.abs(amount) >= 100000) return `₹${(amount / 100000).toFixed(2)} L`;
   if (Math.abs(amount) >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
   return `₹${amount.toLocaleString()}`;
+}
+
+export function getDaysUntil(dateStr: string): number {
+  const target = new Date(dateStr);
+  const now = new Date();
+  const diff = target.getTime() - now.getTime();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
