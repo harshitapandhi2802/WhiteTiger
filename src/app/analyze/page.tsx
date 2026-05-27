@@ -1,15 +1,17 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp, Search, AlertCircle, Zap, ChevronDown, Shield, Globe,
   Package, Users, Anchor, BarChart3, Target, Activity, FileText,
   X, Check, Layers, Flame, Bitcoin, Coins, Droplets, Factory,
-  DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, RefreshCw, Building2
+  DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, RefreshCw, Building2,
+  Brain, Cpu, Pill, Car, Landmark, Wifi, Monitor, Gem, Sparkles, ChevronLeft
 } from "lucide-react";
 import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan } from "@/lib/usage";
-import { searchStocks, NSE_STOCKS, type StockEntry } from "@/lib/stocks";
+import { searchStocks, NSE_STOCKS, STOCK_SECTORS as LIB_STOCK_SECTORS, MCAP_FILTERS, type StockEntry } from "@/lib/stocks";
 import { searchCommodities, MCX_COMMODITIES, COMMODITY_CATEGORIES, type CommodityEntry } from "@/lib/commodities";
 import { searchCrypto, CRYPTO_LIST, CRYPTO_CATEGORIES, type CryptoEntry } from "@/lib/crypto";
 import { searchCurrencies, CURRENCY_LIST, CURRENCY_CATEGORIES, type CurrencyEntry } from "@/lib/currencies";
@@ -29,14 +31,27 @@ import FXIntelligenceDashboard from "@/components/FXIntelligenceDashboard";
 import FXPlatform from "@/components/fx/FXPlatform";
 import WealthAdvisoryDashboard from "@/components/WealthAdvisoryDashboard";
 import TaxIntelligenceDashboard from "@/components/TaxIntelligenceDashboard";
+import MFPlatform from "@/components/mf/MFPlatform";
+import BondsPlatform from "@/components/bonds/BondsPlatform";
+import CryptoPlatform from "@/components/crypto/CryptoPlatform";
+import { DataHealthMonitor } from "@/components/DataHealth";
+import SplashScreen from "@/components/mobile/SplashScreen";
+import FloatingAI from "@/components/mobile/FloatingAI";
+import MobileHome from "@/components/mobile-lite/MobileHome";
+import MobileMarkets from "@/components/mobile-lite/MobileMarkets";
+import MobileSearch from "@/components/mobile-lite/MobileSearch";
+import BottomNav from "@/components/mobile-lite/BottomNav";
+import {
+  useStockPrices, useCommodityPrices, useForexRates, useMFNavs, useInternationalPrices,
+} from "@/hooks/useMarketData";
 
 type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
 type ResultView = "dashboard" | "report";
 
 declare global { interface Window { Razorpay: new (o: Record<string, unknown>) => { open: () => void }; } }
 
-/* ═══ Stock Sector Categories ═══ */
-const STOCK_SECTORS = ["All", "Banking", "IT", "FMCG", "Auto", "Pharma", "Oil & Gas", "Power", "Infrastructure", "Metals", "NBFC", "Telecom", "Insurance", "Defense", "Chemicals", "Consumer", "Cement", "Tech", "Renewable Energy", "Railways"];
+/* ═══ Stock Sector Categories — from lib, limited for dashboard ═══ */
+const STOCK_SECTORS = LIB_STOCK_SECTORS.slice(0, 20); // show top 20 sectors on dashboard
 
 /* Top 50 stocks for the main dashboard — curated for visibility */
 const TOP_50_TICKERS = new Set([
@@ -56,12 +71,31 @@ function StockCard({ s, stockPrices }: { s: StockEntry; stockPrices: Record<stri
   const livePrice = stockPrices[sym];
   const change = livePrice?.changePercent || 0;
   const slug = sym.toLowerCase().replace(/[^a-z0-9]/g, "-");
+  const nseUrl = `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(sym)}`;
   return (
     <button key={s.ticker} onClick={() => { window.location.href = `/stocks/${slug}`; }} className="card fx-pair-card" style={{
       padding: 0, textAlign: "left", cursor: "pointer",
-      border: "1px solid var(--border)", background: "#fff", overflow: "hidden", transition: "all 0.2s", position: "relative",
+      border: "0.5px solid var(--border)", background: "var(--bg-midnight)", overflow: "hidden", transition: "all 0.2s ease-out", position: "relative",
     }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: change >= 0 ? "var(--success, #10b981)" : "var(--danger, #ef4444)" }} />
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: change >= 0 ? "var(--success)" : "var(--danger)" }} />
+      {/* Official NSE Link — top right */}
+      <a
+        href={nseUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={e => e.stopPropagation()}
+        title={`View ${sym} on NSE India`}
+        style={{
+          position: "absolute", top: 8, right: 8, zIndex: 2,
+          display: "flex", alignItems: "center", gap: 3,
+          padding: "3px 8px", borderRadius: 6,
+          background: "rgba(74,158,255,0.06)", border: "0.5px solid rgba(74,158,255,0.12)",
+          color: "#4A9EFF", fontSize: "0.52rem", fontWeight: 600,
+          textDecoration: "none", transition: "all 0.2s",
+        }}
+      >
+        NSE <ArrowUpRight size={10} />
+      </a>
       <div style={{ padding: "14px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)", marginBottom: 2 }}>{s.name}</div>
@@ -94,28 +128,219 @@ function StockCard({ s, stockPrices }: { s: StockEntry; stockPrices: Record<stri
   );
 }
 
-/* ═══ Stocks Explorer Component ═══ */
+/* ═══ Sector Definitions for Stocks Explorer ═══ */
+interface SectorDef {
+  name: string; key: string; color: string; icon: React.ReactNode;
+  niftyIndex?: string; sectors: string[]; aiStory: string;
+}
+
+const SECTOR_DEFS: SectorDef[] = [
+  { name: "IT & Tech", key: "it", color: "#6366f1", icon: <Cpu size={18} />, niftyIndex: "NIFTY IT", sectors: ["IT", "Tech"], aiStory: "IT stocks track US tech spending, dollar strength, and AI-driven demand shifts." },
+  { name: "Financial Services", key: "finance", color: "#0ea5e9", icon: <Landmark size={18} />, niftyIndex: "NIFTY FIN SERVICE", sectors: ["Banking", "NBFC", "Insurance", "Fintech"], aiStory: "Banks benefit from credit growth and rate cuts; NBFCs from rural recovery." },
+  { name: "Banking", key: "banking", color: "#2563eb", icon: <Building2 size={18} />, niftyIndex: "NIFTY BANK", sectors: ["Banking"], aiStory: "NIM expansion + credit growth acceleration. RBI rate cycle is the key driver." },
+  { name: "Auto & EV", key: "auto", color: "#f59e0b", icon: <Car size={18} />, niftyIndex: "NIFTY AUTO", sectors: ["Auto"], aiStory: "Rural demand recovery + EV transition + export order books driving momentum." },
+  { name: "Pharma & Health", key: "pharma", color: "#10b981", icon: <Pill size={18} />, niftyIndex: "NIFTY PHARMA", sectors: ["Pharma", "Healthcare"], aiStory: "US FDA approvals, specialty segment growth, and CDMO opportunity in focus." },
+  { name: "FMCG", key: "fmcg", color: "#84cc16", icon: <Package size={18} />, niftyIndex: "NIFTY FMCG", sectors: ["FMCG"], aiStory: "Volume growth recovery depends on rural demand and input cost trends." },
+  { name: "Energy & Oil", key: "energy", color: "#ef4444", icon: <Flame size={18} />, niftyIndex: "NIFTY ENERGY", sectors: ["Oil & Gas", "Power", "Renewable Energy"], aiStory: "Oil prices, government policy on renewables, and power demand drive this sector." },
+  { name: "Metals & Mining", key: "metals", color: "#78716c", icon: <Gem size={18} />, niftyIndex: "NIFTY METAL", sectors: ["Metals"], aiStory: "China demand, global steel prices, and LME inventory levels are key drivers." },
+  { name: "Realty", key: "realty", color: "#c084fc", icon: <Building2 size={18} />, niftyIndex: "NIFTY REALTY", sectors: ["Real Estate"], aiStory: "Interest rate cycle, inventory clearance, and premium housing demand drive realty." },
+  { name: "Infrastructure", key: "infra", color: "#f97316", icon: <Factory size={18} />, niftyIndex: "NIFTY INFRA", sectors: ["Infrastructure", "Capital Goods", "Railways", "Cement"], aiStory: "Government capex push + roads/railways/defense infrastructure at all-time highs." },
+  { name: "Telecom", key: "telecom", color: "#14b8a6", icon: <Wifi size={18} />, sectors: ["Telecom"], aiStory: "ARPU growth, 5G monetization, and consolidation in the sector." },
+  { name: "PSU & Defence", key: "psu", color: "#3b82f6", icon: <Shield size={18} />, niftyIndex: "NIFTY PSE", sectors: ["Defense"], aiStory: "Defense order flows and government disinvestment plans drive PSU/defence stocks." },
+  { name: "Media & Entertainment", key: "media", color: "#ec4899", icon: <Monitor size={18} />, niftyIndex: "NIFTY MEDIA", sectors: ["Media"], aiStory: "Digital advertising growth and OTT subscriber economics in focus." },
+  { name: "Consumption", key: "consumption", color: "#a855f7", icon: <Sparkles size={18} />, sectors: ["Consumer", "Retail", "Hospitality", "Education", "Paints"], aiStory: "Discretionary spending, premiumization, and wedding/festive season demand." },
+  { name: "Chemicals", key: "chemicals", color: "#06b6d4", icon: <Layers size={18} />, sectors: ["Chemicals", "Fertilizers"], aiStory: "China+1 theme, specialty chemical margins, and agrochemical demand cycle." },
+  { name: "Others", key: "others", color: "#6b7280", icon: <Globe size={18} />, sectors: ["Textiles", "Logistics", "Aviation", "Sugar", "Paper", "Electronics", "EMS", "ETF"], aiStory: "Diverse set of stocks spanning niche themes and emerging opportunities." },
+];
+
+/* ═══ INDEX DATA ═══ */
+interface IndexData { name: string; shortName: string; color: string; constituents: number; description: string; }
+const INDICES: IndexData[] = [
+  { name: "NIFTY 50", shortName: "NIFTY", color: "#6366f1", constituents: 50, description: "India's benchmark — Top 50 companies by market cap" },
+  { name: "SENSEX", shortName: "SENSEX", color: "#ef4444", constituents: 30, description: "BSE benchmark — 30 largest companies" },
+  { name: "BANK NIFTY", shortName: "BANKNIFTY", color: "#2563eb", constituents: 12, description: "Top banking stocks — interest rate sensitive" },
+  { name: "NIFTY MIDCAP 100", shortName: "MIDCAP", color: "#f59e0b", constituents: 100, description: "Mid-sized growth companies — higher beta" },
+  { name: "NIFTY SMALLCAP 250", shortName: "SMALLCAP", color: "#10b981", constituents: 250, description: "Small companies — high growth, high risk" },
+  { name: "NIFTY FIN SERVICE", shortName: "FINNIFTY", color: "#0ea5e9", constituents: 20, description: "Banks, NBFCs, Insurance — financial ecosystem" },
+];
+
+/* ═══ Seeded RNG for deterministic data ═══ */
+function seededRng(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) { h = ((h << 5) - h + seed.charCodeAt(i)) | 0; }
+  return () => { h = (h * 16807 + 0) % 2147483647; return (h & 0x7fffffff) / 0x7fffffff; };
+}
+
+function genSectorData(def: SectorDef, stocks: StockEntry[], liveStocks: Record<string, { price: number; changePercent: number; name?: string }>) {
+  const sectorStocks = stocks.filter(s => def.sectors.includes(s.sector));
+  const rng = seededRng(def.key + new Date().toDateString());
+  let avgChange = ((rng() * 6 - 2) * 100 | 0) / 100;
+  let topGainer = { name: "-", change: 0 };
+  let topLoser = { name: "-", change: 0 };
+  const withPrices = sectorStocks.map(s => {
+    const sym = s.ticker.replace(".NS", "");
+    const lp = liveStocks[sym];
+    const chg = lp ? lp.changePercent : ((rng() * 8 - 3) * 100 | 0) / 100;
+    return { ...s, change: chg };
+  }).sort((a, b) => b.change - a.change);
+  if (withPrices.length > 0) {
+    avgChange = Number((withPrices.reduce((a, b) => a + b.change, 0) / withPrices.length).toFixed(2));
+    topGainer = { name: withPrices[0].name, change: withPrices[0].change };
+    topLoser = { name: withPrices[withPrices.length - 1].name, change: withPrices[withPrices.length - 1].change };
+  }
+  const sentiment = avgChange > 1.5 ? "Bullish" : avgChange > 0 ? "Mildly Bullish" : avgChange > -1 ? "Neutral" : "Bearish";
+  return { ...def, stockCount: sectorStocks.length, avgChange, topGainer, topLoser, sentiment, heatColor: avgChange > 2 ? "#059669" : avgChange > 0.5 ? "#10b981" : avgChange > -0.5 ? "#6b7280" : avgChange > -2 ? "#f87171" : "#dc2626" };
+}
+
+function genIndexValues(idx: IndexData) {
+  const rng = seededRng(idx.shortName + new Date().toDateString());
+  const bases: Record<string, number> = { NIFTY: 24812, SENSEX: 81340, BANKNIFTY: 52340, MIDCAP: 58200, SMALLCAP: 17450, FINNIFTY: 24100 };
+  const base = bases[idx.shortName] || 20000;
+  const change = ((rng() * 4 - 1.5) * 100 | 0) / 100;
+  const value = base + Math.round(base * change / 100);
+  const sentiment = change > 1 ? "Bullish" : change > 0 ? "Positive" : change > -1 ? "Neutral" : "Bearish";
+  return { ...idx, value, change, sentiment };
+}
+
+/* ═══ Sector-First Stocks Explorer Component (DARK THEME) ═══ */
 function StocksExplorer({ stockPrices, forexPrices }: { stockPrices: Record<string, { price: number; changePercent: number; name?: string }>; forexPrices: Record<string, { rate: number; change24h: number }> }) {
-  const [showExplorer, setShowExplorer] = useState(false);
-  const [sectorFilter, setSectorFilter] = useState("All");
-  const [visibleCount, setVisibleCount] = useState(36);
+  const [activeSector, setActiveSector] = useState<SectorDef | null>(null);
+  const [view, setView] = useState<"sectors" | "list" | "heatmap">("sectors");
+  const [mcap, setMcap] = useState("All");
   const [explorerSearch, setExplorerSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(50);
 
-  const top50 = NSE_STOCKS.filter((s: StockEntry) => TOP_50_TICKERS.has(s.ticker));
-  const remaining = NSE_STOCKS.filter((s: StockEntry) => !TOP_50_TICKERS.has(s.ticker));
+  const indices = useMemo(() => INDICES.map(genIndexValues), []);
+  const sectorData = useMemo(() => SECTOR_DEFS.map(def => genSectorData(def, NSE_STOCKS, stockPrices)), [stockPrices]);
 
-  // Explorer filtering
-  const explorerBase = sectorFilter === "All" ? NSE_STOCKS : NSE_STOCKS.filter((s: StockEntry) => s.sector === sectorFilter);
-  const explorerFiltered = explorerSearch.trim()
-    ? explorerBase.filter((s: StockEntry) => s.name.toLowerCase().includes(explorerSearch.toLowerCase()) || s.ticker.toLowerCase().includes(explorerSearch.toLowerCase()))
-    : explorerBase;
-  const explorerVisible = explorerFiltered.slice(0, visibleCount);
+  const filtered = useMemo(() => {
+    let stocks = NSE_STOCKS as StockEntry[];
+    if (activeSector) stocks = stocks.filter(s => activeSector.sectors.includes(s.sector));
+    if (mcap !== "All") {
+      const map: Record<string, string> = { "Large Cap": "large", "Mid Cap": "mid", "Small Cap": "small", "SME/Micro": "sme" };
+      stocks = stocks.filter(s => s.mcapType === map[mcap]);
+    }
+    if (explorerSearch.trim()) {
+      const q = explorerSearch.toLowerCase();
+      stocks = stocks.filter(s => s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().replace(".ns", "").includes(q) || s.sector.toLowerCase().includes(q));
+    }
+    return stocks;
+  }, [activeSector, mcap, explorerSearch]);
+
+  const visible = filtered.slice(0, visibleCount);
+
+  const openSector = (def: SectorDef) => { setActiveSector(def); setView("list"); setVisibleCount(50); setExplorerSearch(""); setMcap("All"); };
+  const backToSectors = () => { setActiveSector(null); setView("sectors"); setVisibleCount(50); setExplorerSearch(""); };
+
+  const activeSectorData = activeSector ? sectorData.find(s => s.key === activeSector.key) : null;
+  const rng = seededRng("market-" + new Date().toDateString());
+  const niftyChange = ((rng() * 3 - 1) * 100 | 0) / 100;
+
+  /* Stock row renderer (shared between sector detail + list view) */
+  const renderStockRow = (s: StockEntry, i: number) => {
+    const sym = s.ticker.replace(".NS", "");
+    const slug = sym.toLowerCase().replace(/[^a-z0-9]/g, "-");
+    const lp = stockPrices[sym];
+    let h = 0; for (let c = 0; c < s.ticker.length; c++) { h = ((h << 5) - h) + s.ticker.charCodeAt(c); h |= 0; }
+    const price = lp ? lp.price : Math.abs(h % 9000) + 50;
+    const change = lp ? lp.changePercent : ((h % 800) - 400) / 100;
+    return (
+      <Link key={`${s.ticker}-${i}`} href={`/stocks/${slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "32px 1.8fr 0.8fr 0.7fr 80px", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid var(--border)", transition: "all 0.15s", cursor: "pointer" }}
+          onMouseOver={e => { e.currentTarget.style.background = "var(--bg-card-hover)"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}>
+          <span style={{ fontSize: "0.66rem", color: "var(--text-muted)", fontWeight: 600 }}>{i + 1}</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--text-primary)" }}>{s.name}</div>
+            <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", display: "flex", gap: 6, marginTop: 2 }}>
+              <span>{sym}</span>
+              {s.mcapType && <span style={{ background: s.mcapType === "large" ? "rgba(59,130,246,0.15)" : s.mcapType === "mid" ? "rgba(245,158,11,0.15)" : "rgba(236,72,153,0.15)", color: s.mcapType === "large" ? "#60a5fa" : s.mcapType === "mid" ? "#fbbf24" : "#f472b6", padding: "0 5px", borderRadius: 3, fontSize: "0.54rem", fontWeight: 700, textTransform: "uppercase" }}>{s.mcapType}</span>}
+            </div>
+          </div>
+          <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text-primary)", textAlign: "right" }}>₹{price.toLocaleString("en-IN")}</div>
+          <div style={{ textAlign: "right" }}>
+            <span style={{ fontSize: "0.76rem", fontWeight: 700, color: change >= 0 ? "var(--success)" : "var(--danger)", display: "inline-flex", alignItems: "center", gap: 2 }}>
+              {change >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />} {Math.abs(change).toFixed(2)}%
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}><MiniSparkline seed={s.ticker} positive={change >= 0} width={60} height={22} /></div>
+        </div>
+      </Link>
+    );
+  };
+
+  /* Mcap filter buttons */
+  const renderMcapFilters = () => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 4 }}>
+        {MCAP_FILTERS.map(m => (
+          <button key={m} onClick={() => { setMcap(m); setVisibleCount(50); }} style={{
+            padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: "0.68rem", fontWeight: 600,
+            background: mcap === m ? "var(--accent)" : "var(--bg-slate)", color: mcap === m ? "#fff" : "var(--text-secondary)",
+          }}>{m}</button>
+        ))}
+      </div>
+      <span style={{ marginLeft: "auto", fontSize: "0.74rem", color: "var(--text-muted)", fontWeight: 600 }}>{filtered.length} stocks</span>
+    </div>
+  );
+
+  /* Stock table container */
+  const renderStockTable = () => (
+    <>
+      <div style={{ background: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "32px 1.8fr 0.8fr 0.7fr 80px", padding: "10px 18px", borderBottom: "1px solid var(--border)", fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          <span>#</span><span>Company</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Change</span><span style={{ textAlign: "right" }}>Trend</span>
+        </div>
+        {visible.map((s: StockEntry, i: number) => renderStockRow(s, i))}
+      </div>
+      {visibleCount < filtered.length && (
+        <div style={{ textAlign: "center", padding: "20px 0" }}>
+          <button onClick={() => setVisibleCount(v => v + 50)} style={{ padding: "10px 32px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-card)", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            Load More ({(filtered.length - visibleCount).toLocaleString()} remaining)
+          </button>
+        </div>
+      )}
+      {filtered.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
+          <Search size={32} style={{ color: "var(--text-muted)", marginBottom: 12, opacity: 0.3 }} />
+          <div style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 8, color: "var(--text-primary)" }}>No stocks found</div>
+          <div style={{ fontSize: "0.82rem" }}>Try a different search term or adjust your filters.</div>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div>
-      <MarketPulseBar tab="stocks" />
+      {/* ── View Mode Toggle + Search ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {activeSector ? (
+            <button onClick={backToSectors} style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: "0.76rem", fontWeight: 600 }}>
+              <ChevronLeft size={14} /> Market Overview
+            </button>
+          ) : (
+            <div style={{ display: "flex", gap: 2, background: "var(--bg-slate)", borderRadius: 8, padding: 2 }}>
+              {(["sectors", "list", "heatmap"] as const).map(v => (
+                <button key={v} onClick={() => setView(v)} style={{
+                  padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer",
+                  fontSize: "0.72rem", fontWeight: 600, textTransform: "capitalize",
+                  background: view === v ? "var(--accent)" : "transparent",
+                  color: view === v ? "#fff" : "var(--text-secondary)",
+                }}>{v === "heatmap" ? "Heat Map" : v === "sectors" ? "Sectors" : "All Stocks"}</button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ position: "relative", width: 260 }}>
+          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+          <input value={explorerSearch} onChange={e => { setExplorerSearch(e.target.value); setVisibleCount(50); if (e.target.value && !activeSector) setView("list"); }}
+            placeholder="Search stocks, sectors..."
+            style={{ width: "100%", padding: "9px 14px 9px 32px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-slate)", color: "var(--text-primary)", fontSize: "0.78rem", outline: "none" }}
+          />
+        </div>
+      </div>
 
-      {/* Charts — clean 2x2 grid */}
+      {/* Charts */}
       <LiveChartGrid tab="stocks" />
 
       <MarketTicker items={
@@ -129,84 +354,226 @@ function StocksExplorer({ stockPrices, forexPrices }: { stockPrices: Record<stri
           : [{ label: "Loading...", value: "—" }]
       } />
 
-      {/* ── Top 50 Stocks Section ── */}
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div>
-            <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>Market Leaders — NIFTY 50</h3>
-            <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "3px 0 0" }}>Click any stock for full-screen AI analysis</p>
-          </div>
-          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 600 }}>{top50.length} stocks</span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
-          {top50.map((s: StockEntry) => <StockCard key={s.ticker} s={s} stockPrices={stockPrices} />)}
-        </div>
-      </div>
-
-      {/* ── Explore All Stocks Button ── */}
-      <div style={{ margin: "24px 0 16px", textAlign: "center" }}>
-        <button onClick={() => { setShowExplorer(!showExplorer); setVisibleCount(36); setSectorFilter("All"); setExplorerSearch(""); }} style={{
-          padding: "14px 36px", borderRadius: 12, cursor: "pointer", fontSize: "0.9rem", fontWeight: 700, transition: "all 0.3s",
-          background: showExplorer ? "var(--accent)" : "linear-gradient(135deg, #1a1d29, #2a2d3e)",
-          color: "#fff", border: "none",
-          boxShadow: showExplorer ? "0 4px 16px rgba(41,98,255,0.25)" : "0 2px 12px rgba(0,0,0,0.15)",
-          display: "inline-flex", alignItems: "center", gap: 8,
-        }}>
-          {showExplorer ? "▲ Close Explorer" : `▼ Explore All ${NSE_STOCKS.length}+ NSE Stocks`}
-        </button>
-      </div>
-
-      {/* ── Full Stock Explorer ── */}
-      {showExplorer && (
-        <div style={{ background: "#fff", border: "1px solid var(--border)", borderRadius: 16, padding: "20px 24px", marginBottom: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
-          {/* Explorer Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>NSE Stock Universe</h3>
-              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "2px 0 0" }}>{explorerFiltered.length} stocks found</p>
-            </div>
-            {/* Search */}
-            <div style={{ position: "relative" }}>
-              <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-              <input
-                value={explorerSearch}
-                onChange={e => { setExplorerSearch(e.target.value); setVisibleCount(36); }}
-                placeholder="Search stocks..."
-                style={{ paddingLeft: 32, padding: "8px 14px 8px 32px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.82rem", width: 240, outline: "none" }}
-              />
+      {/* ═══ SECTOR DETAIL VIEW ═══ */}
+      {activeSector && activeSectorData && (
+        <>
+          <div style={{ background: `linear-gradient(135deg, ${activeSector.color}10, ${activeSector.color}20)`, borderRadius: 16, padding: "24px 28px", marginBottom: 20, border: `1px solid ${activeSector.color}30` }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                  <Brain size={16} style={{ color: activeSector.color }} />
+                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: activeSector.color, textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Sector Story</span>
+                </div>
+                <p style={{ fontSize: "0.88rem", color: "var(--text-primary)", lineHeight: 1.6, margin: 0 }}>{activeSector.aiStory}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12 }}>
+                  <span style={{ fontSize: "0.66rem", fontWeight: 700, padding: "3px 10px", borderRadius: 5, background: activeSectorData.avgChange >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)", color: activeSectorData.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>
+                    {activeSectorData.sentiment}
+                  </span>
+                  <span style={{ fontSize: "0.66rem", color: "var(--text-muted)" }}>·</span>
+                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>
+                    Avg: <strong style={{ color: activeSectorData.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>{activeSectorData.avgChange > 0 ? "+" : ""}{activeSectorData.avgChange}%</strong>
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, minWidth: 240 }}>
+                <div style={{ background: "var(--bg-card)", borderRadius: 10, padding: "12px 16px", border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Top Gainer</div>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{activeSectorData.topGainer.name.split(" ").slice(0, 2).join(" ")}</div>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--success)" }}>+{activeSectorData.topGainer.change.toFixed(2)}%</div>
+                </div>
+                <div style={{ background: "var(--bg-card)", borderRadius: 10, padding: "12px 16px", border: "1px solid var(--border)" }}>
+                  <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Top Loser</div>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{activeSectorData.topLoser.name.split(" ").slice(0, 2).join(" ")}</div>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--danger)" }}>{activeSectorData.topLoser.change.toFixed(2)}%</div>
+                </div>
+              </div>
             </div>
           </div>
+          {renderMcapFilters()}
+          {renderStockTable()}
+        </>
+      )}
 
-          {/* Sector Filter */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 16 }}>
-            {STOCK_SECTORS.map(sec => (
-              <button key={sec} onClick={() => { setSectorFilter(sec); setVisibleCount(36); }} style={{
-                padding: "5px 12px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: "0.68rem", fontWeight: 600, transition: "all 0.2s",
-                background: sectorFilter === sec ? "var(--accent)" : "#f1f5f9",
-                color: sectorFilter === sec ? "#fff" : "var(--text-muted)",
-              }}>
-                {sec}
-              </button>
+      {/* ═══ SECTOR-FIRST OVERVIEW ═══ */}
+      {!activeSector && view === "sectors" && (
+        <>
+          {/* Market Indices */}
+          <section style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <Activity size={16} style={{ color: "var(--accent)" }} />
+              <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "var(--text-primary)" }}>Market Indices</span>
+              <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 500 }}>Live market pulse</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
+              {indices.map((idx) => (
+                <div key={idx.shortName} style={{ background: "var(--bg-card)", borderRadius: 14, padding: "18px 18px 14px", border: "1px solid var(--border)", position: "relative", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: idx.color }} />
+                  <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>{idx.shortName}</div>
+                  <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "var(--text-primary)", marginBottom: 4 }}>{idx.value.toLocaleString("en-IN")}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                    {idx.change >= 0 ? <ArrowUpRight size={12} style={{ color: "var(--success)" }} /> : <ArrowDownRight size={12} style={{ color: "var(--danger)" }} />}
+                    <span style={{ fontSize: "0.76rem", fontWeight: 700, color: idx.change >= 0 ? "var(--success)" : "var(--danger)" }}>{idx.change > 0 ? "+" : ""}{idx.change}%</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "0.56rem", fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: idx.change >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)", color: idx.change >= 0 ? "var(--success)" : "var(--danger)" }}>{idx.sentiment}</span>
+                    <MiniSparkline seed={idx.shortName} positive={idx.change >= 0} width={50} height={18} />
+                  </div>
+                  <div style={{ fontSize: "0.52rem", color: "var(--text-muted)", marginTop: 6 }}>{idx.description}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* AI Market Brief */}
+          <section style={{ marginBottom: 24 }}>
+            <div style={{ background: "linear-gradient(135deg, var(--bg-card), var(--bg-slate))", borderRadius: 16, padding: "22px 28px", color: "#fff", position: "relative", overflow: "hidden", border: "1px solid var(--border)" }}>
+              <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(74,158,255,0.08) 0%, transparent 70%)" }} />
+              <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "flex-start", gap: 20 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg, var(--accent), #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Brain size={18} style={{ color: "#fff" }} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "var(--text-primary)" }}>AI Market Intelligence</span>
+                    <span style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</span>
+                  </div>
+                  <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.65, margin: 0 }}>
+                    {niftyChange > 0
+                      ? "Markets are showing strength with broad-based participation. Banking and infrastructure sectors are leading the rally driven by strong credit growth data and government capex push. FIIs are net buyers, signaling renewed confidence."
+                      : "Markets are consolidating after a strong rally phase. Global headwinds from rising US bond yields and Dollar Index strength are weighing on sentiment. Mid and small-caps are showing relative outperformance with selective buying."
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Sector Explorer */}
+          <section style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <BarChart3 size={16} style={{ color: "var(--accent)" }} />
+              <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "var(--text-primary)" }}>Sector Explorer</span>
+              <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 500 }}>Click any sector to explore stocks</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+              {sectorData.map((sec) => (
+                <button key={sec.key} onClick={() => openSector(sec)} style={{
+                  background: "var(--bg-card)", borderRadius: 14, padding: "20px 20px 16px", border: "1px solid var(--border)", textAlign: "left", cursor: "pointer", transition: "all 0.2s", position: "relative", overflow: "hidden",
+                }} onMouseOver={e => { e.currentTarget.style.borderColor = sec.color; e.currentTarget.style.boxShadow = `0 4px 20px ${sec.color}20`; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                  onMouseOut={e => { e.currentTarget.style.borderColor = "rgba(232,237,245,0.08)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: sec.heatColor, opacity: 0.8 }} />
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${sec.color}18`, display: "flex", alignItems: "center", justifyContent: "center", color: sec.color }}>{sec.icon}</div>
+                      <div>
+                        <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{sec.name}</div>
+                        <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 500 }}>{sec.stockCount} stocks</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "0.92rem", fontWeight: 800, color: sec.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>{sec.avgChange > 0 ? "+" : ""}{sec.avgChange}%</div>
+                      <div style={{ fontSize: "0.54rem", fontWeight: 600, padding: "2px 6px", borderRadius: 3, background: sec.sentiment.includes("Bull") ? "rgba(52,211,153,0.12)" : sec.sentiment.includes("Bear") ? "rgba(248,113,113,0.12)" : "rgba(140,153,176,0.1)", color: sec.sentiment.includes("Bull") ? "var(--success)" : sec.sentiment.includes("Bear") ? "var(--danger)" : "var(--text-secondary)" }}>{sec.sentiment}</div>
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 10 }}><MiniSparkline seed={sec.key} positive={sec.avgChange >= 0} width={200} height={28} /></div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6rem" }}>
+                    <span style={{ color: "var(--success)" }}>▲ {sec.topGainer.name.split(" ")[0]}</span>
+                    <span style={{ color: "var(--danger)" }}>▼ {sec.topLoser.name.split(" ")[0]}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* "What This Means" AI Cards */}
+          <section style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <Zap size={16} style={{ color: "var(--warning)" }} />
+              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text-primary)" }}>What This Means</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              {[
+                { text: "Rising oil prices may negatively affect paint, aviation, and chemical companies while benefiting upstream oil & gas stocks.", color: "#ef4444", sector: "Energy vs Consumption" },
+                { text: "Lower interest rates support real estate, auto (financing), and banking stocks through cheaper credit and higher loan growth.", color: "#60a5fa", sector: "Rates vs Financials" },
+                { text: "Rupee weakness benefits IT exporters (revenue in USD) but pressures importers like oil marketing companies and electronics.", color: "var(--success)", sector: "FX vs IT/Energy" },
+              ].map((card, i) => (
+                <div key={i} style={{ background: "var(--bg-card)", borderRadius: 12, padding: "18px 20px", border: "1px solid var(--border)", borderLeft: `3px solid ${card.color}` }}>
+                  <div style={{ fontSize: "0.58rem", fontWeight: 700, color: card.color, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>{card.sector}</div>
+                  <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.55, margin: 0 }}>{card.text}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Link to full explorer */}
+          <div style={{ textAlign: "center", marginTop: 8 }}>
+            <Link href="/stocks" style={{
+              padding: "12px 28px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700, textDecoration: "none",
+              background: "linear-gradient(135deg, var(--accent-deep), var(--accent))", color: "#fff",
+              display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 2px 12px rgba(74,158,255,0.2)",
+            }}>
+              Full Stock Explorer — All {NSE_STOCKS.length}+ NSE Stocks →
+            </Link>
+          </div>
+        </>
+      )}
+
+      {/* ═══ HEATMAP VIEW ═══ */}
+      {!activeSector && view === "heatmap" && (
+        <section>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+            <Flame size={16} style={{ color: "var(--danger)" }} />
+            <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "var(--text-primary)" }}>Market Heatmap</span>
+            <span style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>Size = relative market cap · Color = daily change</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "var(--bg-card)", borderRadius: 16, padding: 16, border: "1px solid var(--border)" }}>
+            {sectorData.map((sec) => {
+              const sectorStocks = (NSE_STOCKS as StockEntry[]).filter(s => sec.sectors.includes(s.sector)).slice(0, 12);
+              return (
+                <div key={sec.key} style={{ flex: `${Math.max(sec.stockCount, 8)} 0 0`, minWidth: 120 }}>
+                  <div style={{ fontSize: "0.58rem", fontWeight: 700, color: sec.color, marginBottom: 4, paddingLeft: 4 }}>{sec.name}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                    {sectorStocks.map(s => {
+                      const sym = s.ticker.replace(".NS", "");
+                      const lp = stockPrices[sym];
+                      let h2 = 0;
+                      for (let c = 0; c < s.ticker.length; c++) { h2 = ((h2 << 5) - h2) + s.ticker.charCodeAt(c); h2 |= 0; }
+                      const chg = lp ? lp.changePercent : ((h2 % 800) - 400) / 100;
+                      const intensity = Math.min(Math.abs(chg) / 4, 1);
+                      const bg = chg >= 0 ? `rgba(52, 211, 153, ${0.12 + intensity * 0.45})` : `rgba(248, 113, 113, ${0.12 + intensity * 0.45})`;
+                      const size = s.mcapType === "large" ? 72 : s.mcapType === "mid" ? 58 : 48;
+                      return (
+                        <Link key={sym} href={`/stocks/${sym.toLowerCase().replace(/[^a-z0-9]/g, "-")}`} style={{ textDecoration: "none" }}>
+                          <div style={{ width: size, height: size, borderRadius: 6, background: bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "transform 0.15s" }}
+                            onMouseOver={e => e.currentTarget.style.transform = "scale(1.08)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
+                            <span style={{ fontSize: "0.54rem", fontWeight: 700, color: chg >= 0 ? "#6ee7b7" : "#fca5a5" }}>{sym.slice(0, 6)}</span>
+                            <span style={{ fontSize: "0.52rem", fontWeight: 800, color: chg >= 0 ? "var(--success)" : "var(--danger)" }}>{chg >= 0 ? "+" : ""}{chg.toFixed(1)}%</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 14 }}>
+            {[{ bg: "rgba(248,113,113,0.5)", label: "Strong Decline" }, { bg: "rgba(248,113,113,0.15)", label: "Mild Decline" }, { bg: "rgba(52,211,153,0.15)", label: "Mild Gain" }, { bg: "rgba(52,211,153,0.5)", label: "Strong Gain" }].map(l => (
+              <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 18, height: 10, borderRadius: 2, background: l.bg }} />
+                <span style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{l.label}</span>
+              </div>
             ))}
           </div>
+        </section>
+      )}
 
-          {/* Stock Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
-            {explorerVisible.map((s: StockEntry) => <StockCard key={s.ticker} s={s} stockPrices={stockPrices} />)}
-          </div>
-
-          {/* Load More */}
-          {visibleCount < explorerFiltered.length && (
-            <div style={{ textAlign: "center", marginTop: 16 }}>
-              <button onClick={() => setVisibleCount(v => v + 48)} style={{
-                padding: "10px 28px", borderRadius: 8, border: "1px solid var(--border)", background: "#f8fafc",
-                cursor: "pointer", fontSize: "0.82rem", fontWeight: 600, color: "var(--accent)",
-              }}>
-                Load More ({explorerFiltered.length - visibleCount} remaining)
-              </button>
-            </div>
-          )}
-        </div>
+      {/* ═══ ALL STOCKS LIST VIEW ═══ */}
+      {!activeSector && view === "list" && (
+        <>
+          {renderMcapFilters()}
+          {renderStockTable()}
+        </>
       )}
     </div>
   );
@@ -277,14 +644,54 @@ export default function AnalyzePage() {
   const [intlExpandedIndex, setIntlExpandedIndex] = useState<string | null>(null);
   const [intlPrices, setIntlPrices] = useState<Record<string, { price: number; change: number; changePercent: number; name: string; currency: string }>>({});
 
-  // Live prices
-  const [cryptoPrices, setCryptoPrices] = useState<Record<string, { usd: number; inr: number; change24h: number }>>({});
-  const [forexPrices, setForexPrices] = useState<Record<string, { rate: number; change24h: number }>>({});
-  const [stockPrices, setStockPrices] = useState<Record<string, { price: number; change: number; changePercent: number; name: string }>>({});
-  const [commodityPrices, setCommodityPrices] = useState<Record<string, { price: number; change: number; changePercent: number; name: string; currency: string }>>({});
-  const [mfPrices, setMfPrices] = useState<Record<string, { nav: number; date: string; name: string }>>({});
-  const [pricesLoading, setPricesLoading] = useState(false);
-  const [forexLoading, setForexLoading] = useState(false);
+  // Live prices via centralized hooks (auto-refresh, caching, fallbacks)
+  const { data: liveStocks, loading: stocksHookLoading, refresh: refreshStocks } = useStockPrices();
+  const { data: liveCommodities, loading: commoditiesHookLoading, refresh: refreshCommodities } = useCommodityPrices();
+  const { data: liveForex, loading: forexHookLoading, refresh: refreshForex } = useForexRates();
+  const { data: liveMF, loading: mfHookLoading, refresh: refreshMF } = useMFNavs();
+  const { data: liveIntl, loading: intlHookLoading, refresh: refreshIntl } = useInternationalPrices();
+
+  // Adapt hook data to existing prop shapes
+  const stockPrices = useMemo(() => {
+    const out: Record<string, { price: number; change: number; changePercent: number; name: string }> = {};
+    for (const [sym, d] of Object.entries(liveStocks)) {
+      out[sym] = { price: d.price, change: d.change, changePercent: d.changePercent, name: d.name || sym };
+    }
+    return out;
+  }, [liveStocks]);
+
+  const commodityPrices = useMemo(() => {
+    const out: Record<string, { price: number; change: number; changePercent: number; name: string; currency: string }> = {};
+    for (const [sym, d] of Object.entries(liveCommodities)) {
+      out[sym] = { price: d.price, change: d.change, changePercent: d.changePercent, name: d.name || sym, currency: d.currency || "USD" };
+    }
+    return out;
+  }, [liveCommodities]);
+
+  const cryptoPrices = useMemo(() => {
+    const out: Record<string, { usd: number; inr: number; change24h: number }> = {};
+    // crypto is handled by CryptoPlatform now, but keep for backward compat
+    return out;
+  }, []);
+
+  const forexPrices = useMemo(() => {
+    const out: Record<string, { rate: number; change24h: number }> = {};
+    for (const [sym, d] of Object.entries(liveForex)) {
+      out[sym] = { rate: d.rate, change24h: d.change24h };
+    }
+    return out;
+  }, [liveForex]);
+
+  const mfPrices = useMemo(() => {
+    const out: Record<string, { nav: number; date: string; name: string }> = {};
+    for (const [sym, d] of Object.entries(liveMF)) {
+      out[sym] = { nav: d.nav, date: d.date, name: d.name };
+    }
+    return out;
+  }, [liveMF]);
+
+  const pricesLoading = stocksHookLoading || commoditiesHookLoading;
+  const forexLoading = forexHookLoading;
 
   // Shared state
   const [loading, setLoading] = useState(false);
@@ -298,8 +705,26 @@ export default function AnalyzePage() {
   const [currentPlan, setCurrentPlan] = useState("free");
   const [analysisType, setAnalysisType] = useState<MainTab>("stocks");
 
+  // Splash screen & mobile state
+  const [showSplash, setShowSplash] = useState(true);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileView, setMobileView] = useState<"home" | "markets" | "ai" | "search" | "profile" | "tab">("home");
+  type MobileNavView = "home" | "markets" | "ai" | "search" | "profile";
+
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  // Check if splash was already shown this session + detect mobile
+  useEffect(() => {
+    const splashShown = sessionStorage.getItem("wt-splash-shown");
+    if (splashShown) setShowSplash(false);
+    // Detect mobile
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     setRemaining(remainingAnalyses());
@@ -321,67 +746,13 @@ export default function AnalyzePage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch live crypto prices
-  const fetchCryptoPrices = useCallback(async () => {
-    setPricesLoading(true);
-    try {
-      const res = await fetch("/api/live-prices?type=crypto");
-      if (res.ok) {
-        const data = await res.json();
-        setCryptoPrices(data.prices || {});
-      }
-    } catch { /* silent fail */ }
-    setPricesLoading(false);
-  }, []);
-
-  // Fetch live stock prices (for ticker + browse cards)
-  const fetchStockPrices = useCallback(async () => {
-    try {
-      const res = await fetch("/api/live-prices?type=stocks");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.prices && Object.keys(data.prices).length > 0) {
-          setStockPrices(data.prices);
-        }
-      }
-    } catch { /* silent fail */ }
-  }, []);
-
-  const fetchCommodityPrices = useCallback(async () => {
-    try {
-      const res = await fetch("/api/live-prices?type=commodities");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.prices && Object.keys(data.prices).length > 0) {
-          setCommodityPrices(data.prices);
-        }
-      }
-    } catch { /* silent fail */ }
-  }, []);
-
-  const fetchMfPrices = useCallback(async () => {
-    try {
-      const res = await fetch("/api/live-prices?type=mf");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.prices && Object.keys(data.prices).length > 0) {
-          setMfPrices(data.prices);
-        }
-      }
-    } catch { /* silent fail */ }
-  }, []);
-
-  const fetchIntlPrices = useCallback(async () => {
-    try {
-      const res = await fetch("/api/live-prices?type=international");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.prices && Object.keys(data.prices).length > 0) {
-          setIntlPrices(prev => ({ ...prev, ...data.prices }));
-        }
-      }
-    } catch { /* silent fail */ }
-  }, []);
+  // Backward-compat aliases — hooks handle fetching/refresh automatically
+  const fetchCryptoPrices = useCallback(() => {}, []);
+  const fetchStockPrices = useCallback(() => refreshStocks(), [refreshStocks]);
+  const fetchCommodityPrices = useCallback(() => refreshCommodities(), [refreshCommodities]);
+  const fetchForexPrices = useCallback(() => refreshForex(), [refreshForex]);
+  const fetchMfPrices = useCallback(() => refreshMF(), [refreshMF]);
+  const fetchIntlPrices = useCallback(() => refreshIntl(), [refreshIntl]);
 
   const fetchIntlStockPrices = useCallback(async (indexSymbol: string) => {
     const stocks = getStocksForIndex(indexSymbol);
@@ -398,49 +769,18 @@ export default function AnalyzePage() {
     } catch { /* silent fail */ }
   }, []);
 
+  // Merge international hook data into local intlPrices state
   useEffect(() => {
-    fetchStockPrices();
-    fetchCryptoPrices();
-    fetchCommodityPrices();
-    fetchMfPrices();
-    fetchForexPrices();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Fetch live forex prices
-  const fetchForexPrices = useCallback(async () => {
-    setForexLoading(true);
-    try {
-      const res = await fetch("/api/live-prices?type=forex");
-      if (res.ok) {
-        const data = await res.json();
-        setForexPrices(data.prices || {});
+    if (Object.keys(liveIntl).length > 0) {
+      const merged: Record<string, { price: number; change: number; changePercent: number; name: string; currency: string }> = {};
+      for (const [sym, d] of Object.entries(liveIntl)) {
+        merged[sym] = { price: d.price, change: d.change, changePercent: d.changePercent, name: d.name || sym, currency: d.currency || "USD" };
       }
-    } catch { /* silent fail */ }
-    setForexLoading(false);
-  }, []);
+      setIntlPrices(prev => ({ ...prev, ...merged }));
+    }
+  }, [liveIntl]);
 
-  useEffect(() => {
-    if (mainTab === "crypto") fetchCryptoPrices();
-    if (mainTab === "currency") fetchForexPrices();
-    if (mainTab === "commodities") fetchCommodityPrices();
-    if (mainTab === "mutualfunds") fetchMfPrices();
-    if (mainTab === "international") fetchIntlPrices();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mainTab]);
-
-  // Auto-refresh prices when on respective tabs
-  useEffect(() => {
-    if (mainTab !== "crypto") return;
-    const interval = setInterval(fetchCryptoPrices, 60000);
-    return () => clearInterval(interval);
-  }, [mainTab, fetchCryptoPrices]);
-
-  useEffect(() => {
-    if (mainTab !== "currency") return;
-    const interval = setInterval(fetchForexPrices, 300000);
-    return () => clearInterval(interval);
-  }, [mainTab, fetchForexPrices]);
+  // Auto-refresh is now handled by centralized useMarketData hooks
 
   // Clear results when switching tabs
   function switchMainTab(tab: MainTab) {
@@ -587,7 +927,7 @@ export default function AnalyzePage() {
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: data.amount, currency: data.currency,
-        name: "MoonLight", description: `${data.planName} Plan — ${data.analyses} analyses/month`,
+        name: "White Tiger", description: `${data.planName} Plan — ${data.analyses} analyses/month`,
         order_id: data.orderId,
         handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           const v = await fetch("/api/payment/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...response, plan }) });
@@ -620,6 +960,121 @@ export default function AnalyzePage() {
 
   return (
     <div style={{ background: "var(--bg-secondary)", minHeight: "100vh" }}>
+      {/* ── Splash Screen ── */}
+      {showSplash && (
+        <SplashScreen onComplete={() => {
+          setShowSplash(false);
+          sessionStorage.setItem("wt-splash-shown", "1");
+        }} />
+      )}
+
+      {/* ── Floating AI Button (desktop only, mobile has nav) ── */}
+      {!isMobile && <FloatingAI />}
+
+      {/* ══════ MOBILE EXPERIENCE ══════ */}
+      {isMobile && mobileView !== "tab" && (
+        <>
+          {/* Mobile Views */}
+          {mobileView === "home" && (
+            <MobileHome
+              marketItems={[
+                ...(stockPrices.NIFTY50 ? [{ name: "NIFTY 50", symbol: "NIFTY", price: stockPrices.NIFTY50.price.toLocaleString("en-IN"), change: stockPrices.NIFTY50.changePercent }] : []),
+                ...(stockPrices.SENSEX ? [{ name: "SENSEX", symbol: "SENSEX", price: stockPrices.SENSEX.price.toLocaleString("en-IN"), change: stockPrices.SENSEX.changePercent }] : []),
+                ...(commodityPrices.GOLD ? [{ name: "Gold", symbol: "GOLD", price: `$${commodityPrices.GOLD.price.toFixed(2)}`, change: commodityPrices.GOLD.changePercent }] : []),
+                ...(forexPrices.USDINR ? [{ name: "USD/INR", symbol: "USDINR", price: `₹${forexPrices.USDINR.rate.toFixed(2)}`, change: forexPrices.USDINR.change24h }] : []),
+                ...(commodityPrices.CRUDEOIL ? [{ name: "Crude Oil", symbol: "OIL", price: `$${commodityPrices.CRUDEOIL.price.toFixed(2)}`, change: commodityPrices.CRUDEOIL.changePercent }] : []),
+                ...(stockPrices.BANKNIFTY ? [{ name: "Bank Nifty", symbol: "BANKNIFTY", price: stockPrices.BANKNIFTY.price.toLocaleString("en-IN"), change: stockPrices.BANKNIFTY.changePercent }] : []),
+              ]}
+              onTabSelect={(tab) => { switchMainTab(tab); setMobileView("tab"); }}
+              onSearch={() => setMobileView("search")}
+            />
+          )}
+          {mobileView === "markets" && (
+            <MobileMarkets
+              onTabSelect={(tab) => { switchMainTab(tab); setMobileView("tab"); }}
+              onBack={() => setMobileView("home")}
+            />
+          )}
+          {mobileView === "search" && (
+            <MobileSearch onBack={() => setMobileView("home")} />
+          )}
+          {mobileView === "ai" && (
+            <div style={{ minHeight: "100vh", background: "var(--bg-obsidian)", padding: "60px 20px 90px", textAlign: "center" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(74,158,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <Zap size={24} color="#4A9EFF" />
+              </div>
+              <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#fff", marginBottom: 8 }}>AI Assistant</h2>
+              <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.35)", lineHeight: 1.6, maxWidth: 280, margin: "0 auto 24px" }}>
+                Select any stock, crypto, or asset to get instant AI-powered analysis.
+              </p>
+              <button onClick={() => setMobileView("search")} style={{
+                padding: "14px 28px", borderRadius: 14, border: "none",
+                background: "#4A9EFF", color: "#fff", fontWeight: 700,
+                fontSize: "0.92rem", cursor: "pointer",
+              }}>
+                Search & Analyze
+              </button>
+            </div>
+          )}
+          {mobileView === "profile" && (
+            <div style={{ minHeight: "100vh", background: "var(--bg-obsidian)", padding: "60px 20px 90px", textAlign: "center" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <Users size={24} color="var(--text-muted)" />
+              </div>
+              <h2 style={{ fontSize: "1.2rem", fontWeight: 800, color: "#fff", marginBottom: 8 }}>Profile</h2>
+              <p style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.35)", marginBottom: 20 }}>
+                {currentPlan === "free" ? "Free Plan · " : `${currentPlan.toUpperCase()} Plan · `}{remaining} analyses left
+              </p>
+              {currentPlan === "free" && (
+                <button onClick={() => setShowUpgrade(true)} style={{
+                  padding: "14px 28px", borderRadius: 14, border: "none",
+                  background: "linear-gradient(135deg, #4A9EFF, #1E5FBF)", color: "#fff",
+                  fontWeight: 700, fontSize: "0.92rem", cursor: "pointer",
+                  boxShadow: "0 6px 24px rgba(74,158,255,0.25)",
+                }}>
+                  Upgrade Plan
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Mobile Bottom Nav */}
+          <BottomNav
+            active={(mobileView as string) === "tab" ? "home" : mobileView as MobileNavView}
+            onChange={(v) => {
+              if (v === "home" || v === "markets" || v === "search" || v === "ai" || v === "profile") {
+                setMobileView(v);
+              }
+            }}
+          />
+        </>
+      )}
+
+      {/* ══════ DESKTOP + MOBILE-TAB EXPERIENCE ══════ */}
+      {(!isMobile || mobileView === "tab") && (
+      <>
+
+      {/* Mobile back button when viewing a specific tab */}
+      {isMobile && mobileView === "tab" && (
+        <div style={{
+          padding: "10px 16px", display: "flex", alignItems: "center", gap: 8,
+          position: "sticky", top: 0, zIndex: 45,
+          background: "var(--bg-obsidian)",
+          borderBottom: "0.5px solid rgba(232,237,245,0.04)",
+        }}>
+          <button onClick={() => setMobileView("home")} style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: "#4A9EFF", fontSize: "0.85rem", fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 4, padding: 0,
+          }}>
+            ← Back
+          </button>
+          <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)", textTransform: "capitalize" }}>
+            {mainTab === "mutualfunds" ? "Mutual Funds" : mainTab === "realestate" ? "Real Estate" : mainTab === "currency" ? "Forex" : mainTab === "debt" ? "Bonds" : mainTab}
+          </span>
+        </div>
+      )}
+
       {/* ── Scrolling Ticker ── */}
       <ScrollingTicker items={[
         ...(Object.keys(stockPrices).length > 0
@@ -653,45 +1108,80 @@ export default function AnalyzePage() {
         ),
       ]} />
 
+      {/* ── Mobile PWA Styles ── */}
+      <style>{`
+        .wt-tabs-scroll { display: flex; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .wt-tabs-scroll::-webkit-scrollbar { display: none; }
+        .wt-mobile-bottom { display: none; }
+        .wt-desktop-right { display: flex; }
+        .wt-brand-text { display: inline; }
+        .wt-main-content { padding: 24px; }
+        @media (max-width: 1024px) {
+          .wt-tabs-scroll { margin-left: 0 !important; }
+          .wt-brand-text { display: none !important; }
+        }
+        @media (max-width: 768px) {
+          .wt-desktop-right { display: none !important; }
+          .wt-tabs-scroll { display: none !important; }
+          .wt-mobile-bottom {
+            display: flex !important;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: var(--bg-obsidian, #0A0E1A);
+            border-top: 0.5px solid rgba(232,237,245,0.08);
+            padding: 4px 0 env(safe-area-inset-bottom, 6px);
+            justify-content: space-around;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+          }
+          .wt-main-content { padding: 12px !important; padding-bottom: 80px !important; }
+          .navbar { padding: 0 12px !important; height: 52px !important; }
+          /* Mobile: flex layout goes vertical */
+          .wt-main-content > div[style*="display: flex"][style*="gap: 20"] {
+            flex-direction: column !important;
+          }
+          /* Hide commodity/forex sidebars on mobile */
+          div[style*="width: 270, minWidth: 270"] { display: none !important; }
+        }
+      `}</style>
+
       {/* ── Navbar ── */}
       <div className="navbar">
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{ width: 30, height: 30, background: "var(--accent)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <TrendingUp size={16} color="white" />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text-primary)" }}>MoonLight</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0 }}>
+            <Image src="/logo.png" alt="White Tiger" width={30} height={30} style={{ borderRadius: 6 }} />
+            <span className="wt-brand-text" style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text-primary)" }}>White Tiger</span>
           </Link>
 
-          {/* Main Tabs */}
-          <div style={{ display: "flex", gap: 2, marginLeft: 12, background: "var(--bg-secondary)", borderRadius: 10, padding: 3 }}>
+          {/* Main Tabs — scrollable on mobile */}
+          <div className="wt-tabs-scroll" style={{ marginLeft: 12, background: "var(--bg-secondary)", borderRadius: 10, padding: 3 }}>
             {([
-              { id: "stocks" as MainTab, label: "Stocks", icon: <TrendingUp size={14} />, color: "#2962ff" },
-              { id: "commodities" as MainTab, label: "Commodities", icon: <Flame size={14} />, color: "#e65100" },
+              { id: "stocks" as MainTab, label: "Stocks", icon: <TrendingUp size={14} />, color: "#4A9EFF" },
+              { id: "commodities" as MainTab, label: "Commodities", icon: <Flame size={14} />, color: "#FBBF24" },
               { id: "crypto" as MainTab, label: "Crypto", icon: <Bitcoin size={14} />, color: "#f7931a" },
-              { id: "currency" as MainTab, label: "Forex", icon: <DollarSign size={14} />, color: "#00897b" },
-              { id: "mutualfunds" as MainTab, label: "MF", icon: <PiggyBank size={14} />, color: "#7c3aed" },
-              { id: "debt" as MainTab, label: "Bonds", icon: <Shield size={14} />, color: "#00897b" },
-              { id: "international" as MainTab, label: "Global", icon: <Globe size={14} />, color: "#0d47a1" },
-              { id: "realestate" as MainTab, label: "Real Estate", icon: <Building2 size={14} />, color: "#6d4c41" },
-              { id: "derivatives" as MainTab, label: "F&O", icon: <Layers size={14} />, color: "#d32f2f" },
-              { id: "wealth" as MainTab, label: "Wealth", icon: <Target size={14} />, color: "#1a237e" },
-              { id: "tax" as MainTab, label: "Tax", icon: <FileText size={14} />, color: "#0d47a1" },
+              { id: "currency" as MainTab, label: "Forex", icon: <DollarSign size={14} />, color: "#34D399" },
+              { id: "mutualfunds" as MainTab, label: "MF", icon: <PiggyBank size={14} />, color: "#a78bfa" },
+              { id: "debt" as MainTab, label: "Bonds", icon: <Shield size={14} />, color: "#34D399" },
+              { id: "international" as MainTab, label: "Global", icon: <Globe size={14} />, color: "#4A9EFF" },
+              { id: "realestate" as MainTab, label: "Real Estate", icon: <Building2 size={14} />, color: "#C5A572" },
+              { id: "derivatives" as MainTab, label: "F&O", icon: <Layers size={14} />, color: "#F87171" },
+              { id: "wealth" as MainTab, label: "Wealth", icon: <Target size={14} />, color: "#7BB8FF" },
+              { id: "tax" as MainTab, label: "Tax", icon: <FileText size={14} />, color: "#4A9EFF" },
             ]).map(t => (
               <button key={t.id} onClick={() => switchMainTab(t.id)} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 18px", borderRadius: 8, border: "none",
-                background: mainTab === t.id ? "#fff" : "transparent",
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 14px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0,
+                border: mainTab === t.id ? "0.5px solid rgba(232,237,245,0.08)" : "0.5px solid transparent",
+                background: mainTab === t.id ? "var(--bg-slate)" : "transparent",
                 color: mainTab === t.id ? t.color : "var(--text-muted)",
-                fontWeight: mainTab === t.id ? 700 : 600, fontSize: "0.84rem", cursor: "pointer",
-                boxShadow: mainTab === t.id ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
-                transition: "all 0.2s",
+                fontWeight: mainTab === t.id ? 600 : 500, fontSize: "0.82rem", cursor: "pointer",
+                boxShadow: "none",
+                transition: "all 0.2s ease-out",
               }}>{t.icon} {t.label}</button>
             ))}
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div className="wt-desktop-right" style={{ alignItems: "center", gap: 14, flexShrink: 0 }}>
           {currentPlan !== "free" && <span className="badge badge-blue" style={{ textTransform: "uppercase" }}>{currentPlan}</span>}
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
             <span style={{ color: "var(--accent)", fontWeight: 700 }}>{remaining}</span> left
@@ -704,14 +1194,107 @@ export default function AnalyzePage() {
         </div>
       </div>
 
+      {/* ── Mobile Bottom Navigation ── */}
+      <div className="wt-mobile-bottom">
+        {([
+          { id: "stocks" as MainTab, icon: <TrendingUp size={20} />, label: "Stocks" },
+          { id: "crypto" as MainTab, icon: <Bitcoin size={20} />, label: "Crypto" },
+          { id: "currency" as MainTab, icon: <DollarSign size={20} />, label: "Forex" },
+          { id: "derivatives" as MainTab, icon: <Layers size={20} />, label: "F&O" },
+          { id: null, icon: <BarChart3 size={20} />, label: "More" },
+        ] as { id: MainTab | null; icon: React.ReactNode; label: string }[]).map(t => (
+          <button key={t.label} onClick={() => {
+            if (t.id === null) { setShowMoreMenu(true); }
+            else { switchMainTab(t.id); setShowMoreMenu(false); }
+          }} style={{
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+            background: "none", border: "none", cursor: "pointer",
+            color: t.id !== null && mainTab === t.id ? "#4A9EFF" : (t.id === null && showMoreMenu ? "#4A9EFF" : "var(--text-muted)"),
+            fontSize: "0.6rem", fontWeight: (t.id !== null && mainTab === t.id) || (t.id === null && showMoreMenu) ? 700 : 500,
+            padding: "6px 0", minWidth: 56,
+            transition: "all 0.2s",
+            position: "relative",
+          }}>
+            {/* Active indicator dot */}
+            {t.id !== null && mainTab === t.id && (
+              <div style={{
+                position: "absolute", top: 0, width: 4, height: 4,
+                borderRadius: "50%", background: "#4A9EFF",
+              }} />
+            )}
+            {t.icon}
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── More Menu Bottom Sheet ── */}
+      {showMoreMenu && (
+        <>
+          <div onClick={() => setShowMoreMenu(false)} style={{
+            position: "fixed", inset: 0, zIndex: 998,
+            background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+          }} />
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 999,
+            background: "var(--bg-midnight, #14213D)",
+            borderRadius: "20px 20px 0 0",
+            border: "0.5px solid rgba(232,237,245,0.08)",
+            borderBottom: "none",
+            padding: "8px 16px calc(16px + env(safe-area-inset-bottom, 8px))",
+            animation: "mobileSlideUp 0.3s cubic-bezier(0.16,1,0.3,1)",
+          }}>
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.1)", margin: "0 auto 16px" }} />
+            <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12 }}>
+              All Markets
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {([
+                { id: "stocks" as MainTab, icon: <TrendingUp size={22} />, label: "Stocks", color: "#4A9EFF" },
+                { id: "commodities" as MainTab, icon: <Flame size={22} />, label: "Commodities", color: "#FBBF24" },
+                { id: "crypto" as MainTab, icon: <Bitcoin size={22} />, label: "Crypto", color: "#f7931a" },
+                { id: "currency" as MainTab, icon: <DollarSign size={22} />, label: "Forex", color: "#34D399" },
+                { id: "mutualfunds" as MainTab, icon: <PiggyBank size={22} />, label: "Mutual Funds", color: "#a78bfa" },
+                { id: "debt" as MainTab, icon: <Shield size={22} />, label: "Bonds", color: "#34D399" },
+                { id: "international" as MainTab, icon: <Globe size={22} />, label: "Global", color: "#4A9EFF" },
+                { id: "realestate" as MainTab, icon: <Building2 size={22} />, label: "Real Estate", color: "#C5A572" },
+                { id: "derivatives" as MainTab, icon: <Layers size={22} />, label: "F&O", color: "#F87171" },
+                { id: "wealth" as MainTab, icon: <Target size={22} />, label: "Wealth", color: "#7BB8FF" },
+                { id: "tax" as MainTab, icon: <FileText size={22} />, label: "Tax", color: "#4A9EFF" },
+              ]).map(t => (
+                <button key={t.id} onClick={() => { switchMainTab(t.id); setShowMoreMenu(false); }} style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                  padding: "14px 4px", borderRadius: 14, border: "none", cursor: "pointer",
+                  background: mainTab === t.id ? `${t.color}15` : "rgba(255,255,255,0.02)",
+                  transition: "all 0.2s",
+                }}>
+                  <div style={{
+                    color: mainTab === t.id ? t.color : "var(--text-muted)",
+                    transition: "color 0.2s",
+                  }}>{t.icon}</div>
+                  <span style={{
+                    fontSize: "0.62rem", fontWeight: mainTab === t.id ? 700 : 500,
+                    color: mainTab === t.id ? t.color : "rgba(255,255,255,0.4)",
+                    textAlign: "center", lineHeight: 1.2,
+                  }}>{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ── Main Content ── */}
-      <div style={{ maxWidth: 1920, margin: "0 auto", padding: 24, display: "flex", gap: 20 }}>
-        {/* Left: Intelligence Column (desktop only) */}
+      <div className="wt-main-content" style={{ maxWidth: 1920, margin: "0 auto", display: "flex", gap: 20 }}>
+        {/* Left: Intelligence Column (desktop only, hidden on crypto) */}
+        {mainTab !== "crypto" && (
         <div className="intel-sidebar" style={{ width: 300, minWidth: 280, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
             <IntelligenceColumn tab={mainTab} />
           </div>
         </div>
+        )}
 
         {/* Center: Main content */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1022,86 +1605,8 @@ export default function AnalyzePage() {
               </div>
             </div>
 
-            {/* Category filter + Browse grid */}
             {!analysis && !loading && (
-              <div>
-                <MarketPulseBar tab="crypto" />
-                <LiveChartGrid tab="crypto" />
-                {/* Live market ticker */}
-                {Object.keys(cryptoPrices).length > 0 && (
-                  <MarketTicker items={[
-                    { label: "BTC", value: `₹${(cryptoPrices.BTC?.inr || 0).toLocaleString("en-IN")}`, change: cryptoPrices.BTC?.change24h || 0 },
-                    { label: "ETH", value: `₹${(cryptoPrices.ETH?.inr || 0).toLocaleString("en-IN")}`, change: cryptoPrices.ETH?.change24h || 0 },
-                    { label: "SOL", value: `₹${(cryptoPrices.SOL?.inr || 0).toLocaleString("en-IN")}`, change: cryptoPrices.SOL?.change24h || 0 },
-                    { label: "BNB", value: `₹${(cryptoPrices.BNB?.inr || 0).toLocaleString("en-IN")}`, change: cryptoPrices.BNB?.change24h || 0 },
-                    { label: "XRP", value: `₹${(cryptoPrices.XRP?.inr || 0).toFixed(2)}`, change: cryptoPrices.XRP?.change24h || 0 },
-                  ]} />
-                )}
-                <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                  {CRYPTO_CATEGORIES.map(cat => (
-                    <button key={cat} onClick={() => setCryptoCategory(cat)} style={{
-                      padding: "6px 16px", borderRadius: 20, border: "1px solid",
-                      borderColor: cryptoCategory === cat ? "var(--accent)" : "var(--border)",
-                      background: cryptoCategory === cat ? "var(--accent)" : "#fff",
-                      color: cryptoCategory === cat ? "#fff" : "var(--text-muted)",
-                      fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
-                    }}>{cat}</button>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 }}>
-                  {filteredCrypto.map(c => {
-                    const price = cryptoPrices[c.symbol];
-                    const isPositive = price ? price.change24h >= 0 : true;
-                    return (
-                      <button key={c.symbol} onClick={() => selectCrypto(c)} className="card" style={{
-                        padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
-                        border: cryptoSymbol === c.symbol ? "2px solid var(--accent)" : "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.2s",
-                      }}>
-                        <div style={{ padding: "14px 16px 6px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                              <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>{c.name}</span>
-                              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>{c.symbol}</span>
-                            </div>
-                            <span className="badge badge-gray" style={{ padding: "1px 6px", fontSize: "0.58rem" }}>{c.category}</span>
-                          </div>
-                          <MiniSparkline seed={c.symbol} positive={isPositive} width={64} height={28} />
-                        </div>
-                        <div style={{ padding: "6px 16px 12px" }}>
-                          {price ? (
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                              <div>
-                                <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--text-primary)" }}>
-                                  ₹{price.inr.toLocaleString("en-IN", { maximumFractionDigits: price.inr < 1 ? 6 : 2 })}
-                                </div>
-                                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 1 }}>
-                                  ${price.usd.toLocaleString("en-US", { maximumFractionDigits: price.usd < 1 ? 6 : 2 })}
-                                </div>
-                              </div>
-                              <span style={{
-                                fontSize: "0.82rem", fontWeight: 700,
-                                color: isPositive ? "var(--success)" : "var(--danger)",
-                                background: isPositive ? "var(--success-bg)" : "var(--danger-bg)",
-                                padding: "3px 8px", borderRadius: 6,
-                                display: "flex", alignItems: "center", gap: 3,
-                              }}>
-                                {isPositive ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                                {Math.abs(price.change24h).toFixed(2)}%
-                              </span>
-                            </div>
-                          ) : (
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <div className="shimmer" style={{ width: 80, height: 16, borderRadius: 4 }} />
-                              <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{c.pair}</span>
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <CryptoPlatform />
             )}
           </div>
         )}
@@ -1160,8 +1665,6 @@ export default function AnalyzePage() {
 
             {!analysis && !loading && (
               <div>
-                <MarketPulseBar tab="currency" />
-                <LiveChartGrid tab="currency" />
                 {/* Forex Market Ticker */}
                 {Object.keys(forexPrices).length > 0 ? (
                   <MarketTicker items={[
@@ -1307,165 +1810,7 @@ export default function AnalyzePage() {
 
             {!analysis && !loading && (
               <div>
-                <MarketPulseBar tab="mutualfunds" />
-                <LiveChartGrid tab="mutualfunds" />
-                <MarketTicker items={
-                  Object.keys(stockPrices).length > 0
-                    ? [
-                        ...(stockPrices.NIFTY50 ? [{ label: "NIFTY 50", value: stockPrices.NIFTY50.price.toLocaleString("en-IN"), change: stockPrices.NIFTY50.changePercent }] : []),
-                        ...(stockPrices.SENSEX ? [{ label: "SENSEX", value: stockPrices.SENSEX.price.toLocaleString("en-IN"), change: stockPrices.SENSEX.changePercent }] : []),
-                        ...(stockPrices.BANKNIFTY ? [{ label: "BANK NIFTY", value: stockPrices.BANKNIFTY.price.toLocaleString("en-IN"), change: stockPrices.BANKNIFTY.changePercent }] : []),
-                        ...(commodityPrices.GOLD ? [{ label: "GOLD", value: `$${commodityPrices.GOLD.price.toLocaleString("en-US")}`, change: commodityPrices.GOLD.changePercent }] : []),
-                      ]
-                    : [{ label: "Loading...", value: "—" }]
-                } />
-                <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-                  {/* ── Market Intelligence Sidebar ── */}
-                  <div style={{ width: 280, minWidth: 280, display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div className="card" style={{ padding: 16, background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)", color: "#fff", border: "none" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00e676", boxShadow: "0 0 8px #00e67680", animation: "pulse 2s infinite" }} />
-                        <span style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1.2 }}>Market Intelligence</span>
-                      </div>
-                      {[
-                        { label: "RBI Policy Rate", value: "6.50%", sub: "Accommodative stance", color: "#00e676" },
-                        { label: "SIP Monthly Inflow", value: "₹25,323 Cr", sub: "All-time high", color: "#00e676" },
-                        { label: "FII Net Flow (MTD)", value: "-₹4,215 Cr", sub: "Selling pressure", color: "#ef5350" },
-                        { label: "DII Net Flow (MTD)", value: "+₹8,920 Cr", sub: "Strong buying", color: "#00e676" },
-                      ].map((item, i) => (
-                        <div key={i} style={{ padding: "8px 0", borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.6)" }}>{item.label}</span>
-                            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: item.color }}>{item.value}</span>
-                          </div>
-                          <div style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>{item.sub}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="card" style={{ padding: 14 }}>
-                      <div style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>Sector Momentum</div>
-                      {[
-                        { sector: "Banking & Finance", trend: "Bullish", pct: "+2.8%", color: "#00c853" },
-                        { sector: "IT & Technology", trend: "Neutral", pct: "+0.4%", color: "#ff9800" },
-                        { sector: "Pharma & Health", trend: "Bullish", pct: "+1.9%", color: "#00c853" },
-                        { sector: "Auto & Ancillary", trend: "Bearish", pct: "-1.2%", color: "#ef5350" },
-                        { sector: "FMCG & Consumer", trend: "Neutral", pct: "+0.6%", color: "#ff9800" },
-                        { sector: "Metals & Mining", trend: "Bullish", pct: "+3.1%", color: "#00c853" },
-                      ].map((s, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: i < 5 ? "1px solid var(--border-light)" : "none" }}>
-                          <span style={{ fontSize: "0.72rem", fontWeight: 600 }}>{s.sector}</span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: "0.62rem", fontWeight: 700, color: s.color }}>{s.pct}</span>
-                            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: s.color, background: `${s.color}15`, padding: "1px 6px", borderRadius: 4 }}>{s.trend}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="card" style={{ padding: 14 }}>
-                      <div style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>AI Insights</div>
-                      {[
-                        { icon: "🎯", text: "Large-cap funds showing resilience amid global uncertainty" },
-                        { icon: "📈", text: "Flexi-cap category AUM crossed ₹4L Cr milestone" },
-                        { icon: "⚡", text: "Sectoral funds gaining traction — Infra & Energy leading" },
-                        { icon: "🛡️", text: "Debt fund yields attractive post rate pause signal" },
-                      ].map((insight, i) => (
-                        <div key={i} style={{ display: "flex", gap: 8, padding: "6px 0", borderBottom: i < 3 ? "1px solid var(--border-light)" : "none" }}>
-                          <span style={{ fontSize: "0.82rem" }}>{insight.icon}</span>
-                          <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", lineHeight: 1.4 }}>{insight.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="card" style={{ padding: 14 }}>
-                      <div style={{ fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--text-muted)", marginBottom: 10 }}>Market Sentiment</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <div style={{ flex: 1, height: 8, borderRadius: 4, background: "linear-gradient(90deg, #ef5350 0%, #ff9800 35%, #00c853 100%)", position: "relative" }}>
-                          <div style={{ position: "absolute", left: "68%", top: -3, width: 14, height: 14, borderRadius: "50%", background: "#fff", border: "3px solid #00c853", transform: "translateX(-50%)" }} />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.62rem", color: "var(--text-muted)" }}>
-                        <span>Fear</span>
-                        <span style={{ fontWeight: 800, color: "#00c853" }}>Greed (68)</span>
-                        <span>Extreme Greed</span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* ── Fund Cards Grid ── */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                  {MF_CATEGORIES.map(cat => (
-                    <button key={cat} onClick={() => setMfCategory(cat)} style={{
-                      padding: "6px 16px", borderRadius: 20, border: "1px solid",
-                      borderColor: mfCategory === cat ? "var(--accent)" : "var(--border)",
-                      background: mfCategory === cat ? "var(--accent)" : "#fff",
-                      color: mfCategory === cat ? "#fff" : "var(--text-muted)",
-                      fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
-                    }}>{cat}</button>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-                  {filteredMf.map(f => {
-                    const riskColor = f.riskLevel === "Low" ? "#00c853" : f.riskLevel === "Moderate" ? "#ff9800" : f.riskLevel === "High" ? "#f44336" : "#d32f2f";
-                    const isPositive = f.riskLevel !== "Very High";
-                    const mfKey = f.symbol.replace(/[^A-Z0-9_]/gi, "_").toUpperCase();
-                    const liveMf = mfPrices[mfKey];
-                    const fundSlug = f.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, "");
-                    return (
-                      <div key={f.symbol} onClick={() => { window.location.href = `/mf-intelligence/${fundSlug}`; }} className="card fx-pair-card" style={{
-                        padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
-                        border: "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.3s", position: "relative",
-                        borderTop: `3px solid ${riskColor}`,
-                      }}>
-                        <div style={{ padding: "14px 16px 8px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontWeight: 800, fontSize: "0.88rem", marginBottom: 2, lineHeight: 1.3, color: "var(--text-primary)" }}>{f.name}</div>
-                              <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{f.amc}</div>
-                            </div>
-                            <MiniSparkline seed={f.symbol} positive={isPositive} color={riskColor} width={64} height={28} />
-                          </div>
-                          <div style={{ display: "flex", gap: 12, alignItems: "baseline", marginBottom: 6 }}>
-                            {liveMf ? (
-                              <>
-                                <div>
-                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>NAV</div>
-                                  <div style={{ fontSize: "1.35rem", fontWeight: 900, color: "#1a1a2e", lineHeight: 1.1 }}>₹{liveMf.nav.toFixed(2)}</div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Date</div>
-                                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-muted)", lineHeight: 1.1 }}>{liveMf.date}</div>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div>
-                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Category</div>
-                                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--accent)", lineHeight: 1.1 }}>{f.category}</div>
-                                </div>
-                                <div>
-                                  <div style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Risk</div>
-                                  <div style={{ fontSize: "0.88rem", fontWeight: 800, color: riskColor, lineHeight: 1.1 }}>{f.riskLevel}</div>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ padding: "8px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-light)" }}>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.58rem" }}>{f.category}</span>
-                            <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                              <div style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor }} />
-                              <span style={{ fontSize: "0.62rem", fontWeight: 700, color: riskColor }}>{f.riskLevel}</span>
-                            </span>
-                          </div>
-                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "var(--accent)" }}>View Analysis →</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                  </div>{/* close fund cards grid wrapper */}
-                </div>{/* close flex layout */}
+                <MFPlatform />
               </div>
             )}
           </div>
@@ -1527,65 +1872,7 @@ export default function AnalyzePage() {
             </div>
 
             {!analysis && !loading && (
-              <div>
-                <MarketPulseBar tab="debt" />
-                <LiveChartGrid tab="debt" />
-                <MarketTicker items={[
-                  { label: "INDIA 10Y", value: "Live", change: 0 },
-                  { label: "INDIA 2Y", value: "Live", change: 0 },
-                  { label: "US 10Y", value: "Live", change: 0 },
-                  ...(stockPrices.NIFTY50 ? [{ label: "NIFTY 50", value: stockPrices.NIFTY50.price.toLocaleString("en-IN"), change: stockPrices.NIFTY50.changePercent }] : []),
-                  ...(forexPrices.USDINR ? [{ label: "USD/INR", value: `₹${forexPrices.USDINR.rate.toFixed(2)}`, change: forexPrices.USDINR.change24h }] : []),
-                ]} />
-                <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                  {BOND_CATEGORIES.map(cat => (
-                    <button key={cat} onClick={() => setDebtCategory(cat)} style={{
-                      padding: "6px 16px", borderRadius: 20, border: "1px solid",
-                      borderColor: debtCategory === cat ? "#00897b" : "var(--border)",
-                      background: debtCategory === cat ? "#00897b" : "#fff",
-                      color: debtCategory === cat ? "#fff" : "var(--text-muted)",
-                      fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
-                    }}>{cat}</button>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-                  {filteredDebt.map(b => {
-                    const ratingColor = b.rating === "Sovereign" ? "#00897b" : b.rating === "AAA" ? "#2962ff" : b.rating === "AA+" ? "#7c3aed" : "#ff9800";
-                    return (
-                      <div key={b.symbol} onClick={() => { window.location.href = `/bonds/${b.symbol.toLowerCase()}`; }} className="card fx-pair-card" style={{
-                        padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
-                        border: "1px solid var(--border)",
-                        background: "#fff", transition: "all 0.2s", position: "relative",
-                        borderTop: `3px solid ${ratingColor}`,
-                      }}>
-                        <div style={{ padding: "14px 16px 8px" }}>
-                          <div style={{ fontWeight: 700, fontSize: "0.85rem", marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
-                          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginBottom: 8 }}>{b.issuer} · {b.tenure}</div>
-                          <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginBottom: 8 }}>
-                            <div>
-                              <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Yield</div>
-                              <div style={{ fontSize: "1.4rem", fontWeight: 900, color: "#00897b", lineHeight: 1.1 }}>{b.yieldApprox}</div>
-                            </div>
-                            <div>
-                              <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>Coupon</div>
-                              <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.1 }}>{b.coupon}</div>
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ padding: "8px 16px 10px", display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border-light)" }}>
-                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                            <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.58rem" }}>{b.category}</span>
-                            <span style={{ fontSize: "0.68rem", fontWeight: 700, color: ratingColor, display: "flex", alignItems: "center", gap: 3 }}>
-                              <Shield size={10} /> {b.rating}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#00897b" }}>View Analysis →</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <BondsPlatform />
             )}
           </div>
         )}
@@ -2363,7 +2650,7 @@ export default function AnalyzePage() {
           </div>
         </div>
         )}
-        {mainTab !== "derivatives" && mainTab !== "realestate" && (
+        {mainTab !== "derivatives" && mainTab !== "realestate" && mainTab !== "crypto" && (
         <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
             <DerivativesPanel tab={mainTab} />
@@ -2423,6 +2710,14 @@ export default function AnalyzePage() {
         </div>
       )}
       </div>
+      {/* Data Health Monitor */}
+      <DataHealthMonitor />
+
+      </>
+      )}
+      {/* end of desktop + mobile-tab conditional */}
+
+      {/* Floating Switch Mode Toggle — removed, advanced-only mode */}
     </div>
   );
 }

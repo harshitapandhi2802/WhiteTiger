@@ -12,6 +12,8 @@ import {
   getSessionStatus, MARKET_SESSIONS, FOREX_MARKET_IMPACTS, FOREX_NAV_SECTIONS,
   CONVERTER_CURRENCIES, type ForexSection, type ConversionRate,
 } from "@/lib/forex-engine";
+import { useForexRates } from "@/hooks/useMarketData";
+import { DataSourceBadge } from "@/components/DataHealth";
 
 /* ═══════════════════════════════════════════════════════════════
    MOONLIGHT FOREX INTELLIGENCE PLATFORM v2.0
@@ -88,17 +90,41 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
   // Heatmap period
   const [heatPeriod, setHeatPeriod] = useState<"1d" | "1w" | "1m">("1d");
 
+  // Live forex data
+  const { data: liveRates, source: fxSource, isStale: fxStale, lastUpdated: fxUpdated } = useForexRates();
+
   // Memoized data
   const copilot = useMemo(() => generateForexCopilot(), []);
   const centralBanks = useMemo(() => generateCentralBankIntel(), []);
   const stories = useMemo(() => generateForexStories(), []);
-  const strength = useMemo(() => generateCurrencyStrength(), []);
+  const strength = useMemo(() => {
+    const base = generateCurrencyStrength();
+    if (Object.keys(liveRates).length === 0) return base;
+    // Enhance strength data with live rate changes where available
+    return base.map(s => {
+      const key = `${s.currency}INR`;
+      const live = liveRates[key];
+      if (live && live.change24h !== undefined) {
+        return { ...s, momentum1d: live.change24h };
+      }
+      return s;
+    });
+  }, [liveRates]);
   const heatmap = useMemo(() => generateFXHeatmap(), []);
   const technicals = useMemo(() => generateTechnicalAnalysis(pair, base, quote), [pair, base, quote]);
   const calendar = useMemo(() => generateEconCalendar(base, quote), [base, quote]);
   const riskData = useMemo(() => generateRiskAnalysis(pair, base, quote), [pair, base, quote]);
   const macroDrivers = useMemo(() => generateMacroDrivers(base, quote), [base, quote]);
-  const convRate = useMemo(() => getConversionRate(convFrom, convTo), [convFrom, convTo]);
+  const convRate = useMemo(() => {
+    const baseRate = getConversionRate(convFrom, convTo);
+    // Override with live rate if available
+    const liveKey = `${convFrom}${convTo}`;
+    const live = liveRates[liveKey];
+    if (live) {
+      return { ...baseRate, rate: live.rate, inverse: live.rate > 0 ? 1 / live.rate : 0, change24h: live.change24h };
+    }
+    return baseRate;
+  }, [convFrom, convTo, liveRates]);
   const travelData = useMemo(() => generateTravelInsights(travelCurrency), [travelCurrency]);
   const sparkData = useMemo(() => generateFXSparkline(pair), [pair]);
 
@@ -124,8 +150,9 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
                     <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#69f0ae", animation: "fx-pulse 2s infinite" }} />LIVE
                   </span>
                 </div>
-                <div style={{ fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
                   AI Macro Strategist · Central Bank Intelligence · Currency Analytics
+                  {fxUpdated > 0 && <DataSourceBadge source={fxSource} isStale={fxStale} lastUpdated={fxUpdated} compact />}
                 </div>
               </div>
             </div>

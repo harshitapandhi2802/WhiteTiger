@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" rx="40" fill="#1A7FD6"/>
+  <!-- Tiger head silhouette -->
+  <g fill="white">
+    <!-- Head outline with ears -->
+    <path d="M100 30
+      C85 30 72 35 62 42
+      L52 28 C50 25 46 26 46 30 L50 50
+      C38 62 30 78 30 96
+      C30 120 42 140 60 152
+      C70 160 82 165 96 168
+      L100 170 L104 168
+      C118 165 130 160 140 152
+      C158 140 170 120 170 96
+      C170 78 162 62 150 50
+      L154 30 C154 26 150 25 148 28
+      L138 42 C128 35 115 30 100 30Z"/>
+    <!-- Left eye -->
+    <path d="M72 88 L82 78 L88 88 L82 92Z" fill="#1A7FD6"/>
+    <!-- Right eye -->
+    <path d="M128 88 L118 78 L112 88 L118 92Z" fill="#1A7FD6"/>
+    <!-- Nose -->
+    <path d="M94 118 L100 112 L106 118 L104 122 C102 124 98 124 96 122Z" fill="#1A7FD6"/>
+    <!-- Mouth line -->
+    <path d="M100 124 L100 132 M96 134 C98 138 102 138 104 134" stroke="#1A7FD6" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <!-- Chin/jaw shape -->
+    <path d="M82 140 C88 148 96 152 100 152 C104 152 112 148 118 140
+      L114 136 C108 142 104 144 100 144 C96 144 92 142 86 136Z" fill="#1A7FD6" opacity="0.3"/>
+  </g>
+</svg>

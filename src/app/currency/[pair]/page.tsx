@@ -574,7 +574,7 @@ export default function CurrencyPairPage() {
         <div style={{ position: "relative", zIndex: 1 }}>
           {/* Back link */}
           <Link href="/analyze" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.5)", textDecoration: "none", fontSize: "0.68rem", fontWeight: 600, marginBottom: 16, transition: "color 0.2s" }}>
-            ← Back to MoonLight Dashboard
+            ← Back to White Tiger Dashboard
           </Link>
 
           {/* Header row */}

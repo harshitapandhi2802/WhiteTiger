@@ -1,13 +1,19 @@
 "use client";
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, TrendingUp, TrendingDown, Activity, BarChart3, Target, Shield,
-  Zap, Globe, Users, Building2, AlertCircle, ChevronDown, ChevronUp, Maximize2, X
+  ArrowLeft, TrendingUp, TrendingDown, Brain, Zap, Shield, Target,
+  BarChart3, Globe, Users, AlertTriangle, ChevronDown, ChevronRight,
+  Activity, Eye, Crosshair, Flame, Layers, MessageSquare, Sparkles,
+  BookOpen, DollarSign, PieChart, Lock, Unlock, Radio, Lightbulb, ArrowUpRight,
+  CheckCircle, XCircle, Info, Clock, History, ThumbsUp, ThumbsDown,
+  Award, Database, FileWarning,
 } from "lucide-react";
 import { NSE_STOCKS } from "@/lib/stocks";
 
-/* ═══ Types ═══ */
+/* ═══════════════════════════════════════════════════════════════
+   TYPE DEFINITIONS
+   ═══════════════════════════════════════════════════════════════ */
 interface StockData {
   success: boolean; symbol: string; companyName: string; sector: string; industry: string;
   source: string; generatedAt: string;
@@ -24,7 +30,6 @@ interface StockData {
   quarterlyResults: { quarter: string; revenue: number; pat: number; ebitdaMargin: number; epsGrowth: number }[];
   newsEvents: { title: string; date: string; impact: string; severity: string }[];
   shareholdingTrend: { quarter: string; promoter: number; fii: number; dii: number; public: number }[];
-  // Institutional deep analysis
   revenueBreakdown?: { segments: { name: string; share: number; growth: number }[]; geography: { region: string; share: number }[] };
   marginAnalysis?: { current: { grossMargin: number; ebitdaMargin: number; ebitMargin: number; patMargin: number }; trend: { year: string; grossMargin: number; ebitdaMargin: number; patMargin: number }[] };
   annualFinancials?: { year: string; revenue: number; ebitda: number; pat: number; eps: number; revenueGrowth: number; patGrowth: number }[];
@@ -34,16 +39,34 @@ interface StockData {
   workingCapital?: { receivableDays: number; payableDays: number; inventoryDays: number; ccc: number; wcAsRevenue: number; trend: { year: string; receivableDays: number; payableDays: number; inventoryDays: number }[] };
   dcfValuation?: { wacc: number; terminalGrowth: number; beta: number; riskFreeRate: number; erp: number; fcfProjections: { year: string; fcf: number; pvFcf: number }[]; terminalValue: number; pvTerminal: number; enterpriseValue: number; equityValue: number; sharesOutstanding: number; intrinsicValue: number; upside: number; sensitivity: { wacc: number; tg: number; value: number }[] };
   relativeValuation?: { currentPe: number; forwardPe: number; sectorAvgPe: number; histAvgPe: number; evEbitda: number; evSales: number; pegRatio: number; priceToFcf: number; premiumDiscount: number; historicalBands: { low: number; avg: number; high: number }; peersComparison: { symbol: string; pe: number; pb: number; roe: number; mcap: number; evEbitda: number; pegRatio: number; fcfYield: number }[] };
-  scenarios?: { bull: { probability: number; eps: number; pe: number; targetPrice: number; narrative: string }; base: { probability: number; eps: number; pe: number; targetPrice: number; narrative: string }; bear: { probability: number; eps: number; pe: number; targetPrice: number; narrative: string } };
+  scenarios?: { bull: ScenarioCase; base: ScenarioCase; bear: ScenarioCase };
   stressTests?: { scenario: string; epsImpact: number; priceImpact: number; bsResilience: string }[];
   earningsQuality?: { cashConversionScore: number; accountingQualityScore: number; revenueQualityScore: number; earningsPersistenceScore: number; overallEarningsScore: number; financialStrengthScore: number; cfoPATRatio: number; accrualRatio: number; otherIncomeShare: number; exceptionalItems: number; relatedPartyTransactions: string; auditorObservations: string; flags: string[] };
   reRatingCatalysts?: { upsideCatalysts: string[]; downsideRisks: string[]; multipeExpansionPotential: number; institutionalOwnershipTrend: string; governanceScore: number };
   investmentConclusion?: { fairValueLow: number; fairValueMid: number; fairValueHigh: number; marginOfSafety: number; riskRewardRatio: string; expectedReturn12M: number; downsideRisk: number; view: string; keyMonitorables: string[] };
+  // AI Workflow Engine
+  aiCopilot?: { narrative: string; movementReasons: { technical: string[]; macro: string[]; institutional: string[]; sentiment: string[] } };
+  smartMoney?: { accumulationDistribution: string; adSignal: string; blockDeals: { date: string; quantity: string; value: string; buyer: string; type: "Buy" | "Sell" }[]; deliveryData: { avgDeliveryPercent: number; todayDelivery: number; volumeVsAvg: number; interpretation: string }; derivativesPosition: { futuresOI: string; oiChange: string; putCallRatio: number; maxPainStrike: number; interpretation: string }; insiderActivity: { who: string; action: string; shares: string; date: string }[] };
+  aiRiskEngine?: { overallRiskLevel: string; riskBreakdown: { category: string; level: string; score: number; detail: string }[]; worstCaseDrawdown: number; recoveryTime: string; hedgingSuggestion: string };
+  aiOpportunityEngine?: { opportunityType: string; conviction: string; timeHorizon: string; idealEntryZone: string; targetZone: string; stopLoss: string; positionSizing: string; thesis: string; sectorRotationSignal: string };
+  earningsIntelligence?: { lastQuarterSummary: string; managementCommentary: string[]; earningsSurpriseHistory: { quarter: string; surprise: number }[]; nextEarningsDate: string; consensusEPS: number; epsRevisionTrend: string };
+  geopoliticalImpact?: { commodityExposure: { commodity: string; currentPrice: string; impact: string; severity: string }[]; geopoliticalRisks: { event: string; impact: string; probability: string }[]; currencyImpact: { usdInr: number; direction: string; impact: string }; interestRateImpact: { repoRate: string; outlook: string; impact: string } };
+  // Trust Intelligence Layer
+  whiteTigerScore?: { overall: number; label: string; breakdown: { macro: number; technicals: number; sentiment: number; valuation: number; institutional: number; risk: number }; weights: string };
+  sourceAttribution?: { priceSource: string; priceVerified: boolean; fundamentalsSource: string; analysisEngine: string; dataTimestamp: string; dataSources: string[]; disclaimer: string };
+  analysisRisks?: { risk: string; detail: string; severity: string }[];
+  actionability?: { score: string; label: string; color: string; detail: string };
+  marketMemory?: { event: string; context: string; relevance: string }[];
+  confidenceBreakdown?: { overall: number; dataQuality: number; historicalAccuracy: number; macroAlignment: number; volatilityAdjusted: number; newsConfirmation: number; sentimentConsistency: number; level: string };
+  analysisReasoning?: { bullishFactors: string[]; bearishFactors: string[]; neutralFactors: string[] };
+  analysisVersion?: string;
+  trustFeatures?: string[];
 }
+interface ScenarioCase { probability: number; eps: number; pe: number; targetPrice: number; narrative: string }
 
-type SectionId = "overview" | "drivers" | "technicals" | "fundamentals" | "valuation" | "ownership" | "financials" | "peers" | "news" | "risk" | "dcf" | "scenarios" | "earnings" | "conclusion";
-
-/* ═══ Helpers ═══ */
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
 function resolveStock(slug: string) {
   const lower = slug.toLowerCase().replace(/-/g, " ");
   const stock = NSE_STOCKS.find(s =>
@@ -52,43 +75,123 @@ function resolveStock(slug: string) {
     s.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-") === slug.toLowerCase()
   );
   if (stock) return stock;
-  // fuzzy
   const found = NSE_STOCKS.find(s => s.name.toLowerCase().includes(lower) || lower.includes(s.name.toLowerCase().split(" ")[0]));
   return found || { name: slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()), ticker: slug.toUpperCase() + ".NS", sector: "Equity" };
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
+function pointerText(value: number, type: string): string {
+  switch (type) {
+    case "pe": return value < 15 ? "Attractively valued relative to earnings" : value < 25 ? "Fairly priced for the growth delivered" : value < 40 ? "Premium valuation — market expects high growth" : "Expensive — needs sustained earnings acceleration to justify";
+    case "pb": return value < 1 ? "Trading below book — potential deep value or distress" : value < 3 ? "Reasonable price relative to net assets" : "High premium to book — intangible value dominant";
+    case "roe": return value > 20 ? "Excellent capital efficiency — generates strong shareholder returns" : value > 12 ? "Adequate returns on equity — in line with cost of capital" : "Below-par returns — capital not being deployed efficiently";
+    case "roce": return value > 20 ? "Superior capital allocation — business earns well above its cost" : value > 12 ? "Decent returns on total capital employed" : "Weak returns — may be destroying value for stakeholders";
+    case "de": return value < 0.1 ? "Virtually debt-free — strong balance sheet" : value < 0.5 ? "Conservative leverage — comfortable debt servicing" : value < 1 ? "Moderate leverage — manageable but monitor in downturns" : "Highly leveraged — vulnerable to rate hikes and cash flow disruption";
+    case "rsi": return value > 70 ? "Overbought — momentum stretched, potential pullback ahead" : value < 30 ? "Oversold — selling exhaustion, may see mean reversion" : "Neutral momentum — no extreme directional signal";
+    case "divyield": return value > 3 ? "Attractive dividend income — management returning cash to shareholders" : value > 1 ? "Moderate payout — balanced between growth reinvestment and distributions" : "Minimal/no dividend — profits retained for reinvestment";
+    case "margin": return value > 25 ? "High-margin business with strong pricing power" : value > 15 ? "Healthy margins indicative of competitive advantage" : "Thin margins — operationally leveraged, sensitive to cost pressures";
+    default: return "";
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REUSABLE COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+function ConfidenceMeter({ value, label, color }: { value: number; label: string; color: string }) {
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, fontSize: "0.72rem", fontWeight: 600 }}>
-        <span style={{ color: "#94a3b8" }}>{label}</span>
-        <span style={{ color }}>{value}/100</span>
-      </div>
-      <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
-        <div style={{ width: `${value}%`, height: "100%", background: color, borderRadius: 3, transition: "width 1s ease" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontSize: "0.7rem", color: "#6b7280", fontWeight: 600 }}>{label}</span>
+          <span style={{ fontSize: "0.72rem", fontWeight: 800, color }}>{value}%</span>
+        </div>
+        <div style={{ height: 5, background: "#e5e7eb", borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ width: `${value}%`, height: "100%", background: `linear-gradient(90deg, ${color}88, ${color})`, borderRadius: 3, transition: "width 1.5s cubic-bezier(0.4,0,0.2,1)" }} />
+        </div>
       </div>
     </div>
   );
 }
 
-function MetricCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+function AIInsightCard({ icon, title, children, accentColor = "#6366f1", defaultOpen = false }: { icon: React.ReactNode; title: string; children: React.ReactNode; accentColor?: string; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px" }}>
-      <div style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: "1.05rem", fontWeight: 800, color: color || "#e2e8f0" }}>{value}</div>
-      {sub && <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 2 }}>{sub}</div>}
+    <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", overflow: "hidden", transition: "box-shadow 0.3s", boxShadow: open ? "0 4px 24px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)" }}>
+      <button onClick={() => setOpen(!open)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "18px 22px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left" }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${accentColor}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ color: accentColor }}>{icon}</div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1a1a2e" }}>{title}</div>
+        </div>
+        <div style={{ color: "#9ca3af", transition: "transform 0.3s", transform: open ? "rotate(90deg)" : "none" }}>
+          <ChevronRight size={16} />
+        </div>
+      </button>
+      {open && (
+        <div style={{ padding: "0 22px 22px", borderTop: `1px solid ${accentColor}15` }}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
 
-/* ═══ Page Component ═══ */
+function SectionHeading({ title, subtitle, icon }: { title: string; subtitle?: string; icon?: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 20, paddingBottom: 14, borderBottom: "2px solid #1a1a2e", display: "flex", alignItems: "flex-start", gap: 12 }}>
+      {icon && <div style={{ color: "#6366f1", marginTop: 2 }}>{icon}</div>}
+      <div>
+        <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#1a1a2e", margin: 0 }}>{title}</h2>
+        {subtitle && <p style={{ fontSize: "0.78rem", color: "#6b7280", margin: "4px 0 0", lineHeight: 1.4 }}>{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+function RiskBadge({ level }: { level: string }) {
+  const colors: Record<string, { bg: string; text: string }> = {
+    Low: { bg: "#f0fdf4", text: "#059669" },
+    Moderate: { bg: "#fffbeb", text: "#d97706" },
+    High: { bg: "#fef2f2", text: "#dc2626" },
+    strong: { bg: "#f0fdf4", text: "#059669" },
+    moderate: { bg: "#fffbeb", text: "#d97706" },
+    weak: { bg: "#fef2f2", text: "#dc2626" },
+  };
+  const c = colors[level] || colors["Moderate"];
+  return (
+    <span style={{ padding: "3px 10px", borderRadius: 5, fontSize: "0.68rem", fontWeight: 700, background: c.bg, color: c.text, textTransform: "uppercase" }}>{level}</span>
+  );
+}
+
+/* ═══ Typing animation hook ═══ */
+function useTypingAnimation(text: string, speed = 12) {
+  const [displayed, setDisplayed] = useState("");
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    setDisplayed("");
+    setDone(false);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) { clearInterval(timer); setDone(true); }
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+  return { displayed, done };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN PAGE COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
 export default function StockPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = use(params);
   const stock = resolveStock(symbol);
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState<SectionId>("overview");
-  const [chartFullscreen, setChartFullscreen] = useState(false);
+  const [activeNav, setActiveNav] = useState("copilot");
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     setLoading(true);
@@ -102,139 +205,279 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
       .catch(() => setLoading(false));
   }, [stock.ticker, stock.name]);
 
-  const sections: { id: SectionId; label: string; icon: React.ReactNode }[] = [
-    { id: "overview", label: "Overview", icon: <Activity size={14} /> },
-    { id: "drivers", label: "Price Drivers", icon: <Zap size={14} /> },
-    { id: "technicals", label: "Technicals", icon: <BarChart3 size={14} /> },
-    { id: "fundamentals", label: "Fundamentals", icon: <Target size={14} /> },
-    { id: "valuation", label: "Valuation", icon: <TrendingUp size={14} /> },
-    { id: "dcf", label: "DCF Model", icon: <BarChart3 size={14} /> },
-    { id: "scenarios", label: "Scenarios", icon: <Shield size={14} /> },
-    { id: "earnings", label: "Earnings Quality", icon: <Target size={14} /> },
-    { id: "ownership", label: "Ownership", icon: <Users size={14} /> },
-    { id: "financials", label: "Financials", icon: <Building2 size={14} /> },
-    { id: "peers", label: "Peers", icon: <Globe size={14} /> },
-    { id: "news", label: "News & Events", icon: <AlertCircle size={14} /> },
-    { id: "conclusion", label: "Conclusion", icon: <TrendingUp size={14} /> },
-    { id: "risk", label: "Risk", icon: <Shield size={14} /> },
-  ];
+  const scrollTo = (id: string) => {
+    setActiveNav(id);
+    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
+  /* ═══ LOADING STATE ═══ */
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #0a0e1a 0%, #111827 100%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: 48, height: 48, border: "3px solid rgba(99,102,241,0.3)", borderTopColor: "#6366f1", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
-          <div style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Loading {stock.name} intelligence...</div>
+      <div style={{ minHeight: "100vh", background: "#0a0a1a", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 24 }}>
+        <div style={{ position: "relative", width: 64, height: 64 }}>
+          <div style={{ position: "absolute", inset: 0, border: "3px solid rgba(99,102,241,0.15)", borderTopColor: "#6366f1", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <div style={{ position: "absolute", inset: 8, border: "2px solid rgba(168,85,247,0.15)", borderBottomColor: "#a855f7", borderRadius: "50%", animation: "spin 1.5s linear infinite reverse" }} />
+          <Brain size={20} style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", color: "#6366f1" }} />
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ color: "#fff", fontSize: "1.05rem", fontWeight: 700, marginBottom: 6 }}>AI Analyzing {stock.name}</div>
+          <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.78rem" }}>Generating institutional-grade intelligence...</div>
+        </div>
+        <div style={{ display: "flex", gap: 20, marginTop: 8 }}>
+          {["Market Data", "Fundamentals", "Smart Money", "Risk Analysis", "Opportunities"].map((step, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, opacity: 0, animation: `fadeIn 0.5s ease forwards ${i * 0.4}s` }}>
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#6366f1", animation: `pulse 1.5s ease infinite ${i * 0.3}s` }} />
+              <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)" }}>{step}</span>
+            </div>
+          ))}
+        </div>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes fadeIn { to { opacity: 1; } }
+          @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
+        `}</style>
       </div>
     );
   }
 
-  if (!data) return <div style={{ minHeight: "100vh", background: "#0a0e1a", color: "#fff", padding: 40 }}>Error loading data.</div>;
+  if (!data) return <div style={{ minHeight: "100vh", background: "#fff", color: "#111", padding: 40 }}>Error loading data.</div>;
 
   const isPositive = data.hero.changePercent >= 0;
-  const sentimentColor = data.sentiment.label.includes("Bullish") ? "#10b981" : data.sentiment.label.includes("Bearish") ? "#ef4444" : "#f59e0b";
+  const viewColor = data.investmentConclusion?.view.includes("UNDERVALUED") ? "#059669" : data.investmentConclusion?.view.includes("OVERVALUED") ? "#dc2626" : "#d97706";
+  const viewLabel = data.investmentConclusion?.view.includes("UNDERVALUED") ? "BUY" : data.investmentConclusion?.view.includes("OVERVALUED") ? "SELL" : "HOLD";
+
+  const navItems = [
+    { id: "copilot", label: "AI Copilot", icon: <Brain size={13} /> },
+    { id: "trust", label: "Trust Score", icon: <Award size={13} /> },
+    { id: "movement", label: "Why Moving", icon: <Zap size={13} /> },
+    { id: "smartmoney", label: "Smart Money", icon: <Eye size={13} /> },
+    { id: "risk", label: "Risk Engine", icon: <Shield size={13} /> },
+    { id: "opportunity", label: "Opportunity", icon: <Target size={13} /> },
+    { id: "earnings", label: "Earnings AI", icon: <BookOpen size={13} /> },
+    { id: "geopolitical", label: "Macro/Geo", icon: <Globe size={13} /> },
+    { id: "fundamentals", label: "Fundamentals", icon: <BarChart3 size={13} /> },
+    { id: "valuation", label: "Valuation", icon: <DollarSign size={13} /> },
+    { id: "technicals", label: "Technicals", icon: <Activity size={13} /> },
+  ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #0a0e1a 0%, #0f172a 50%, #111827 100%)", color: "#e2e8f0", fontFamily: "'Inter', -apple-system, sans-serif" }}>
-      {/* ═══ HEADER ═══ */}
-      <header style={{ padding: "14px 24px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 16, position: "sticky", top: 0, zIndex: 40, backdropFilter: "blur(20px)", background: "rgba(10,14,26,0.85)" }}>
-        <Link href="/analyze" style={{ color: "#64748b", display: "flex", alignItems: "center", gap: 6, fontSize: "0.8rem", textDecoration: "none" }}>
-          <ArrowLeft size={16} /> Back
-        </Link>
-        <div style={{ flex: 1 }}>
-          <span style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f1f5f9" }}>{data.companyName}</span>
-          <span style={{ marginLeft: 10, fontSize: "0.72rem", color: "#64748b", fontWeight: 600 }}>{data.symbol} · {data.sector}</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: "1.3rem", fontWeight: 900, color: "#fff" }}>₹{data.hero.cmp.toLocaleString("en-IN")}</span>
-          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: isPositive ? "#10b981" : "#ef4444", background: isPositive ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", padding: "4px 10px", borderRadius: 6, display: "flex", alignItems: "center", gap: 4 }}>
-            {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-            {isPositive ? "+" : ""}{data.hero.changePercent}%
-          </span>
+    <div style={{ minHeight: "100vh", background: "#f8f9fb", color: "#1a1a2e", fontFamily: "'Inter', 'SF Pro Display', -apple-system, sans-serif" }}>
+
+      {/* ═══════════════════════════════════════════
+          HEADER — Premium Sticky
+          ═══════════════════════════════════════════ */}
+      <header style={{ background: "linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16162a 100%)", color: "#fff", padding: "20px 40px", position: "sticky", top: 0, zIndex: 50, borderBottom: "1px solid rgba(99,102,241,0.15)", backdropFilter: "blur(20px)" }}>
+        <div style={{ maxWidth: 1260, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <Link href="/stocks" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", transition: "color 0.2s" }}>
+                <ArrowLeft size={14} /> Stocks
+              </Link>
+              <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>{data.companyName}</span>
+                  <span style={{ fontSize: "0.66rem", padding: "3px 8px", borderRadius: 5, background: "rgba(99,102,241,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{data.symbol}</span>
+                </div>
+                <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{data.sector} · {data.industry} · NSE</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+              {/* Official NSE Link */}
+              <a
+                href={`https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(data.symbol)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 14px", borderRadius: 8,
+                  background: "rgba(41,98,255,0.12)", border: "1px solid rgba(41,98,255,0.25)",
+                  color: "#93b4ff", fontSize: "0.72rem", fontWeight: 700,
+                  textDecoration: "none", transition: "all 0.2s",
+                }}
+              >
+                NSE Official <ArrowUpRight size={12} />
+              </a>
+              {/* AI Sentiment Badge */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                <Sparkles size={13} style={{ color: "#a5b4fc" }} />
+                <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#a5b4fc" }}>AI: {data.sentiment.label}</span>
+                <span style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.4)" }}>{data.sentiment.confidence}%</span>
+              </div>
+
+              {/* Price Block */}
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "1.6rem", fontWeight: 900, letterSpacing: "-0.02em" }}>₹{data.hero.cmp.toLocaleString("en-IN")}</div>
+                <div style={{ fontSize: "0.78rem", fontWeight: 700, color: isPositive ? "#4ade80" : "#f87171", display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
+                  {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {isPositive ? "+" : ""}{data.hero.changePercent}%
+                </div>
+              </div>
+
+              {/* White Tiger Score Badge */}
+              {data.whiteTigerScore && (
+                <div style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 70 }}>
+                  <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>WT Score</div>
+                  <div style={{ fontSize: "1rem", fontWeight: 900, color: data.whiteTigerScore.overall >= 70 ? "#4ade80" : data.whiteTigerScore.overall >= 50 ? "#fbbf24" : "#f87171", marginTop: 2 }}>
+                    {data.whiteTigerScore.overall}
+                  </div>
+                </div>
+              )}
+
+              {/* AI View Badge */}
+              <div style={{ background: `${viewColor}18`, border: `1px solid ${viewColor}40`, borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 70 }}>
+                <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>AI View</div>
+                <div style={{ fontSize: "1rem", fontWeight: 900, color: viewColor, marginTop: 2 }}>{viewLabel}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Pills */}
+          <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 2 }}>
+            {navItems.map(n => (
+              <button key={n.id} onClick={() => scrollTo(n.id)} style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 7,
+                border: "none", cursor: "pointer", fontSize: "0.7rem", fontWeight: 600, whiteSpace: "nowrap",
+                background: activeNav === n.id ? "rgba(99,102,241,0.2)" : "transparent",
+                color: activeNav === n.id ? "#a5b4fc" : "rgba(255,255,255,0.45)",
+                transition: "all 0.2s",
+              }}>
+                {n.icon} {n.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      {/* ═══ SECTION TABS ═══ */}
-      <nav style={{ padding: "10px 24px", borderBottom: "1px solid rgba(255,255,255,0.04)", overflowX: "auto", display: "flex", gap: 4 }}>
-        {sections.map(s => (
-          <button key={s.id} onClick={() => setActiveSection(s.id)} style={{
-            padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.2s",
-            background: activeSection === s.id ? "rgba(99,102,241,0.15)" : "transparent",
-            color: activeSection === s.id ? "#818cf8" : "#64748b",
-          }}>
-            {s.icon} {s.label}
-          </button>
-        ))}
-      </nav>
+      {/* ═══════════════════════════════════════════
+          MAIN CONTENT — AI-First Flow
+          ═══════════════════════════════════════════ */}
+      <div style={{ maxWidth: 1260, margin: "0 auto", padding: "28px 40px 80px" }}>
 
-      {/* ═══ MAIN CONTENT ═══ */}
-      <main style={{ display: "flex", gap: 0, minHeight: "calc(100vh - 110px)" }}>
-        {/* LEFT — Main Content Area */}
-        <div style={{ flex: 1, padding: "20px 24px", overflow: "auto" }}>
+        {/* ════════════════════════════════════════════════════════
+            SECTION 1: AI COPILOT — THE MAIN INTELLIGENCE LAYER
+            ════════════════════════════════════════════════════════ */}
+        <section ref={el => { sectionRefs.current["copilot"] = el; }} style={{ marginBottom: 36 }}>
+          <div style={{ background: "linear-gradient(135deg, #0f0f23, #1a1035)", borderRadius: 18, padding: "32px 36px", color: "#fff", position: "relative", overflow: "hidden" }}>
+            {/* Background decoration */}
+            <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)" }} />
+            <div style={{ position: "absolute", bottom: -40, left: "30%", width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%)" }} />
 
-          {/* HERO METRICS */}
-          {activeSection === "overview" && (
-            <div>
-              {/* Top Metrics Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
-                <MetricCard label="Market Cap" value={`₹${(data.hero.mcap / 100).toFixed(0)}K Cr`} />
-                <MetricCard label="P/E Ratio" value={data.hero.pe.toFixed(1)} sub="TTM" />
-                <MetricCard label="P/B Ratio" value={data.hero.pb.toFixed(1)} />
-                <MetricCard label="EPS" value={`₹${data.hero.eps}`} />
-                <MetricCard label="Div. Yield" value={`${data.hero.divYield}%`} color="#10b981" />
-                <MetricCard label="Volume" value={`${(data.hero.volume / 1000000).toFixed(1)}M`} />
-                <MetricCard label="52W High" value={`₹${data.hero.weekHigh52.toLocaleString()}`} color="#10b981" />
-                <MetricCard label="52W Low" value={`₹${data.hero.weekLow52.toLocaleString()}`} color="#ef4444" />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg, #6366f1, #a855f7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Brain size={20} style={{ color: "#fff" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: "1.05rem", fontWeight: 800, letterSpacing: "-0.01em" }}>White Tiger AI Copilot</div>
+                  <div style={{ fontSize: "0.66rem", color: "rgba(255,255,255,0.4)" }}>Real-time institutional intelligence for {data.companyName}</div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+                  <Radio size={10} style={{ color: "#4ade80", animation: "pulse 2s ease infinite" }} />
+                  <span style={{ fontSize: "0.62rem", color: "#4ade80", fontWeight: 600 }}>LIVE</span>
+                </div>
               </div>
 
-              {/* AI Sentiment Card */}
-              <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(16,185,129,0.05) 100%)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 14, padding: "18px 22px", marginBottom: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              {/* AI Narrative — The Main Intelligence */}
+              {data.aiCopilot && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "20px 24px", border: "1px solid rgba(99,102,241,0.12)", lineHeight: 1.75 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <MessageSquare size={14} style={{ color: "#a5b4fc" }} />
+                      <span style={{ fontSize: "0.68rem", fontWeight: 700, color: "#a5b4fc", textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Market Narrative</span>
+                    </div>
+                    <p style={{ fontSize: "0.92rem", color: "rgba(255,255,255,0.88)", margin: 0, fontWeight: 400, letterSpacing: "0.01em" }}>
+                      {data.aiCopilot.narrative}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Intelligence Grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                {[
+                  { label: "Market Cap", value: `₹${(data.hero.mcap / 100).toFixed(0)}K Cr`, icon: <Layers size={14} /> },
+                  { label: "AI Confidence", value: `${data.sentiment.confidence}%`, icon: <Brain size={14} />, color: data.sentiment.confidence > 70 ? "#4ade80" : "#fbbf24" },
+                  { label: "Risk Level", value: data.aiRiskEngine?.overallRiskLevel || "Moderate", icon: <Shield size={14} />, color: data.aiRiskEngine?.overallRiskLevel === "Low" ? "#4ade80" : data.aiRiskEngine?.overallRiskLevel === "High" ? "#f87171" : "#fbbf24" },
+                  { label: "Opportunity", value: data.aiOpportunityEngine?.opportunityType || "Value", icon: <Target size={14} />, color: "#a5b4fc" },
+                ].map((m, i) => (
+                  <div key={i} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ color: m.color || "rgba(255,255,255,0.4)" }}>{m.icon}</span>
+                      <span style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.4)", fontWeight: 600, textTransform: "uppercase" }}>{m.label}</span>
+                    </div>
+                    <div style={{ fontSize: "1.05rem", fontWeight: 800, color: m.color || "#fff" }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════
+            TRUST INTELLIGENCE — White Tiger Score + Source + Risks
+            ════════════════════════════════════════════════════════ */}
+        <section ref={el => { sectionRefs.current["trust"] = el; }} style={{ marginBottom: 36 }}>
+          {/* ── White Tiger Score Card ── */}
+          {data.whiteTigerScore && (
+            <div style={{ background: "linear-gradient(135deg, #0f1628, #162040)", borderRadius: 18, padding: "28px 32px", color: "#fff", marginBottom: 18, border: "1px solid rgba(99,102,241,0.15)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32 }}>
+                {/* Score circle */}
+                <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                  <div style={{ position: "relative", width: 100, height: 100 }}>
+                    <svg width="100" height="100" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+                      <circle cx="50" cy="50" r="42" fill="none"
+                        stroke={data.whiteTigerScore.overall >= 70 ? "#4ade80" : data.whiteTigerScore.overall >= 50 ? "#fbbf24" : "#f87171"}
+                        strokeWidth="8" strokeLinecap="round"
+                        strokeDasharray={`${data.whiteTigerScore.overall * 2.64} 264`}
+                        transform="rotate(-90 50 50)"
+                        style={{ transition: "stroke-dasharray 2s cubic-bezier(0.4,0,0.2,1)" }}
+                      />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: "1.6rem", fontWeight: 900, color: data.whiteTigerScore.overall >= 70 ? "#4ade80" : data.whiteTigerScore.overall >= 50 ? "#fbbf24" : "#f87171" }}>
+                        {data.whiteTigerScore.overall}
+                      </span>
+                      <span style={{ fontSize: "0.52rem", color: "rgba(255,255,255,0.4)", fontWeight: 600 }}>/ 100</span>
+                    </div>
+                  </div>
                   <div>
-                    <div style={{ fontSize: "0.68rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>AI Sentiment</div>
-                    <div style={{ fontSize: "1.3rem", fontWeight: 900, color: sentimentColor, marginTop: 4 }}>{data.sentiment.label}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: "0.65rem", color: "#64748b" }}>Confidence</div>
-                    <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "#818cf8" }}>{data.sentiment.confidence}%</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 8, padding: "6px 12px", fontSize: "0.72rem", color: "#10b981", fontWeight: 600 }}>
-                    Target: ₹{data.analystConsensus.targetPrice.toLocaleString()} ({data.analystConsensus.upside > 0 ? "+" : ""}{data.analystConsensus.upside}%)
-                  </div>
-                  <div style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, padding: "6px 12px", fontSize: "0.72rem", color: "#818cf8", fontWeight: 600 }}>
-                    {data.analystConsensus.rating} · {data.analystConsensus.analystCount} analysts
-                  </div>
-                  <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, padding: "6px 12px", fontSize: "0.72rem", color: "#f59e0b", fontWeight: 600 }}>
-                    Fair Value: ₹{data.fairValue.dcfValue.toLocaleString()} ({data.fairValue.upside > 0 ? "+" : ""}{data.fairValue.upside}%)
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                      <Award size={18} style={{ color: "#a5b4fc" }} />
+                      <span style={{ fontSize: "1.05rem", fontWeight: 800 }}>White Tiger Score</span>
+                    </div>
+                    <span style={{
+                      fontSize: "0.72rem", fontWeight: 700,
+                      padding: "4px 12px", borderRadius: 6,
+                      background: data.whiteTigerScore.overall >= 70 ? "rgba(74,222,128,0.12)" : data.whiteTigerScore.overall >= 50 ? "rgba(251,191,36,0.12)" : "rgba(248,113,113,0.12)",
+                      color: data.whiteTigerScore.overall >= 70 ? "#4ade80" : data.whiteTigerScore.overall >= 50 ? "#fbbf24" : "#f87171",
+                    }}>
+                      {data.whiteTigerScore.label}
+                    </span>
+                    <div style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.3)", marginTop: 8 }}>
+                      {data.whiteTigerScore.weights}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* AI Scores */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px 22px", marginBottom: 20 }}>
-                <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 14 }}>AI Quality Scores</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
-                  <ScoreBar label="Overall" value={data.aiScores.overallScore} color="#6366f1" />
-                  <ScoreBar label="Quality" value={data.aiScores.qualityScore} color="#10b981" />
-                  <ScoreBar label="Valuation" value={data.aiScores.valuationScore} color="#f59e0b" />
-                  <ScoreBar label="Momentum" value={data.aiScores.momentumScore} color="#06b6d4" />
-                  <ScoreBar label="Growth" value={data.aiScores.growthScore} color="#8b5cf6" />
-                  <ScoreBar label="Risk" value={data.aiScores.riskScore} color="#ef4444" />
-                </div>
-              </div>
-
-              {/* Returns */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px 22px" }}>
-                <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 14 }}>Historical Returns</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
-                  {Object.entries(data.returns).map(([period, ret]) => (
-                    <div key={period} style={{ textAlign: "center", padding: "10px 4px", background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
-                      <div style={{ fontSize: "0.62rem", color: "#64748b", fontWeight: 600, marginBottom: 4 }}>{period}</div>
-                      <div style={{ fontSize: "0.9rem", fontWeight: 800, color: ret >= 0 ? "#10b981" : "#ef4444" }}>{ret > 0 ? "+" : ""}{ret}%</div>
+                {/* Score breakdown bars */}
+                <div style={{ flex: 1, maxWidth: 420, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    { label: "Valuation", value: data.whiteTigerScore.breakdown.valuation, weight: "25%", color: "#6366f1" },
+                    { label: "Macro", value: data.whiteTigerScore.breakdown.macro, weight: "20%", color: "#0ea5e9" },
+                    { label: "Technicals", value: data.whiteTigerScore.breakdown.technicals, weight: "15%", color: "#8b5cf6" },
+                    { label: "Institutional", value: data.whiteTigerScore.breakdown.institutional, weight: "15%", color: "#a855f7" },
+                    { label: "Risk", value: data.whiteTigerScore.breakdown.risk, weight: "15%", color: "#14b8a6" },
+                    { label: "Sentiment", value: data.whiteTigerScore.breakdown.sentiment, weight: "10%", color: "#f59e0b" },
+                  ].map((item) => (
+                    <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.45)", fontWeight: 600, width: 75, textAlign: "right" }}>{item.label} ({item.weight})</span>
+                      <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: `${item.value}%`, height: "100%", background: item.color, borderRadius: 3, transition: "width 1.5s ease" }} />
+                      </div>
+                      <span style={{ fontSize: "0.62rem", fontWeight: 700, color: item.color, minWidth: 28 }}>{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -242,778 +485,1100 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             </div>
           )}
 
-          {/* PRICE DRIVERS */}
-          {activeSection === "drivers" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Why {data.symbol} is Moving</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {data.priceDrivers.map((d, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 18px", display: "flex", alignItems: "flex-start", gap: 12 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", marginTop: 6, background: d.direction === "positive" ? "#10b981" : d.direction === "negative" ? "#ef4444" : "#f59e0b", flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#e2e8f0", marginBottom: 3 }}>{d.driver}</div>
-                      <div style={{ fontSize: "0.78rem", color: "#94a3b8", lineHeight: 1.5 }}>{d.detail}</div>
+          {/* ── Source Attribution + Actionability Row ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+            {/* Source Attribution */}
+            {data.sourceAttribution && (
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                  <Database size={16} style={{ color: "#6366f1" }} />
+                  <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>Data Sources</span>
+                  {data.sourceAttribution.priceVerified && (
+                    <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.6rem", fontWeight: 700, color: "#059669", background: "#f0fdf4", padding: "2px 8px", borderRadius: 4, marginLeft: "auto" }}>
+                      <CheckCircle size={10} /> VERIFIED
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {data.sourceAttribution.dataSources.map((src, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 5, height: 5, borderRadius: "50%", background: i === 0 ? "#4ade80" : "#6366f1", flexShrink: 0 }} />
+                      <span style={{ fontSize: "0.76rem", color: "#4b5563" }}>{src}</span>
                     </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 12, fontSize: "0.62rem", color: "#9ca3af", lineHeight: 1.5 }}>
+                  Price: {data.sourceAttribution.priceSource} · Engine: {data.sourceAttribution.analysisEngine}
+                </div>
+              </div>
+            )}
+
+            {/* Actionability Score */}
+            {data.actionability && (
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                  <Target size={16} style={{ color: data.actionability.color }} />
+                  <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>Actionability</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
+                  <span style={{
+                    fontSize: "1.2rem", fontWeight: 900, color: data.actionability.color,
+                  }}>
+                    {data.actionability.label}
+                  </span>
+                  <span style={{
+                    fontSize: "0.66rem", fontWeight: 700,
+                    padding: "4px 10px", borderRadius: 5,
+                    background: `${data.actionability.color}12`,
+                    color: data.actionability.color,
+                  }}>
+                    {data.actionability.score}
+                  </span>
+                </div>
+                <p style={{ fontSize: "0.76rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}>
+                  {data.actionability.detail}
+                </p>
+
+                {/* Confidence */}
+                {data.confidenceBreakdown && (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #f3f4f6" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#6b7280" }}>AI Confidence</span>
+                      <span style={{
+                        fontSize: "0.62rem", fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                        background: data.confidenceBreakdown.level === "High Confidence" ? "#f0fdf4" : data.confidenceBreakdown.level === "Medium Confidence" ? "#fffbeb" : "#fef2f2",
+                        color: data.confidenceBreakdown.level === "High Confidence" ? "#059669" : data.confidenceBreakdown.level === "Medium Confidence" ? "#d97706" : "#dc2626",
+                      }}>
+                        {data.confidenceBreakdown.level}
+                      </span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                      {[
+                        { label: "Data Quality", value: data.confidenceBreakdown.dataQuality },
+                        { label: "Macro Fit", value: data.confidenceBreakdown.macroAlignment },
+                        { label: "Historical", value: data.confidenceBreakdown.historicalAccuracy },
+                        { label: "Sentiment", value: data.confidenceBreakdown.sentimentConsistency },
+                      ].map(c => (
+                        <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <span style={{ fontSize: "0.58rem", color: "#9ca3af", width: 60 }}>{c.label}</span>
+                          <div style={{ flex: 1, height: 4, background: "#f3f4f6", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ width: `${c.value}%`, height: "100%", background: c.value >= 70 ? "#4ade80" : c.value >= 45 ? "#fbbf24" : "#f87171", borderRadius: 2 }} />
+                          </div>
+                          <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "#6b7280", minWidth: 22 }}>{c.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── Analysis Reasoning — Why This Conclusion ── */}
+          {data.analysisReasoning && (data.analysisReasoning.bullishFactors.length > 0 || data.analysisReasoning.bearishFactors.length > 0) && (
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "22px 24px", marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <Lightbulb size={16} style={{ color: "#f59e0b" }} />
+                <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1a1a2e" }}>Why This Conclusion?</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: data.analysisReasoning.bearishFactors.length > 0 ? "1fr 1fr" : "1fr", gap: 20 }}>
+                {data.analysisReasoning.bullishFactors.length > 0 && (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                      <TrendingUp size={13} style={{ color: "#059669" }} />
+                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#059669", textTransform: "uppercase" }}>Bullish Factors</span>
+                    </div>
+                    {data.analysisReasoning.bullishFactors.map((f, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                        <CheckCircle size={12} style={{ color: "#4ade80", marginTop: 3, flexShrink: 0 }} />
+                        <span style={{ fontSize: "0.76rem", color: "#4b5563", lineHeight: 1.5 }}>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {data.analysisReasoning.bearishFactors.length > 0 && (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                      <TrendingDown size={13} style={{ color: "#dc2626" }} />
+                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#dc2626", textTransform: "uppercase" }}>Bearish Factors</span>
+                    </div>
+                    {data.analysisReasoning.bearishFactors.map((f, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                        <XCircle size={12} style={{ color: "#f87171", marginTop: 3, flexShrink: 0 }} />
+                        <span style={{ fontSize: "0.76rem", color: "#4b5563", lineHeight: 1.5 }}>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {data.analysisReasoning.neutralFactors.length > 0 && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #f3f4f6" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <Info size={13} style={{ color: "#6b7280" }} />
+                    <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "#6b7280" }}>Neutral</span>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {data.analysisReasoning.neutralFactors.map((f, i) => (
+                      <span key={i} style={{ fontSize: "0.7rem", color: "#6b7280", background: "#f9fafb", padding: "4px 10px", borderRadius: 6, border: "1px solid #e5e7eb" }}>
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Risks to This Analysis ── */}
+          {data.analysisRisks && data.analysisRisks.length > 0 && (
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "22px 24px", marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <FileWarning size={16} style={{ color: "#dc2626" }} />
+                <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1a1a2e" }}>Risks to This Analysis</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {data.analysisRisks.map((r, i) => (
+                  <div key={i} style={{
+                    padding: "14px 16px", borderRadius: 10,
+                    background: r.severity === "high" ? "#fef2f2" : r.severity === "medium" ? "#fffbeb" : "#f0fdf4",
+                    border: `1px solid ${r.severity === "high" ? "#fecaca" : r.severity === "medium" ? "#fde68a" : "#bbf7d0"}`,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <AlertTriangle size={12} style={{ color: r.severity === "high" ? "#dc2626" : r.severity === "medium" ? "#d97706" : "#059669" }} />
+                      <span style={{ fontSize: "0.72rem", fontWeight: 700, color: r.severity === "high" ? "#dc2626" : r.severity === "medium" ? "#92400e" : "#065f46" }}>
+                        {r.risk}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: "0.7rem", color: "#4b5563", lineHeight: 1.5, margin: 0 }}>{r.detail}</p>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* TECHNICALS */}
-          {activeSection === "technicals" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Technical Analysis</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
-                <MetricCard label="RSI (14)" value={data.technicals.rsi.toString()} color={data.technicals.rsi > 70 ? "#ef4444" : data.technicals.rsi < 30 ? "#10b981" : "#f59e0b"} sub={data.technicals.rsi > 70 ? "Overbought" : data.technicals.rsi < 30 ? "Oversold" : "Neutral"} />
-                <MetricCard label="MACD" value={data.technicals.macd.toString()} color={data.technicals.macd > 0 ? "#10b981" : "#ef4444"} />
-                <MetricCard label="SMA 20" value={`₹${data.technicals.sma20.toLocaleString()}`} color={data.hero.cmp > data.technicals.sma20 ? "#10b981" : "#ef4444"} sub={data.hero.cmp > data.technicals.sma20 ? "Above" : "Below"} />
-                <MetricCard label="SMA 50" value={`₹${data.technicals.sma50.toLocaleString()}`} color={data.hero.cmp > data.technicals.sma50 ? "#10b981" : "#ef4444"} sub={data.hero.cmp > data.technicals.sma50 ? "Above" : "Below"} />
-                <MetricCard label="SMA 200" value={`₹${data.technicals.sma200.toLocaleString()}`} color={data.hero.cmp > data.technicals.sma200 ? "#10b981" : "#ef4444"} sub={data.hero.cmp > data.technicals.sma200 ? "Above" : "Below"} />
-                <MetricCard label="ATR" value={data.technicals.atr.toString()} sub="Volatility" />
-                <MetricCard label="Support" value={`₹${data.technicals.support.toLocaleString()}`} color="#10b981" />
-                <MetricCard label="Resistance" value={`₹${data.technicals.resistance.toLocaleString()}`} color="#ef4444" />
+          {/* ── Market Memory — Historical Parallels ── */}
+          {data.marketMemory && data.marketMemory.length > 0 && (
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "22px 24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                <History size={16} style={{ color: "#8b5cf6" }} />
+                <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1a1a2e" }}>Market Memory</span>
+                <span style={{ fontSize: "0.6rem", color: "#9ca3af", fontWeight: 500, marginLeft: 4 }}>Historical parallels for context</span>
               </div>
-              {/* Signal Summary */}
-              <div style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 12, padding: "16px 20px" }}>
-                <div style={{ fontSize: "0.72rem", color: "#818cf8", fontWeight: 700, marginBottom: 8 }}>TECHNICAL SIGNAL</div>
-                <div style={{ fontSize: "0.88rem", color: "#e2e8f0", lineHeight: 1.6 }}>
-                  {data.symbol} is trading {data.hero.cmp > data.technicals.sma200 ? "above" : "below"} its 200-day SMA (₹{data.technicals.sma200.toLocaleString()}), indicating a {data.hero.cmp > data.technicals.sma200 ? "bullish" : "bearish"} long-term trend. RSI at {data.technicals.rsi} signals {data.technicals.rsi > 70 ? "overbought conditions — consider profit booking" : data.technicals.rsi < 30 ? "oversold conditions — potential buying opportunity" : "neutral momentum"}. Key support at ₹{data.technicals.support.toLocaleString()} and resistance at ₹{data.technicals.resistance.toLocaleString()}.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* FUNDAMENTALS */}
-          {activeSection === "fundamentals" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Fundamental Analysis</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
-                <MetricCard label="Revenue" value={`₹${(data.fundamentals.revenue / 100).toFixed(0)}K Cr`} />
-                <MetricCard label="Net Profit (PAT)" value={`₹${(data.fundamentals.pat / 100).toFixed(0)}K Cr`} color="#10b981" />
-                <MetricCard label="EBITDA Margin" value={`${data.fundamentals.ebitdaMargin}%`} />
-                <MetricCard label="ROE" value={`${data.fundamentals.roe}%`} color={data.fundamentals.roe > 15 ? "#10b981" : "#f59e0b"} />
-                <MetricCard label="ROCE" value={`${data.fundamentals.roce}%`} color={data.fundamentals.roce > 15 ? "#10b981" : "#f59e0b"} />
-                <MetricCard label="Debt/Equity" value={data.fundamentals.debtEquity.toFixed(2)} color={data.fundamentals.debtEquity < 0.5 ? "#10b981" : data.fundamentals.debtEquity < 1 ? "#f59e0b" : "#ef4444"} />
-              </div>
-            </div>
-          )}
-
-          {/* VALUATION */}
-          {activeSection === "valuation" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Valuation Analysis</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-                <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.02))", border: "1px solid rgba(16,185,129,0.15)", borderRadius: 14, padding: "20px" }}>
-                  <div style={{ fontSize: "0.68rem", color: "#10b981", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>Fair Value (DCF)</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#10b981" }}>₹{data.fairValue.dcfValue.toLocaleString()}</div>
-                  <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>{data.fairValue.upside > 0 ? "Upside" : "Downside"}: {data.fairValue.upside > 0 ? "+" : ""}{data.fairValue.upside}%</div>
-                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 6 }}>Method: {data.fairValue.method}</div>
-                </div>
-                <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(99,102,241,0.02))", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 14, padding: "20px" }}>
-                  <div style={{ fontSize: "0.68rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>Analyst Target</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#818cf8" }}>₹{data.analystConsensus.targetPrice.toLocaleString()}</div>
-                  <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: 4 }}>{data.analystConsensus.rating} · {data.analystConsensus.analystCount} analysts</div>
-                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 6 }}>Upside: {data.analystConsensus.upside > 0 ? "+" : ""}{data.analystConsensus.upside}%</div>
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-                <MetricCard label="P/E Ratio" value={data.hero.pe.toFixed(1)} sub="TTM" />
-                <MetricCard label="P/B Ratio" value={data.hero.pb.toFixed(1)} />
-                <MetricCard label="EPS" value={`₹${data.hero.eps}`} />
-                <MetricCard label="Book Value" value={`₹${data.hero.bookValue}`} />
-                <MetricCard label="Dividend Yield" value={`${data.hero.divYield}%`} color="#10b981" />
-                <MetricCard label="CMP" value={`₹${data.hero.cmp.toLocaleString()}`} />
-              </div>
-            </div>
-          )}
-
-          {/* OWNERSHIP */}
-          {activeSection === "ownership" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Shareholding Pattern</h3>
-              {/* Current Holding */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
-                {[
-                  { label: "Promoter", value: data.fundamentals.promoterHolding, color: "#6366f1" },
-                  { label: "FII", value: data.fundamentals.fiiHolding, color: "#10b981" },
-                  { label: "DII", value: data.fundamentals.diiHolding, color: "#f59e0b" },
-                  { label: "Public", value: data.fundamentals.publicHolding, color: "#94a3b8" },
-                ].map(h => (
-                  <div key={h.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px", textAlign: "center" }}>
-                    <div style={{ width: 56, height: 56, borderRadius: "50%", border: `3px solid ${h.color}`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}>
-                      <span style={{ fontSize: "0.85rem", fontWeight: 800, color: h.color }}>{h.value}%</span>
-                    </div>
-                    <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600 }}>{h.label}</div>
-                  </div>
-                ))}
-              </div>
-              {/* Trend Table */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-                  <thead>
-                    <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                      <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b", fontWeight: 600 }}>Quarter</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#6366f1" }}>Promoter</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#10b981" }}>FII</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#f59e0b" }}>DII</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Public</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.shareholdingTrend.map(row => (
-                      <tr key={row.quarter} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                        <td style={{ padding: "10px 14px", color: "#e2e8f0", fontWeight: 600 }}>{row.quarter}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{row.promoter.toFixed(1)}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{row.fii.toFixed(1)}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{row.dii.toFixed(1)}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{row.public.toFixed(1)}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* FINANCIALS */}
-          {activeSection === "financials" && (
-            <div>
-              {/* Revenue Breakdown */}
-              {data.revenueBreakdown && (
-                <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12, color: "#f1f5f9" }}>Revenue Segmentation</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
-                      <div style={{ fontSize: "0.68rem", color: "#818cf8", fontWeight: 700, marginBottom: 10 }}>BY SEGMENT</div>
-                      {data.revenueBreakdown.segments.map((s, i) => (
-                        <div key={i} style={{ marginBottom: 8 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", marginBottom: 3 }}>
-                            <span style={{ color: "#e2e8f0" }}>{s.name}</span>
-                            <span style={{ color: "#94a3b8" }}>{s.share}% <span style={{ color: s.growth > 0 ? "#10b981" : "#ef4444", fontSize: "0.65rem" }}>({s.growth > 0 ? "+" : ""}{s.growth}%)</span></span>
-                          </div>
-                          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-                            <div style={{ width: `${s.share}%`, height: "100%", background: "#6366f1", borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
-                      <div style={{ fontSize: "0.68rem", color: "#10b981", fontWeight: 700, marginBottom: 10 }}>BY GEOGRAPHY</div>
-                      {data.revenueBreakdown.geography.map((g, i) => (
-                        <div key={i} style={{ marginBottom: 8 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", marginBottom: 3 }}>
-                            <span style={{ color: "#e2e8f0" }}>{g.region}</span>
-                            <span style={{ color: "#94a3b8" }}>{g.share}%</span>
-                          </div>
-                          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
-                            <div style={{ width: `${g.share}%`, height: "100%", background: "#10b981", borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Annual Financials */}
-              {data.annualFinancials && (
-                <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12, color: "#f1f5f9" }}>Annual Financials (₹ Cr)</h4>
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
-                      <thead>
-                        <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                          <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b" }}>Year</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Revenue</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>EBITDA</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>PAT</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>EPS</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Rev Gr%</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>PAT Gr%</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.annualFinancials.map(f => (
-                          <tr key={f.year} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                            <td style={{ padding: "10px 14px", color: "#e2e8f0", fontWeight: 600 }}>{f.year}</td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{f.revenue.toLocaleString()}</td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{f.ebitda.toLocaleString()}</td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{f.pat.toLocaleString()}</td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{f.eps}</td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: f.revenueGrowth >= 0 ? "#10b981" : "#ef4444", fontWeight: 600 }}>{f.revenueGrowth > 0 ? "+" : ""}{f.revenueGrowth}%</td>
-                            <td style={{ padding: "10px 14px", textAlign: "right", color: f.patGrowth >= 0 ? "#10b981" : "#ef4444", fontWeight: 600 }}>{f.patGrowth > 0 ? "+" : ""}{f.patGrowth}%</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Margin Analysis */}
-              {data.marginAnalysis && (
-                <div style={{ marginBottom: 20 }}>
-                  <h4 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12, color: "#f1f5f9" }}>Margin Trends</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 12 }}>
-                    <MetricCard label="Gross Margin" value={`${data.marginAnalysis.current.grossMargin}%`} color="#10b981" />
-                    <MetricCard label="EBITDA Margin" value={`${data.marginAnalysis.current.ebitdaMargin}%`} color="#818cf8" />
-                    <MetricCard label="EBIT Margin" value={`${data.marginAnalysis.current.ebitMargin}%`} color="#f59e0b" />
-                    <MetricCard label="PAT Margin" value={`${data.marginAnalysis.current.patMargin}%`} color="#06b6d4" />
-                  </div>
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
-                      <thead>
-                        <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                          <th style={{ padding: "8px 14px", textAlign: "left", color: "#64748b" }}>Year</th>
-                          <th style={{ padding: "8px 14px", textAlign: "right", color: "#10b981" }}>Gross %</th>
-                          <th style={{ padding: "8px 14px", textAlign: "right", color: "#818cf8" }}>EBITDA %</th>
-                          <th style={{ padding: "8px 14px", textAlign: "right", color: "#06b6d4" }}>PAT %</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.marginAnalysis.trend.map(t => (
-                          <tr key={t.year} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                            <td style={{ padding: "8px 14px", color: "#e2e8f0", fontWeight: 600 }}>{t.year}</td>
-                            <td style={{ padding: "8px 14px", textAlign: "right", color: "#cbd5e1" }}>{t.grossMargin}%</td>
-                            <td style={{ padding: "8px 14px", textAlign: "right", color: "#cbd5e1" }}>{t.ebitdaMargin}%</td>
-                            <td style={{ padding: "8px 14px", textAlign: "right", color: "#cbd5e1" }}>{t.patMargin}%</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* Quarterly Results */}
-              <h4 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12, color: "#f1f5f9" }}>Quarterly Results</h4>
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-                  <thead>
-                    <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                      <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b", fontWeight: 600 }}>Quarter</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Revenue (Cr)</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>PAT (Cr)</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>EBITDA %</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>EPS Growth</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.quarterlyResults.map(q => (
-                      <tr key={q.quarter} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                        <td style={{ padding: "10px 14px", color: "#e2e8f0", fontWeight: 600 }}>{q.quarter}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{q.revenue.toLocaleString()}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{q.pat.toLocaleString()}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{q.ebitdaMargin}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: q.epsGrowth >= 0 ? "#10b981" : "#ef4444", fontWeight: 600 }}>{q.epsGrowth > 0 ? "+" : ""}{q.epsGrowth}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* PEERS */}
-          {activeSection === "peers" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Peer Comparison — {data.sector}</h3>
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
-                  <thead>
-                    <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                      <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b" }}>Company</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>P/E</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>P/B</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>ROE %</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>MCap (Cr)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ background: "rgba(99,102,241,0.05)", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                      <td style={{ padding: "10px 14px", color: "#818cf8", fontWeight: 700 }}>{data.symbol} ★</td>
-                      <td style={{ padding: "10px 14px", textAlign: "right", color: "#e2e8f0" }}>{data.hero.pe.toFixed(1)}</td>
-                      <td style={{ padding: "10px 14px", textAlign: "right", color: "#e2e8f0" }}>{data.hero.pb.toFixed(1)}</td>
-                      <td style={{ padding: "10px 14px", textAlign: "right", color: "#e2e8f0" }}>{data.fundamentals.roe}%</td>
-                      <td style={{ padding: "10px 14px", textAlign: "right", color: "#e2e8f0" }}>₹{data.hero.mcap.toLocaleString()}</td>
-                    </tr>
-                    {data.peerComparison.map(p => (
-                      <tr key={p.symbol} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                        <td style={{ padding: "10px 14px", color: "#cbd5e1", fontWeight: 600 }}>{p.symbol}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{p.pe.toFixed(1)}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{p.pb.toFixed(1)}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{p.roe}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{p.mcap.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* NEWS */}
-          {activeSection === "news" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>News & Events</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {data.newsEvents.map((n, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 18px", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {data.marketMemory.map((m, i) => (
+                  <div key={i} style={{
+                    display: "flex", gap: 14, padding: "14px 16px", borderRadius: 10,
+                    background: m.relevance === "high" ? "rgba(99,102,241,0.04)" : "#f9fafb",
+                    border: `1px solid ${m.relevance === "high" ? "rgba(99,102,241,0.12)" : "#f3f4f6"}`,
+                  }}>
                     <div style={{
-                      width: 8, height: 8, borderRadius: "50%", marginTop: 6, flexShrink: 0,
-                      background: n.impact === "positive" ? "#10b981" : n.impact === "negative" ? "#ef4444" : "#f59e0b",
-                    }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#e2e8f0", marginBottom: 3 }}>{n.title}</div>
-                      <div style={{ display: "flex", gap: 8, fontSize: "0.68rem" }}>
-                        <span style={{ color: "#64748b" }}>{n.date}</span>
-                        <span style={{ color: n.severity === "high" ? "#ef4444" : n.severity === "medium" ? "#f59e0b" : "#64748b", fontWeight: 600, textTransform: "uppercase" }}>{n.severity}</span>
+                      width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                      background: m.relevance === "high" ? "rgba(139,92,246,0.1)" : "rgba(107,114,128,0.08)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Clock size={16} style={{ color: m.relevance === "high" ? "#8b5cf6" : "#9ca3af" }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1a1a2e", marginBottom: 4 }}>{m.event}</div>
+                      <p style={{ fontSize: "0.72rem", color: "#6b7280", lineHeight: 1.55, margin: 0 }}>{m.context}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Key Metrics Quick Strip */}
+        <section style={{ marginBottom: 32 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 1, background: "#e5e7eb", borderRadius: 12, overflow: "hidden" }}>
+            {[
+              { label: "P/E", value: data.hero.pe.toFixed(1) + "x" },
+              { label: "P/B", value: data.hero.pb.toFixed(1) + "x" },
+              { label: "EPS", value: `₹${data.hero.eps}` },
+              { label: "ROE", value: `${data.fundamentals.roe}%` },
+              { label: "ROCE", value: `${data.fundamentals.roce}%` },
+              { label: "D/E", value: data.fundamentals.debtEquity.toFixed(2) },
+              { label: "Div Yield", value: `${data.hero.divYield}%` },
+              { label: "52W Range", value: `₹${data.hero.weekLow52}–${data.hero.weekHigh52}` },
+            ].map((m, i) => (
+              <div key={i} style={{ background: "#fff", padding: "12px 10px", textAlign: "center" }}>
+                <div style={{ fontSize: "0.58rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>{m.label}</div>
+                <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1a1a2e" }}>{m.value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 2: WHY IS THIS STOCK MOVING?
+            ════════════════════════════════════════════════════════ */}
+        <section ref={el => { sectionRefs.current["movement"] = el; }} style={{ marginBottom: 36 }}>
+          <SectionHeading title="Why Is This Stock Moving?" subtitle="AI-powered analysis connecting technical, macro, institutional, and sentiment factors" icon={<Zap size={18} />} />
+
+          {data.aiCopilot?.movementReasons && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {([
+                { key: "technical" as const, title: "Technical Signals", icon: <Activity size={15} />, color: "#6366f1" },
+                { key: "macro" as const, title: "Macro Environment", icon: <Globe size={15} />, color: "#0ea5e9" },
+                { key: "institutional" as const, title: "Institutional Activity", icon: <Users size={15} />, color: "#8b5cf6" },
+                { key: "sentiment" as const, title: "Market Sentiment", icon: <MessageSquare size={15} />, color: "#f59e0b" },
+              ]).map(cat => (
+                <div key={cat.key} style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: `${cat.color}10`, display: "flex", alignItems: "center", justifyContent: "center", color: cat.color }}>{cat.icon}</div>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{cat.title}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {data.aiCopilot!.movementReasons[cat.key].map((reason, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: cat.color, marginTop: 7, flexShrink: 0, opacity: 0.7 }} />
+                        <span style={{ fontSize: "0.78rem", color: "#4b5563", lineHeight: 1.55 }}>{reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Price Drivers */}
+          <div style={{ marginTop: 18, background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+            <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+              <Flame size={14} style={{ color: "#f59e0b" }} /> Key Price Catalysts
+            </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {data.priceDrivers.map((d, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < data.priceDrivers.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", marginTop: 6, flexShrink: 0, background: d.direction === "positive" ? "#059669" : d.direction === "negative" ? "#dc2626" : "#d97706" }} />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#1a1a2e", marginBottom: 2 }}>{d.driver}</div>
+                    <div style={{ fontSize: "0.76rem", color: "#6b7280", lineHeight: 1.5 }}>{d.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 3: SMART MONEY TRACKER
+            ════════════════════════════════════════════════════════ */}
+        {data.smartMoney && (
+          <section ref={el => { sectionRefs.current["smartmoney"] = el; }} style={{ marginBottom: 36 }}>
+            <SectionHeading title="Smart Money Tracker" subtitle="Institutional flows, block deals, delivery data, and derivatives positioning" icon={<Eye size={18} />} />
+
+            {/* Accumulation/Distribution Signal */}
+            <div style={{ background: data.smartMoney.accumulationDistribution === "Accumulation" ? "linear-gradient(135deg, #f0fdf4, #ecfdf5)" : data.smartMoney.accumulationDistribution === "Distribution" ? "linear-gradient(135deg, #fef2f2, #fff1f2)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 14, padding: "22px 26px", marginBottom: 16, border: `1px solid ${data.smartMoney.accumulationDistribution === "Accumulation" ? "#bbf7d0" : data.smartMoney.accumulationDistribution === "Distribution" ? "#fecaca" : "#fde68a"}` }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                    <span style={{ fontSize: "1.1rem", fontWeight: 800, color: data.smartMoney.accumulationDistribution === "Accumulation" ? "#059669" : data.smartMoney.accumulationDistribution === "Distribution" ? "#dc2626" : "#d97706" }}>
+                      {data.smartMoney.accumulationDistribution === "Accumulation" ? "📈" : data.smartMoney.accumulationDistribution === "Distribution" ? "📉" : "➡️"} {data.smartMoney.accumulationDistribution} Phase Detected
+                    </span>
+                  </div>
+                  <p style={{ fontSize: "0.82rem", color: "#4b5563", margin: 0, lineHeight: 1.5, maxWidth: 650 }}>{data.smartMoney.adSignal}</p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "0.62rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>Delivery %</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: 900, color: data.smartMoney.deliveryData.todayDelivery > data.smartMoney.deliveryData.avgDeliveryPercent ? "#059669" : "#dc2626" }}>{data.smartMoney.deliveryData.todayDelivery}%</div>
+                  <div style={{ fontSize: "0.65rem", color: "#6b7280" }}>Avg: {data.smartMoney.deliveryData.avgDeliveryPercent}%</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {/* Block Deals */}
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Lock size={14} style={{ color: "#8b5cf6" }} /> Recent Block Deals
+                </div>
+                {data.smartMoney.blockDeals.map((deal, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < data.smartMoney!.blockDeals.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                    <div>
+                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1a1a2e" }}>{deal.buyer}</div>
+                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{deal.date} · {deal.quantity}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: deal.type === "Buy" ? "#059669" : "#dc2626" }}>{deal.type}</div>
+                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{deal.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Derivatives Position */}
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Crosshair size={14} style={{ color: "#6366f1" }} /> Derivatives Positioning
+                </div>
+                {[
+                  { label: "Futures OI", value: data.smartMoney.derivativesPosition.futuresOI },
+                  { label: "OI Change", value: data.smartMoney.derivativesPosition.oiChange },
+                  { label: "Put-Call Ratio", value: data.smartMoney.derivativesPosition.putCallRatio.toString() },
+                  { label: "Max Pain", value: `₹${data.smartMoney.derivativesPosition.maxPainStrike.toLocaleString()}` },
+                ].map((item, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < 3 ? "1px solid #f3f4f6" : "none" }}>
+                    <span style={{ fontSize: "0.76rem", color: "#6b7280" }}>{item.label}</span>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{item.value}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 12, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, fontSize: "0.74rem", color: "#4b5563", lineHeight: 1.5 }}>
+                  <Lightbulb size={12} style={{ color: "#f59e0b", marginRight: 6, verticalAlign: "middle" }} />
+                  {data.smartMoney.derivativesPosition.interpretation}
+                </div>
+              </div>
+            </div>
+
+            {/* Insider Activity */}
+            <div style={{ marginTop: 14, background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "18px 22px" }}>
+              <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                <Users size={14} style={{ color: "#0ea5e9" }} /> Insider Activity
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {data.smartMoney.insiderActivity.map((ins, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#f8fafc", borderRadius: 8 }}>
+                    <div>
+                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1a1a2e" }}>{ins.who}</div>
+                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{ins.date}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "0.76rem", fontWeight: 700, color: ins.action.includes("Acquired") || ins.action.includes("ESOP") ? "#059669" : ins.action.includes("Sold") ? "#dc2626" : "#6b7280" }}>{ins.action}</div>
+                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{ins.shares}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 4: AI RISK ENGINE
+            ════════════════════════════════════════════════════════ */}
+        {data.aiRiskEngine && (
+          <section ref={el => { sectionRefs.current["risk"] = el; }} style={{ marginBottom: 36 }}>
+            <SectionHeading title="AI Risk Engine" subtitle="Multi-dimensional risk assessment with AI-powered hedging suggestions" icon={<Shield size={18} />} />
+
+            {/* Risk Overview */}
+            <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16, marginBottom: 16 }}>
+              <div style={{ background: data.aiRiskEngine.overallRiskLevel === "Low" ? "linear-gradient(135deg, #f0fdf4, #ecfdf5)" : data.aiRiskEngine.overallRiskLevel === "High" ? "linear-gradient(135deg, #fef2f2, #fff1f2)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 14, padding: "24px", textAlign: "center", border: `1px solid ${data.aiRiskEngine.overallRiskLevel === "Low" ? "#bbf7d0" : data.aiRiskEngine.overallRiskLevel === "High" ? "#fecaca" : "#fde68a"}` }}>
+                <Shield size={28} style={{ color: data.aiRiskEngine.overallRiskLevel === "Low" ? "#059669" : data.aiRiskEngine.overallRiskLevel === "High" ? "#dc2626" : "#d97706", marginBottom: 10 }} />
+                <div style={{ fontSize: "1.4rem", fontWeight: 900, color: data.aiRiskEngine.overallRiskLevel === "Low" ? "#059669" : data.aiRiskEngine.overallRiskLevel === "High" ? "#dc2626" : "#d97706" }}>
+                  {data.aiRiskEngine.overallRiskLevel} Risk
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 8 }}>Worst-case drawdown: <strong>{data.aiRiskEngine.worstCaseDrawdown}%</strong></div>
+                <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 4 }}>Recovery time: <strong>{data.aiRiskEngine.recoveryTime}</strong></div>
+              </div>
+
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 14 }}>Risk Breakdown</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {data.aiRiskEngine.riskBreakdown.map((risk, i) => (
+                    <div key={i}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "#374151" }}>{risk.category}</span>
+                        <RiskBadge level={risk.level} />
+                      </div>
+                      <div style={{ height: 5, background: "#e5e7eb", borderRadius: 3, overflow: "hidden", marginBottom: 4 }}>
+                        <div style={{
+                          width: `${risk.score}%`, height: "100%", borderRadius: 3,
+                          background: risk.level === "Low" ? "#059669" : risk.level === "Moderate" ? "#d97706" : "#dc2626",
+                        }} />
+                      </div>
+                      <div style={{ fontSize: "0.68rem", color: "#6b7280", lineHeight: 1.4 }}>{risk.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Hedging Suggestion */}
+            <div style={{ background: "linear-gradient(135deg, #eff6ff, #f0f9ff)", borderRadius: 12, padding: "16px 20px", border: "1px solid #bfdbfe", display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <Shield size={16} style={{ color: "#3b82f6", marginTop: 2, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#1d4ed8", marginBottom: 4 }}>AI Hedging Suggestion</div>
+                <div style={{ fontSize: "0.78rem", color: "#4b5563", lineHeight: 1.5 }}>{data.aiRiskEngine.hedgingSuggestion}</div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 5: AI OPPORTUNITY ENGINE
+            ════════════════════════════════════════════════════════ */}
+        {data.aiOpportunityEngine && (
+          <section ref={el => { sectionRefs.current["opportunity"] = el; }} style={{ marginBottom: 36 }}>
+            <SectionHeading title="AI Opportunity Engine" subtitle="Actionable trade setup with conviction levels and position sizing" icon={<Target size={18} />} />
+
+            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+              {/* Thesis Header */}
+              <div style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", padding: "22px 26px", color: "#fff" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <div style={{ padding: "5px 14px", borderRadius: 6, background: "rgba(255,255,255,0.15)", fontSize: "0.72rem", fontWeight: 700 }}>
+                    {data.aiOpportunityEngine.opportunityType}
+                  </div>
+                  <div style={{ padding: "5px 14px", borderRadius: 6, background: data.aiOpportunityEngine.conviction === "High" ? "rgba(74,222,128,0.2)" : "rgba(251,191,36,0.2)", fontSize: "0.72rem", fontWeight: 700, color: data.aiOpportunityEngine.conviction === "High" ? "#4ade80" : "#fbbf24" }}>
+                    {data.aiOpportunityEngine.conviction} Conviction
+                  </div>
+                  <div style={{ padding: "5px 14px", borderRadius: 6, background: "rgba(255,255,255,0.1)", fontSize: "0.72rem", fontWeight: 600 }}>
+                    {data.aiOpportunityEngine.timeHorizon}
+                  </div>
+                </div>
+                <p style={{ fontSize: "0.88rem", lineHeight: 1.65, margin: 0, opacity: 0.92 }}>{data.aiOpportunityEngine.thesis}</p>
+              </div>
+
+              {/* Trade Parameters */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, background: "#e5e7eb" }}>
+                {[
+                  { label: "Entry Zone", value: data.aiOpportunityEngine.idealEntryZone, color: "#059669" },
+                  { label: "Target Zone", value: data.aiOpportunityEngine.targetZone, color: "#6366f1" },
+                  { label: "Stop Loss", value: data.aiOpportunityEngine.stopLoss, color: "#dc2626" },
+                  { label: "Position Size", value: data.aiOpportunityEngine.positionSizing, color: "#374151" },
+                  { label: "Sector Signal", value: data.aiOpportunityEngine.sectorRotationSignal.split("—")[0].trim(), color: "#0ea5e9" },
+                ].map((p, i) => (
+                  <div key={i} style={{ background: "#fff", padding: "16px", textAlign: "center" }}>
+                    <div style={{ fontSize: "0.6rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{p.label}</div>
+                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: p.color }}>{p.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 6: EARNINGS INTELLIGENCE
+            ════════════════════════════════════════════════════════ */}
+        {data.earningsIntelligence && (
+          <section ref={el => { sectionRefs.current["earnings"] = el; }} style={{ marginBottom: 36 }}>
+            <SectionHeading title="Earnings Intelligence" subtitle="AI-summarized quarterly results, management commentary, and consensus tracking" icon={<BookOpen size={18} />} />
+
+            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 14 }}>
+              {/* Last Quarter AI Summary */}
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "22px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                  <Brain size={14} style={{ color: "#6366f1" }} />
+                  <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151" }}>AI Earnings Summary</span>
+                </div>
+                <p style={{ fontSize: "0.82rem", color: "#4b5563", lineHeight: 1.65, margin: "0 0 18px" }}>{data.earningsIntelligence.lastQuarterSummary}</p>
+
+                <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Management Commentary Highlights</div>
+                {data.earningsIntelligence.managementCommentary.map((c, i) => (
+                  <div key={i} style={{ padding: "10px 14px", background: "#f8fafc", borderRadius: 8, marginBottom: 8, fontSize: "0.76rem", color: "#4b5563", lineHeight: 1.55, fontStyle: "italic", borderLeft: "3px solid #6366f1" }}>
+                    {c}
+                  </div>
+                ))}
+              </div>
+
+              {/* Earnings Surprise + Consensus */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px", flex: 1 }}>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 12 }}>Earnings Surprise History</div>
+                  {data.earningsIntelligence.earningsSurpriseHistory.map((e, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < data.earningsIntelligence!.earningsSurpriseHistory.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                      <span style={{ fontSize: "0.76rem", color: "#6b7280" }}>{e.quarter}</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: e.surprise > 0 ? "#059669" : "#dc2626" }}>{e.surprise > 0 ? "+" : ""}{e.surprise}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "18px 22px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <div>
+                      <div style={{ fontSize: "0.62rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Next Earnings</div>
+                      <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1a1a2e" }}>{data.earningsIntelligence.nextEarningsDate}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: "0.62rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Consensus EPS</div>
+                      <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#1a1a2e" }}>₹{data.earningsIntelligence.consensusEPS}</div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 12, padding: "8px 12px", background: "#f8fafc", borderRadius: 6, fontSize: "0.72rem", color: "#4b5563" }}>
+                    <Sparkles size={11} style={{ color: "#6366f1", marginRight: 4, verticalAlign: "middle" }} />
+                    {data.earningsIntelligence.epsRevisionTrend}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 7: GEOPOLITICAL & COMMODITY IMPACT
+            ════════════════════════════════════════════════════════ */}
+        {data.geopoliticalImpact && (
+          <section ref={el => { sectionRefs.current["geopolitical"] = el; }} style={{ marginBottom: 36 }}>
+            <SectionHeading title="Geopolitical & Macro Impact" subtitle="How global events, commodities, currencies, and interest rates affect this stock" icon={<Globe size={18} />} />
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+              {/* Commodity Exposure */}
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  <Flame size={14} style={{ color: "#f59e0b" }} /> Commodity Exposure
+                </div>
+                {data.geopoliticalImpact.commodityExposure.map((c, i) => (
+                  <div key={i} style={{ marginBottom: 14, paddingBottom: 12, borderBottom: i < data.geopoliticalImpact!.commodityExposure.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{c.commodity}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#374151" }}>{c.currentPrice}</span>
+                        <RiskBadge level={c.severity === "high" ? "High" : c.severity === "medium" ? "Moderate" : "Low"} />
                       </div>
                     </div>
+                    <div style={{ fontSize: "0.72rem", color: "#6b7280", lineHeight: 1.5 }}>{c.impact}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Geopolitical Risks */}
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
+                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                  <AlertTriangle size={14} style={{ color: "#dc2626" }} /> Geopolitical Risk Factors
+                </div>
+                {data.geopoliticalImpact.geopoliticalRisks.map((r, i) => (
+                  <div key={i} style={{ marginBottom: 14, paddingBottom: 12, borderBottom: i < data.geopoliticalImpact!.geopoliticalRisks.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{r.event}</span>
+                      <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "#6b7280", background: "#f1f5f9", padding: "2px 8px", borderRadius: 4 }}>P: {r.probability}</span>
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "#6b7280", lineHeight: 1.5 }}>{r.impact}</div>
                   </div>
                 ))}
               </div>
             </div>
-          )}
 
-          {/* RISK */}
-          {activeSection === "risk" && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Risk Assessment</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 14, padding: "18px 20px" }}>
-                  <div style={{ fontSize: "0.68rem", color: "#ef4444", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>Key Risks</div>
+            {/* Currency & Interest Rate */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "18px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <DollarSign size={14} style={{ color: "#0ea5e9" }} />
+                  <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151" }}>Currency Impact</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: "0.78rem", color: "#6b7280" }}>USD/INR</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1a1a2e" }}>₹{data.geopoliticalImpact.currencyImpact.usdInr}</span>
+                </div>
+                <div style={{ fontSize: "0.62rem", fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>{data.geopoliticalImpact.currencyImpact.direction}</div>
+                <div style={{ fontSize: "0.74rem", color: "#4b5563", lineHeight: 1.5, padding: "8px 12px", background: "#f8fafc", borderRadius: 8 }}>{data.geopoliticalImpact.currencyImpact.impact}</div>
+              </div>
+
+              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "18px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <Activity size={14} style={{ color: "#8b5cf6" }} />
+                  <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151" }}>Interest Rate Impact</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: "0.78rem", color: "#6b7280" }}>Repo Rate</span>
+                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1a1a2e" }}>{data.geopoliticalImpact.interestRateImpact.repoRate}</span>
+                </div>
+                <div style={{ fontSize: "0.62rem", fontWeight: 600, color: "#6b7280", marginBottom: 6 }}>{data.geopoliticalImpact.interestRateImpact.outlook}</div>
+                <div style={{ fontSize: "0.74rem", color: "#4b5563", lineHeight: 1.5, padding: "8px 12px", background: "#f8fafc", borderRadius: 8 }}>{data.geopoliticalImpact.interestRateImpact.impact}</div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 8: DEEP ANALYSIS (Expandable Cards)
+            Supporting data behind AI insights
+            ════════════════════════════════════════════════════════ */}
+        <section ref={el => { sectionRefs.current["fundamentals"] = el; }} style={{ marginBottom: 36 }}>
+          <SectionHeading title="Deep Analysis" subtitle="Detailed fundamentals, financials, and institutional data supporting AI insights" icon={<BarChart3 size={18} />} />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Fundamentals */}
+            <AIInsightCard icon={<PieChart size={17} />} title="Fundamental Analysis — Valuation & Profitability" accentColor="#6366f1" defaultOpen>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, paddingTop: 16 }}>
+                <div>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginBottom: 14 }}>Valuation</div>
                   {[
-                    "Sector-specific regulatory changes",
-                    `High valuation (${data.hero.pe.toFixed(1)}x PE) leaves limited margin of safety`,
-                    "FII outflow risk if global sentiment deteriorates",
-                    data.fundamentals.debtEquity > 0.5 ? `Elevated debt (D/E: ${data.fundamentals.debtEquity})` : "Competitive intensity increasing",
-                  ].map((r, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                      <span style={{ color: "#ef4444", fontWeight: 800, fontSize: "0.7rem", marginTop: 2 }}>●</span>
-                      <span style={{ fontSize: "0.78rem", color: "#e2e8f0", lineHeight: 1.4 }}>{r}</span>
+                    { label: "P/E Ratio", value: `${data.hero.pe.toFixed(1)}x`, note: pointerText(data.hero.pe, "pe") },
+                    { label: "P/B Ratio", value: `${data.hero.pb.toFixed(1)}x`, note: pointerText(data.hero.pb, "pb") },
+                    { label: "Dividend Yield", value: `${data.hero.divYield}%`, note: pointerText(data.hero.divYield, "divyield") },
+                  ].map((item, i) => (
+                    <div key={i} style={{ marginBottom: 14, paddingBottom: 12, borderBottom: i < 2 ? "1px solid #e5e7eb" : "none" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#374151" }}>{item.label}</span>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1a1a2e" }}>{item.value}</span>
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "#6b7280", lineHeight: 1.4 }}>{item.note}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.12)", borderRadius: 14, padding: "18px 20px" }}>
-                  <div style={{ fontSize: "0.68rem", color: "#10b981", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>Strengths</div>
+                <div>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginBottom: 14 }}>Profitability & Returns</div>
                   {[
-                    `Strong ROE of ${data.fundamentals.roe}% indicates quality earnings`,
-                    data.fundamentals.promoterHolding > 50 ? `High promoter holding (${data.fundamentals.promoterHolding}%) shows skin-in-the-game` : `Institutional interest — FII+DII own ${(data.fundamentals.fiiHolding + data.fundamentals.diiHolding).toFixed(1)}%`,
-                    `Market leader in ${data.industry}`,
-                    data.fundamentals.debtEquity < 0.3 ? "Near zero-debt balance sheet" : "Consistent earnings track record",
-                  ].map((s, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                      <span style={{ color: "#10b981", fontWeight: 800, fontSize: "0.7rem", marginTop: 2 }}>●</span>
-                      <span style={{ fontSize: "0.78rem", color: "#e2e8f0", lineHeight: 1.4 }}>{s}</span>
+                    { label: "ROE", value: `${data.fundamentals.roe}%`, note: pointerText(data.fundamentals.roe, "roe") },
+                    { label: "ROCE", value: `${data.fundamentals.roce}%`, note: pointerText(data.fundamentals.roce, "roce") },
+                    { label: "EBITDA Margin", value: `${data.fundamentals.ebitdaMargin}%`, note: pointerText(data.fundamentals.ebitdaMargin, "margin") },
+                    { label: "Debt/Equity", value: data.fundamentals.debtEquity.toFixed(2), note: pointerText(data.fundamentals.debtEquity, "de") },
+                  ].map((item, i) => (
+                    <div key={i} style={{ marginBottom: 14, paddingBottom: 12, borderBottom: i < 3 ? "1px solid #e5e7eb" : "none" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "#374151" }}>{item.label}</span>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "#1a1a2e" }}>{item.value}</span>
+                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "#6b7280", lineHeight: 1.4 }}>{item.note}</div>
                     </div>
                   ))}
                 </div>
               </div>
+            </AIInsightCard>
 
-              {/* Stress Tests */}
-              {data.stressTests && (
-                <div style={{ marginTop: 20, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                  <div style={{ padding: "12px 16px", background: "rgba(239,68,68,0.05)", fontSize: "0.72rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase" }}>Stress Test Results</div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
+            {/* Revenue & Margins */}
+            {data.revenueBreakdown && (
+              <AIInsightCard icon={<BarChart3 size={17} />} title="Revenue Breakdown & Margin Analysis" accentColor="#0ea5e9">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, paddingTop: 16 }}>
+                  <div>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Revenue by Segment</div>
+                    {data.revenueBreakdown.segments.map((s, i) => (
+                      <div key={i} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 4 }}>
+                          <span style={{ color: "#374151", fontWeight: 500 }}>{s.name}</span>
+                          <span style={{ color: "#1a1a2e", fontWeight: 700 }}>{s.share}% <span style={{ fontSize: "0.68rem", color: s.growth > 0 ? "#059669" : "#dc2626" }}>({s.growth > 0 ? "+" : ""}{s.growth}% YoY)</span></span>
+                        </div>
+                        <div style={{ height: 6, background: "#e5e7eb", borderRadius: 3 }}>
+                          <div style={{ width: `${s.share}%`, height: "100%", background: "#6366f1", borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Revenue by Geography</div>
+                    {data.revenueBreakdown.geography.map((g, i) => (
+                      <div key={i} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: 4 }}>
+                          <span style={{ color: "#374151", fontWeight: 500 }}>{g.region}</span>
+                          <span style={{ color: "#1a1a2e", fontWeight: 700 }}>{g.share}%</span>
+                        </div>
+                        <div style={{ height: 6, background: "#e5e7eb", borderRadius: 3 }}>
+                          <div style={{ width: `${g.share}%`, height: "100%", background: "#0ea5e9", borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {data.marginAnalysis && (
+                  <div style={{ marginTop: 18, borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Year</th>
+                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Gross %</th>
+                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>EBITDA %</th>
+                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>PAT %</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.marginAnalysis.trend.map((t, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                            <td style={{ padding: "10px 16px", fontWeight: 600, color: "#374151" }}>{t.year}</td>
+                            <td style={{ padding: "10px 16px", textAlign: "right", color: "#374151" }}>{t.grossMargin}%</td>
+                            <td style={{ padding: "10px 16px", textAlign: "right", color: "#374151" }}>{t.ebitdaMargin}%</td>
+                            <td style={{ padding: "10px 16px", textAlign: "right", color: "#374151" }}>{t.patMargin}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </AIInsightCard>
+            )}
+
+            {/* Financial Statements */}
+            <AIInsightCard icon={<DollarSign size={17} />} title="Financial Performance — Annual & Quarterly" accentColor="#059669">
+              <div style={{ paddingTop: 16 }}>
+                {data.annualFinancials && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 8 }}>Annual (₹ Cr)</div>
+                    <div style={{ borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.74rem" }}>
+                        <thead>
+                          <tr style={{ background: "#f8fafc" }}>
+                            {["Year", "Revenue", "EBITDA", "PAT", "EPS (₹)", "Rev Gr%", "PAT Gr%"].map(h => (
+                              <th key={h} style={{ padding: "10px 12px", textAlign: h === "Year" ? "left" : "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.annualFinancials.map((f, i) => (
+                            <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                              <td style={{ padding: "10px 12px", fontWeight: 600, color: "#374151" }}>{f.year}</td>
+                              <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>₹{f.revenue.toLocaleString()}</td>
+                              <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>₹{f.ebitda.toLocaleString()}</td>
+                              <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>₹{f.pat.toLocaleString()}</td>
+                              <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>₹{f.eps}</td>
+                              <td style={{ padding: "10px 12px", textAlign: "right", color: f.revenueGrowth >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>{f.revenueGrowth > 0 ? "+" : ""}{f.revenueGrowth}%</td>
+                              <td style={{ padding: "10px 12px", textAlign: "right", color: f.patGrowth >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>{f.patGrowth > 0 ? "+" : ""}{f.patGrowth}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 8 }}>Quarterly (₹ Cr)</div>
+                  <div style={{ borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.74rem" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          {["Quarter", "Revenue", "PAT", "EBITDA %", "EPS Gr%"].map(h => (
+                            <th key={h} style={{ padding: "10px 12px", textAlign: h === "Quarter" ? "left" : "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.quarterlyResults.map((q, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                            <td style={{ padding: "10px 12px", fontWeight: 600, color: "#374151" }}>{q.quarter}</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>₹{q.revenue.toLocaleString()}</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>₹{q.pat.toLocaleString()}</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", color: "#374151" }}>{q.ebitdaMargin}%</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", color: q.epsGrowth >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>{q.epsGrowth > 0 ? "+" : ""}{q.epsGrowth}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </AIInsightCard>
+
+            {/* Balance Sheet & Cash Flows */}
+            {(data.balanceSheet || data.cashFlows) && (
+              <AIInsightCard icon={<Layers size={17} />} title="Balance Sheet & Cash Flow Analysis" accentColor="#8b5cf6">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, paddingTop: 16 }}>
+                  {data.balanceSheet && (
+                    <div>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Balance Sheet Health</div>
+                      {[
+                        { label: "Total Debt", value: `₹${data.balanceSheet.totalDebt.toLocaleString()} Cr`, note: data.balanceSheet.debtEquity < 0.3 ? "Low leverage" : data.balanceSheet.debtEquity < 1 ? "Moderate debt" : "High debt load" },
+                        { label: "Cash", value: `₹${data.balanceSheet.cash.toLocaleString()} Cr`, note: "Liquidity buffer" },
+                        { label: "Net Debt/EBITDA", value: `${data.balanceSheet.netDebtEbitda}x`, note: data.balanceSheet.netDebtEbitda < 1 ? "Can repay within 1yr" : "Monitor" },
+                        { label: "Interest Coverage", value: `${data.balanceSheet.interestCoverage}x`, note: data.balanceSheet.interestCoverage > 8 ? "Comfortable" : "Adequate" },
+                        { label: "Current Ratio", value: data.balanceSheet.currentRatio.toString(), note: data.balanceSheet.currentRatio > 2 ? "Strong liquidity" : "Adequate" },
+                      ].map((item, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < 4 ? "1px solid #f3f4f6" : "none" }}>
+                          <div>
+                            <span style={{ fontSize: "0.76rem", color: "#374151" }}>{item.label}</span>
+                            <span style={{ fontSize: "0.64rem", color: "#9ca3af", marginLeft: 6 }}>{item.note}</span>
+                          </div>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {data.cashFlows && (
+                    <div>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Cash Flow Analysis</div>
+                      {[
+                        { label: "Operating CF", value: `₹${data.cashFlows.cfo.toLocaleString()} Cr` },
+                        { label: "Free Cash Flow", value: `₹${data.cashFlows.fcf.toLocaleString()} Cr` },
+                        { label: "FCF Yield", value: `${data.cashFlows.fcfYield}%` },
+                        { label: "CFO/PAT", value: `${data.cashFlows.cfoPat}%` },
+                        { label: "Capex Intensity", value: `${data.cashFlows.capexIntensity}%` },
+                      ].map((item, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < 4 ? "1px solid #f3f4f6" : "none" }}>
+                          <span style={{ fontSize: "0.76rem", color: "#374151" }}>{item.label}</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </AIInsightCard>
+            )}
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 9: VALUATION
+            ════════════════════════════════════════════════════════ */}
+        <section ref={el => { sectionRefs.current["valuation"] = el; }} style={{ marginBottom: 36 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* DCF */}
+            {data.dcfValuation && (
+              <AIInsightCard icon={<Target size={17} />} title="DCF Valuation — Intrinsic Value Estimate" accentColor="#059669" defaultOpen>
+                <div style={{ paddingTop: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
+                    <div style={{ background: "#1a1a2e", borderRadius: 12, padding: "18px", textAlign: "center", color: "#fff" }}>
+                      <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>Intrinsic Value</div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 900 }}>₹{data.dcfValuation.intrinsicValue.toLocaleString()}</div>
+                      <div style={{ fontSize: "0.72rem", color: data.dcfValuation.upside > 0 ? "#4ade80" : "#f87171", marginTop: 4 }}>{data.dcfValuation.upside > 0 ? "+" : ""}{data.dcfValuation.upside}% vs CMP</div>
+                    </div>
+                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: "18px", textAlign: "center" }}>
+                      <div style={{ fontSize: "0.6rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>WACC</div>
+                      <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a1a2e" }}>{data.dcfValuation.wacc}%</div>
+                      <div style={{ fontSize: "0.62rem", color: "#6b7280", marginTop: 4 }}>Terminal Gr: {data.dcfValuation.terminalGrowth}%</div>
+                    </div>
+                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: "18px", textAlign: "center" }}>
+                      <div style={{ fontSize: "0.6rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>Terminal % of EV</div>
+                      <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a1a2e" }}>{((data.dcfValuation.pvTerminal / data.dcfValuation.enterpriseValue) * 100).toFixed(0)}%</div>
+                      <div style={{ fontSize: "0.62rem", color: "#6b7280", marginTop: 4 }}>Beta: {data.dcfValuation.beta}</div>
+                    </div>
+                  </div>
+                  <div style={{ borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.74rem" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>WACC</th>
+                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Terminal Growth</th>
+                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Fair Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.dcfValuation.sensitivity.map((s, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i === 2 ? "#f0f9ff" : undefined }}>
+                            <td style={{ padding: "10px 16px", fontWeight: 600, color: "#374151" }}>{s.wacc.toFixed(1)}%</td>
+                            <td style={{ padding: "10px 16px", textAlign: "right", color: "#374151" }}>{s.tg.toFixed(1)}%</td>
+                            <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 700, color: s.value > data.hero.cmp ? "#059669" : "#dc2626" }}>₹{s.value.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </AIInsightCard>
+            )}
+
+            {/* Scenarios */}
+            {data.scenarios && (
+              <AIInsightCard icon={<Crosshair size={17} />} title="Scenario Analysis — Bull, Base, Bear" accentColor="#f59e0b">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, paddingTop: 16 }}>
+                  {(["bull", "base", "bear"] as const).map(sc => {
+                    const s = data.scenarios![sc];
+                    const c = sc === "bull" ? "#059669" : sc === "bear" ? "#dc2626" : "#d97706";
+                    const bg = sc === "bull" ? "#f0fdf4" : sc === "bear" ? "#fef2f2" : "#fffbeb";
+                    return (
+                      <div key={sc} style={{ background: bg, borderRadius: 12, padding: "18px", borderTop: `3px solid ${c}` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                          <div style={{ fontSize: "0.8rem", fontWeight: 800, color: c, textTransform: "uppercase" }}>{sc} Case</div>
+                          <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "#6b7280", background: "#fff", padding: "2px 8px", borderRadius: 4 }}>P: {s.probability}%</span>
+                        </div>
+                        <div style={{ fontSize: "1.3rem", fontWeight: 900, color: c, marginBottom: 8 }}>₹{s.targetPrice.toLocaleString()}</div>
+                        <div style={{ display: "flex", gap: 12, marginBottom: 10, fontSize: "0.7rem", color: "#374151" }}>
+                          <span>EPS: ₹{s.eps.toFixed(1)}</span>
+                          <span>P/E: {s.pe.toFixed(1)}x</span>
+                        </div>
+                        <div style={{ fontSize: "0.72rem", color: "#4b5563", lineHeight: 1.55 }}>{s.narrative}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </AIInsightCard>
+            )}
+          </div>
+        </section>
+
+        {/* ════════════════════════════════════════════════════════
+            SECTION 10: TECHNICALS & OWNERSHIP
+            ════════════════════════════════════════════════════════ */}
+        <section ref={el => { sectionRefs.current["technicals"] = el; }} style={{ marginBottom: 36 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Technicals */}
+            <AIInsightCard icon={<Activity size={17} />} title="Technical Analysis" accentColor="#f59e0b" defaultOpen>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, paddingTop: 16 }}>
+                {[
+                  { label: "RSI (14)", value: data.technicals.rsi.toString(), note: pointerText(data.technicals.rsi, "rsi") },
+                  { label: "MACD", value: data.technicals.macd.toString(), note: data.technicals.macd > 0 ? "Bullish crossover — upside momentum" : "Bearish crossover — downside pressure" },
+                  { label: "SMA 200", value: `₹${data.technicals.sma200.toLocaleString()}`, note: data.hero.cmp > data.technicals.sma200 ? `${((data.hero.cmp/data.technicals.sma200 - 1)*100).toFixed(0)}% above — bullish` : "Below — bearish" },
+                  { label: "Support", value: `₹${data.technicals.support.toLocaleString()}`, note: "Key demand zone" },
+                  { label: "Resistance", value: `₹${data.technicals.resistance.toLocaleString()}`, note: "Supply zone" },
+                  { label: "ATR", value: data.technicals.atr.toString(), note: "Daily volatility range" },
+                ].map((item, i) => (
+                  <div key={i} style={{ padding: "14px 16px", background: "#f8fafc", borderRadius: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: "0.74rem", color: "#6b7280", fontWeight: 600 }}>{item.label}</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#1a1a2e" }}>{item.value}</span>
+                    </div>
+                    <div style={{ fontSize: "0.68rem", color: "#6b7280", lineHeight: 1.4 }}>{item.note}</div>
+                  </div>
+                ))}
+              </div>
+            </AIInsightCard>
+
+            {/* Shareholding */}
+            <AIInsightCard icon={<Users size={17} />} title="Shareholding Pattern & Ownership Trend" accentColor="#0ea5e9">
+              <div style={{ paddingTop: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+                  {[
+                    { label: "Promoter", value: data.fundamentals.promoterHolding, color: "#1a1a2e" },
+                    { label: "FII", value: data.fundamentals.fiiHolding, color: "#6366f1" },
+                    { label: "DII", value: data.fundamentals.diiHolding, color: "#0ea5e9" },
+                    { label: "Public", value: data.fundamentals.publicHolding, color: "#f59e0b" },
+                  ].map((h, i) => (
+                    <div key={i} style={{ textAlign: "center", padding: "14px", background: "#f8fafc", borderRadius: 10 }}>
+                      <div style={{ fontSize: "1.3rem", fontWeight: 900, color: h.color }}>{h.value}%</div>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#6b7280", marginTop: 4 }}>{h.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.74rem" }}>
                     <thead>
-                      <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                        <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b" }}>Scenario</th>
-                        <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>EPS Impact</th>
-                        <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Price Impact</th>
-                        <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>BS Resilience</th>
+                      <tr style={{ background: "#f8fafc" }}>
+                        {["Quarter", "Promoter", "FII", "DII", "Public"].map(h => (
+                          <th key={h} style={{ padding: "10px 14px", textAlign: h === "Quarter" ? "left" : "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {data.stressTests.map((st, i) => (
-                        <tr key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                          <td style={{ padding: "10px 14px", color: "#e2e8f0", fontWeight: 600 }}>{st.scenario}</td>
-                          <td style={{ padding: "10px 14px", textAlign: "right", color: "#ef4444", fontWeight: 600 }}>{st.epsImpact}%</td>
-                          <td style={{ padding: "10px 14px", textAlign: "right", color: "#ef4444", fontWeight: 600 }}>{st.priceImpact}%</td>
-                          <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                            <span style={{ padding: "3px 8px", borderRadius: 4, fontSize: "0.68rem", fontWeight: 600, background: st.bsResilience === "strong" ? "rgba(16,185,129,0.1)" : st.bsResilience === "moderate" ? "rgba(245,158,11,0.1)" : "rgba(239,68,68,0.1)", color: st.bsResilience === "strong" ? "#10b981" : st.bsResilience === "moderate" ? "#f59e0b" : "#ef4444" }}>{st.bsResilience}</span>
-                          </td>
+                      {data.shareholdingTrend.map((row, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                          <td style={{ padding: "10px 14px", fontWeight: 600, color: "#374151" }}>{row.quarter}</td>
+                          <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>{row.promoter.toFixed(1)}%</td>
+                          <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>{row.fii.toFixed(1)}%</td>
+                          <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>{row.dii.toFixed(1)}%</td>
+                          <td style={{ padding: "10px 14px", textAlign: "right", color: "#374151" }}>{row.public.toFixed(1)}%</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* ═══ DCF VALUATION MODEL ═══ */}
-          {activeSection === "dcf" && data.dcfValuation && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>DCF Valuation Model (FCFF)</h3>
-
-              {/* Key Assumptions */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
-                <MetricCard label="WACC" value={`${data.dcfValuation.wacc}%`} color="#818cf8" />
-                <MetricCard label="Terminal Growth" value={`${data.dcfValuation.terminalGrowth}%`} color="#10b981" />
-                <MetricCard label="Beta" value={data.dcfValuation.beta.toString()} />
-                <MetricCard label="Risk-Free Rate" value={`${data.dcfValuation.riskFreeRate}%`} />
-                <MetricCard label="ERP" value={`${data.dcfValuation.erp}%`} />
               </div>
+            </AIInsightCard>
 
-              {/* Intrinsic Value Card */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
-                <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(99,102,241,0.03))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 14, padding: "18px", textAlign: "center" }}>
-                  <div style={{ fontSize: "0.65rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Intrinsic Value</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#818cf8" }}>₹{data.dcfValuation.intrinsicValue.toLocaleString()}</div>
-                  <div style={{ fontSize: "0.72rem", color: data.dcfValuation.upside > 0 ? "#10b981" : "#ef4444", marginTop: 4, fontWeight: 600 }}>{data.dcfValuation.upside > 0 ? "+" : ""}{data.dcfValuation.upside}% vs CMP</div>
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px", textAlign: "center" }}>
-                  <div style={{ fontSize: "0.65rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Enterprise Value</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#e2e8f0" }}>₹{(data.dcfValuation.enterpriseValue / 100).toFixed(0)}K Cr</div>
-                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 4 }}>EV = PV(FCF) + PV(TV)</div>
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px", textAlign: "center" }}>
-                  <div style={{ fontSize: "0.65rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Terminal Value</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: 800, color: "#e2e8f0" }}>₹{(data.dcfValuation.pvTerminal / 100).toFixed(0)}K Cr</div>
-                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: 4 }}>PV of TV ({((data.dcfValuation.pvTerminal / data.dcfValuation.enterpriseValue) * 100).toFixed(0)}% of EV)</div>
-                </div>
-              </div>
-
-              {/* FCF Projections Table */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
-                <div style={{ padding: "12px 16px", background: "rgba(99,102,241,0.05)", fontSize: "0.72rem", fontWeight: 700, color: "#818cf8", textTransform: "uppercase" }}>5-Year FCF Projections (₹ Cr)</div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
-                  <thead>
-                    <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                      <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b" }}>Year</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>FCF</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>PV of FCF</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.dcfValuation.fcfProjections.map((p, i) => (
-                      <tr key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-                        <td style={{ padding: "10px 14px", color: "#e2e8f0", fontWeight: 600 }}>{p.year}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#10b981" }}>₹{p.fcf.toLocaleString()}</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>₹{p.pvFcf.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Sensitivity Table */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, overflow: "hidden" }}>
-                <div style={{ padding: "12px 16px", background: "rgba(245,158,11,0.05)", fontSize: "0.72rem", fontWeight: 700, color: "#f59e0b", textTransform: "uppercase" }}>Sensitivity Analysis (WACC vs Terminal Growth)</div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.76rem" }}>
-                  <thead>
-                    <tr style={{ background: "rgba(255,255,255,0.03)" }}>
-                      <th style={{ padding: "10px 14px", textAlign: "left", color: "#64748b" }}>WACC</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Terminal Growth</th>
-                      <th style={{ padding: "10px 14px", textAlign: "right", color: "#94a3b8" }}>Fair Value/Share</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.dcfValuation.sensitivity.map((s, i) => (
-                      <tr key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.04)", background: i === 2 ? "rgba(99,102,241,0.05)" : undefined }}>
-                        <td style={{ padding: "10px 14px", color: "#e2e8f0", fontWeight: 600 }}>{s.wacc.toFixed(1)}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: "#cbd5e1" }}>{s.tg.toFixed(1)}%</td>
-                        <td style={{ padding: "10px 14px", textAlign: "right", color: s.value > data.hero.cmp ? "#10b981" : "#ef4444", fontWeight: 700 }}>₹{s.value.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Relative Valuation */}
-              {data.relativeValuation && (
-                <div style={{ marginTop: 20 }}>
-                  <h4 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12, color: "#f1f5f9" }}>Relative Valuation</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
-                    <MetricCard label="Forward P/E" value={data.relativeValuation.forwardPe.toFixed(1)} sub={`Sector: ${data.relativeValuation.sectorAvgPe.toFixed(1)}x`} />
-                    <MetricCard label="EV/EBITDA" value={`${data.relativeValuation.evEbitda}x`} />
-                    <MetricCard label="EV/Sales" value={`${data.relativeValuation.evSales}x`} />
-                    <MetricCard label="PEG Ratio" value={data.relativeValuation.pegRatio.toString()} color={data.relativeValuation.pegRatio < 1 ? "#10b981" : data.relativeValuation.pegRatio < 2 ? "#f59e0b" : "#ef4444"} />
-                    <MetricCard label="P/FCF" value={`${data.relativeValuation.priceToFcf}x`} />
-                    <MetricCard label="Premium/Discount" value={`${data.relativeValuation.premiumDiscount > 0 ? "+" : ""}${data.relativeValuation.premiumDiscount}%`} color={data.relativeValuation.premiumDiscount > 20 ? "#ef4444" : "#10b981"} sub="vs Sector avg" />
+            {/* Stress Tests & Catalysts */}
+            {data.stressTests && data.reRatingCatalysts && (
+              <AIInsightCard icon={<AlertTriangle size={17} />} title="Stress Tests, Catalysts & Risks" accentColor="#dc2626">
+                <div style={{ paddingTop: 16 }}>
+                  <div style={{ borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: 18 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.74rem" }}>
+                      <thead>
+                        <tr style={{ background: "#f8fafc" }}>
+                          <th style={{ padding: "10px 14px", textAlign: "left", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Scenario</th>
+                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>EPS Impact</th>
+                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Price Impact</th>
+                          <th style={{ padding: "10px 14px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Resilience</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.stressTests.map((st, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                            <td style={{ padding: "10px 14px", fontWeight: 600, color: "#374151" }}>{st.scenario}</td>
+                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#dc2626", fontWeight: 600 }}>{st.epsImpact}%</td>
+                            <td style={{ padding: "10px 14px", textAlign: "right", color: "#dc2626", fontWeight: 600 }}>{st.priceImpact}%</td>
+                            <td style={{ padding: "10px 14px", textAlign: "right" }}><RiskBadge level={st.bsResilience} /></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  {/* Historical Bands */}
-                  <div style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 12, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <div>
-                      <div style={{ fontSize: "0.65rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase" }}>Historical Valuation Band</div>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#059669", textTransform: "uppercase", marginBottom: 10 }}>Upside Catalysts</div>
+                      {data.reRatingCatalysts.upsideCatalysts.map((c, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                          <span style={{ color: "#059669", fontWeight: 800, fontSize: "0.68rem", marginTop: 3 }}>▲</span>
+                          <span style={{ fontSize: "0.76rem", color: "#374151", lineHeight: 1.5 }}>{c}</span>
+                        </div>
+                      ))}
                     </div>
-                    <div style={{ display: "flex", gap: 20, fontSize: "0.78rem" }}>
-                      <span style={{ color: "#10b981" }}>Low: ₹{data.relativeValuation.historicalBands.low.toLocaleString()}</span>
-                      <span style={{ color: "#f59e0b" }}>Avg: ₹{data.relativeValuation.historicalBands.avg.toLocaleString()}</span>
-                      <span style={{ color: "#ef4444" }}>High: ₹{data.relativeValuation.historicalBands.high.toLocaleString()}</span>
+                    <div>
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#dc2626", textTransform: "uppercase", marginBottom: 10 }}>Downside Risks</div>
+                      {data.reRatingCatalysts.downsideRisks.map((r, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                          <span style={{ color: "#dc2626", fontWeight: 800, fontSize: "0.68rem", marginTop: 3 }}>▼</span>
+                          <span style={{ fontSize: "0.76rem", color: "#374151", lineHeight: 1.5 }}>{r}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              </AIInsightCard>
+            )}
 
-          {/* ═══ SCENARIO ANALYSIS ═══ */}
-          {activeSection === "scenarios" && data.scenarios && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Scenario Analysis</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
-                {(["bull", "base", "bear"] as const).map(scenario => {
-                  const s = data.scenarios![scenario];
-                  const color = scenario === "bull" ? "#10b981" : scenario === "bear" ? "#ef4444" : "#f59e0b";
-                  const bgColor = scenario === "bull" ? "rgba(16,185,129,0.06)" : scenario === "bear" ? "rgba(239,68,68,0.06)" : "rgba(245,158,11,0.06)";
-                  const borderColor = scenario === "bull" ? "rgba(16,185,129,0.15)" : scenario === "bear" ? "rgba(239,68,68,0.15)" : "rgba(245,158,11,0.15)";
-                  return (
-                    <div key={scenario} style={{ background: bgColor, border: `1px solid ${borderColor}`, borderRadius: 14, padding: "18px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                        <div style={{ fontSize: "0.85rem", fontWeight: 800, color, textTransform: "uppercase" }}>{scenario} Case</div>
-                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", background: "rgba(255,255,255,0.05)", padding: "3px 8px", borderRadius: 4 }}>{s.probability}%</div>
-                      </div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 900, color, marginBottom: 8 }}>₹{s.targetPrice.toLocaleString()}</div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                        <div style={{ fontSize: "0.68rem", color: "#64748b" }}>EPS: <span style={{ color: "#e2e8f0", fontWeight: 600 }}>₹{s.eps.toFixed(1)}</span></div>
-                        <div style={{ fontSize: "0.68rem", color: "#64748b" }}>P/E: <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{s.pe.toFixed(1)}x</span></div>
-                      </div>
-                      <div style={{ fontSize: "0.72rem", color: "#94a3b8", lineHeight: 1.5, borderTop: `1px solid ${borderColor}`, paddingTop: 10 }}>{s.narrative}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Balance Sheet & Cash Flows Summary */}
-              {data.balanceSheet && data.cashFlows && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  {/* Balance Sheet */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px" }}>
-                    <div style={{ fontSize: "0.72rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>Balance Sheet</div>
+            {/* Earnings Quality */}
+            {data.earningsQuality && (
+              <AIInsightCard icon={<Eye size={17} />} title="Earnings Quality Assessment" accentColor="#8b5cf6">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, paddingTop: 16 }}>
+                  <div>
                     {[
-                      { label: "Net Debt", value: `₹${data.balanceSheet.netDebt.toLocaleString()} Cr`, color: data.balanceSheet.netDebt < 0 ? "#10b981" : "#f59e0b" },
-                      { label: "Net Debt/EBITDA", value: `${data.balanceSheet.netDebtEbitda}x`, color: data.balanceSheet.netDebtEbitda < 2 ? "#10b981" : "#ef4444" },
-                      { label: "Interest Coverage", value: `${data.balanceSheet.interestCoverage}x`, color: data.balanceSheet.interestCoverage > 5 ? "#10b981" : "#f59e0b" },
-                      { label: "Current Ratio", value: data.balanceSheet.currentRatio.toString(), color: data.balanceSheet.currentRatio > 1.5 ? "#10b981" : "#f59e0b" },
-                      { label: "Tangible Book Value", value: `₹${data.balanceSheet.tangibleBookValue.toLocaleString()} Cr` },
+                      { label: "CFO/PAT Ratio", value: `${data.earningsQuality.cfoPATRatio}%`, good: data.earningsQuality.cfoPATRatio > 80 },
+                      { label: "Accrual Ratio", value: `${data.earningsQuality.accrualRatio}%`, good: data.earningsQuality.accrualRatio < 8 },
+                      { label: "Other Income", value: `${data.earningsQuality.otherIncomeShare}%`, good: data.earningsQuality.otherIncomeShare < 10 },
+                      { label: "Related Party", value: data.earningsQuality.relatedPartyTransactions, good: data.earningsQuality.relatedPartyTransactions === "minimal" },
+                      { label: "Auditor", value: data.earningsQuality.auditorObservations, good: data.earningsQuality.auditorObservations === "clean" },
                     ].map((item, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.76rem" }}>
-                        <span style={{ color: "#94a3b8" }}>{item.label}</span>
-                        <span style={{ color: item.color || "#e2e8f0", fontWeight: 600 }}>{item.value}</span>
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < 4 ? "1px solid #f3f4f6" : "none" }}>
+                        <span style={{ fontSize: "0.76rem", color: "#6b7280" }}>{item.label}</span>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: item.good ? "#059669" : "#d97706" }}>{item.value}</span>
                       </div>
                     ))}
                   </div>
-                  {/* Cash Flows */}
-                  <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px" }}>
-                    <div style={{ fontSize: "0.72rem", color: "#10b981", fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>Cash Flow Analysis</div>
-                    {[
-                      { label: "Operating CF", value: `₹${data.cashFlows.cfo.toLocaleString()} Cr`, color: "#10b981" },
-                      { label: "Free Cash Flow", value: `₹${data.cashFlows.fcf.toLocaleString()} Cr`, color: data.cashFlows.fcf > 0 ? "#10b981" : "#ef4444" },
-                      { label: "FCF Yield", value: `${data.cashFlows.fcfYield}%`, color: data.cashFlows.fcfYield > 3 ? "#10b981" : "#f59e0b" },
-                      { label: "CFO/PAT", value: `${data.cashFlows.cfoPat}%`, color: data.cashFlows.cfoPat > 100 ? "#10b981" : "#f59e0b" },
-                      { label: "Capex Intensity", value: `${data.cashFlows.capexIntensity}%` },
-                    ].map((item, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)", fontSize: "0.76rem" }}>
-                        <span style={{ color: "#94a3b8" }}>{item.label}</span>
-                        <span style={{ color: item.color || "#e2e8f0", fontWeight: 600 }}>{item.value}</span>
+                  <div>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Flags</div>
+                    {data.earningsQuality.flags.map((flag, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
+                        <span style={{ fontSize: "0.78rem", color: flag.startsWith("✓") ? "#059669" : "#d97706" }}>{flag.startsWith("✓") ? "✓" : "⚠"}</span>
+                        <span style={{ fontSize: "0.74rem", color: "#4b5563", lineHeight: 1.5 }}>{flag.slice(2)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
+              </AIInsightCard>
+            )}
 
-              {/* Working Capital */}
-              {data.workingCapital && (
-                <div style={{ marginTop: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px" }}>
-                  <div style={{ fontSize: "0.72rem", color: "#f59e0b", fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>Working Capital Efficiency</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10 }}>
-                    <MetricCard label="Receivable Days" value={data.workingCapital.receivableDays.toString()} />
-                    <MetricCard label="Payable Days" value={data.workingCapital.payableDays.toString()} />
-                    <MetricCard label="Inventory Days" value={data.workingCapital.inventoryDays.toString()} />
-                    <MetricCard label="Cash Conv. Cycle" value={`${data.workingCapital.ccc} days`} color={data.workingCapital.ccc < 30 ? "#10b981" : data.workingCapital.ccc < 60 ? "#f59e0b" : "#ef4444"} />
-                    <MetricCard label="WC/Revenue" value={`${data.workingCapital.wcAsRevenue}%`} />
-                  </div>
+            {/* News & Key Monitorables */}
+            <AIInsightCard icon={<Radio size={17} />} title="Recent News & Key Monitorables" accentColor="#f59e0b">
+              <div style={{ paddingTop: 16 }}>
+                <div style={{ marginBottom: 20 }}>
+                  {data.newsEvents.map((n, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 0", borderBottom: i < data.newsEvents.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", marginTop: 6, flexShrink: 0, background: n.impact === "positive" ? "#059669" : n.impact === "negative" ? "#dc2626" : "#d97706" }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: "0.8rem", color: "#1a1a2e", marginBottom: 2 }}>{n.title}</div>
+                        <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{n.date} · <span style={{ fontWeight: 600, textTransform: "uppercase", color: n.severity === "high" ? "#dc2626" : "#6b7280" }}>{n.severity}</span></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+                {data.investmentConclusion && (
+                  <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 20px" }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Key Monitorables</div>
+                    {data.investmentConclusion.keyMonitorables.map((item, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+                        <span style={{ color: "#6366f1", fontWeight: 800, fontSize: "0.76rem", minWidth: 18 }}>{i + 1}.</span>
+                        <span style={{ fontSize: "0.78rem", color: "#4b5563", lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </AIInsightCard>
+          </div>
+        </section>
+
+        {/* ═══ FOOTER ═══ */}
+        <footer style={{ borderTop: "2px solid #1a1a2e", paddingTop: 24, textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 10 }}>
+            <Brain size={16} style={{ color: "#6366f1" }} />
+            <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1a1a2e" }}>White Tiger AI Intelligence Engine</span>
+            {data.analysisVersion && (
+              <span style={{ fontSize: "0.58rem", color: "#9ca3af", fontWeight: 600, background: "#f3f4f6", padding: "2px 8px", borderRadius: 4 }}>v{data.analysisVersion}</span>
+            )}
+          </div>
+          {data.sourceAttribution?.disclaimer ? (
+            <div style={{ fontSize: "0.66rem", color: "#9ca3af", lineHeight: 1.6 }}>{data.sourceAttribution.disclaimer}</div>
+          ) : (
+            <div style={{ fontSize: "0.66rem", color: "#9ca3af", lineHeight: 1.6 }}>
+              AI-generated equity research for educational purposes only. Not investment advice. Always do your own research.
             </div>
           )}
-
-          {/* ═══ EARNINGS QUALITY ═══ */}
-          {activeSection === "earnings" && data.earningsQuality && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Earnings Quality Assessment</h3>
-
-              {/* Scores Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 20 }}>
-                {[
-                  { label: "Overall Score", value: data.earningsQuality.overallEarningsScore, color: data.earningsQuality.overallEarningsScore > 70 ? "#10b981" : "#f59e0b" },
-                  { label: "Cash Conversion", value: data.earningsQuality.cashConversionScore, color: data.earningsQuality.cashConversionScore > 70 ? "#10b981" : "#f59e0b" },
-                  { label: "Accounting Quality", value: data.earningsQuality.accountingQualityScore, color: data.earningsQuality.accountingQualityScore > 70 ? "#10b981" : "#f59e0b" },
-                  { label: "Revenue Quality", value: data.earningsQuality.revenueQualityScore, color: data.earningsQuality.revenueQualityScore > 70 ? "#10b981" : "#f59e0b" },
-                  { label: "Persistence", value: data.earningsQuality.earningsPersistenceScore, color: data.earningsQuality.earningsPersistenceScore > 70 ? "#10b981" : "#f59e0b" },
-                  { label: "Financial Strength", value: data.earningsQuality.financialStrengthScore, color: data.earningsQuality.financialStrengthScore > 70 ? "#10b981" : "#f59e0b" },
-                ].map((item, i) => (
-                  <div key={i} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px", textAlign: "center" }}>
-                    <div style={{ fontSize: "0.65rem", color: "#64748b", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>{item.label}</div>
-                    <div style={{ fontSize: "1.8rem", fontWeight: 900, color: item.color }}>{item.value}</div>
-                    <div style={{ fontSize: "0.62rem", color: "#64748b" }}>/ 100</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Key Metrics */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
-                <MetricCard label="CFO/PAT" value={`${data.earningsQuality.cfoPATRatio}%`} color={data.earningsQuality.cfoPATRatio > 100 ? "#10b981" : "#f59e0b"} />
-                <MetricCard label="Accrual Ratio" value={`${data.earningsQuality.accrualRatio}%`} color={data.earningsQuality.accrualRatio < 5 ? "#10b981" : "#ef4444"} />
-                <MetricCard label="Other Income" value={`${data.earningsQuality.otherIncomeShare}%`} sub="of PBT" />
-                <MetricCard label="RPT Level" value={data.earningsQuality.relatedPartyTransactions} />
-                <MetricCard label="Auditor" value={data.earningsQuality.auditorObservations} />
-              </div>
-
-              {/* Flags */}
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px 22px" }}>
-                <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>Quality Flags</div>
-                {data.earningsQuality.flags.map((flag, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                    <span style={{ fontSize: "1rem", flexShrink: 0 }}>{flag.startsWith("✓") ? "" : flag.startsWith("⚠") ? "" : "•"}</span>
-                    <span style={{ fontSize: "0.8rem", color: flag.startsWith("✓") ? "#10b981" : flag.startsWith("⚠") ? "#f59e0b" : "#e2e8f0", lineHeight: 1.5 }}>{flag.slice(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Re-Rating Catalysts */}
-              {data.reRatingCatalysts && (
-                <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.12)", borderRadius: 14, padding: "18px" }}>
-                    <div style={{ fontSize: "0.68rem", color: "#10b981", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>Upside Catalysts</div>
-                    {data.reRatingCatalysts.upsideCatalysts.map((c, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                        <span style={{ color: "#10b981", fontSize: "0.7rem", marginTop: 3 }}>▲</span>
-                        <span style={{ fontSize: "0.76rem", color: "#e2e8f0", lineHeight: 1.5 }}>{c}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 14, padding: "18px" }}>
-                    <div style={{ fontSize: "0.68rem", color: "#ef4444", fontWeight: 700, textTransform: "uppercase", marginBottom: 10 }}>Downside Risks</div>
-                    {data.reRatingCatalysts.downsideRisks.map((r, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                        <span style={{ color: "#ef4444", fontSize: "0.7rem", marginTop: 3 }}>▼</span>
-                        <span style={{ fontSize: "0.76rem", color: "#e2e8f0", lineHeight: 1.5 }}>{r}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          <div style={{ fontSize: "0.6rem", color: "#9ca3af", marginTop: 6 }}>Generated {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</div>
+          {data.trustFeatures && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+              {data.trustFeatures.map((f) => (
+                <span key={f} style={{ fontSize: "0.52rem", color: "#a5b4fc", background: "rgba(99,102,241,0.06)", padding: "2px 8px", borderRadius: 3, border: "1px solid rgba(99,102,241,0.1)" }}>
+                  {f}
+                </span>
+              ))}
             </div>
           )}
-
-          {/* ═══ INVESTMENT CONCLUSION ═══ */}
-          {activeSection === "conclusion" && data.investmentConclusion && (
-            <div>
-              <h3 style={{ fontSize: "1.1rem", fontWeight: 800, marginBottom: 16, color: "#f1f5f9" }}>Investment Conclusion</h3>
-
-              {/* View Banner */}
-              <div style={{
-                background: data.investmentConclusion.view.includes("UNDERVALUED") ? "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.03))" : data.investmentConclusion.view.includes("OVERVALUED") ? "linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.03))" : "linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.03))",
-                border: `1px solid ${data.investmentConclusion.view.includes("UNDERVALUED") ? "rgba(16,185,129,0.2)" : data.investmentConclusion.view.includes("OVERVALUED") ? "rgba(239,68,68,0.2)" : "rgba(245,158,11,0.2)"}`,
-                borderRadius: 16, padding: "24px", textAlign: "center", marginBottom: 20,
-              }}>
-                <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase", marginBottom: 8 }}>AI Investment View</div>
-                <div style={{ fontSize: "1.6rem", fontWeight: 900, color: data.investmentConclusion.view.includes("UNDERVALUED") ? "#10b981" : data.investmentConclusion.view.includes("OVERVALUED") ? "#ef4444" : "#f59e0b" }}>
-                  {data.investmentConclusion.view}
-                </div>
-              </div>
-
-              {/* Fair Value Range */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
-                <MetricCard label="Fair Value Low" value={`₹${data.investmentConclusion.fairValueLow.toLocaleString()}`} color="#ef4444" />
-                <MetricCard label="Fair Value Mid" value={`₹${data.investmentConclusion.fairValueMid.toLocaleString()}`} color="#818cf8" />
-                <MetricCard label="Fair Value High" value={`₹${data.investmentConclusion.fairValueHigh.toLocaleString()}`} color="#10b981" />
-                <MetricCard label="CMP" value={`₹${data.hero.cmp.toLocaleString()}`} />
-              </div>
-
-              {/* Key Numbers */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
-                <MetricCard label="Margin of Safety" value={`${data.investmentConclusion.marginOfSafety}%`} color={data.investmentConclusion.marginOfSafety > 15 ? "#10b981" : data.investmentConclusion.marginOfSafety > 0 ? "#f59e0b" : "#ef4444"} />
-                <MetricCard label="Risk:Reward" value={data.investmentConclusion.riskRewardRatio} />
-                <MetricCard label="Expected Return (12M)" value={`${data.investmentConclusion.expectedReturn12M > 0 ? "+" : ""}${data.investmentConclusion.expectedReturn12M}%`} color={data.investmentConclusion.expectedReturn12M > 15 ? "#10b981" : "#f59e0b"} />
-                <MetricCard label="Downside Risk" value={`${data.investmentConclusion.downsideRisk}%`} color="#ef4444" />
-              </div>
-
-              {/* Key Monitorables */}
-              <div style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 14, padding: "18px 22px" }}>
-                <div style={{ fontSize: "0.72rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>Key Monitorables</div>
-                {data.investmentConclusion.keyMonitorables.map((item, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
-                    <span style={{ color: "#818cf8", fontWeight: 800, fontSize: "0.72rem", marginTop: 2 }}>{i + 1}.</span>
-                    <span style={{ fontSize: "0.8rem", color: "#e2e8f0", lineHeight: 1.5 }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Return Ratios */}
-              {data.returnRatios && (
-                <div style={{ marginTop: 20, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "18px" }}>
-                  <div style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>Return Ratios & Capital Efficiency</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 }}>
-                    <MetricCard label="ROE" value={`${data.returnRatios.roe}%`} color={data.returnRatios.roe > 15 ? "#10b981" : "#f59e0b"} />
-                    <MetricCard label="ROCE" value={`${data.returnRatios.roce}%`} color={data.returnRatios.roce > 15 ? "#10b981" : "#f59e0b"} />
-                    <MetricCard label="ROIC" value={`${data.returnRatios.roic}%`} color={data.returnRatios.roic > 12 ? "#10b981" : "#f59e0b"} />
-                    <MetricCard label="WACC" value={`${data.returnRatios.wacc}%`} />
-                    <MetricCard label="Spread over CoC" value={`${data.returnRatios.spreadOverCoC > 0 ? "+" : ""}${data.returnRatios.spreadOverCoC}%`} color={data.returnRatios.spreadOverCoC > 0 ? "#10b981" : "#ef4444"} />
-                    <MetricCard label="Incr. ROCE" value={`${data.returnRatios.incrementalRoce}%`} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT SIDEBAR — Market Intelligence */}
-        <aside style={{ width: 300, minWidth: 280, borderLeft: "1px solid rgba(255,255,255,0.05)", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", maxHeight: "calc(100vh - 110px)" }}>
-          {/* Quick Stats */}
-          <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.05))", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: "0.65rem", color: "#818cf8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Quick View</div>
-            {[
-              { label: "Sector", value: data.sector },
-              { label: "Industry", value: data.industry },
-              { label: "Market Cap", value: `₹${(data.hero.mcap / 100).toFixed(0)}K Cr` },
-              { label: "Face Value", value: `₹${data.hero.faceValue}` },
-            ].map(item => (
-              <div key={item.label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.72rem" }}>
-                <span style={{ color: "#64748b" }}>{item.label}</span>
-                <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{item.value}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* AI Verdict */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: "0.65rem", color: "#10b981", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>AI Verdict</div>
-            <div style={{ fontSize: "0.78rem", color: "#94a3b8", lineHeight: 1.6 }}>
-              {data.companyName} is rated <strong style={{ color: sentimentColor }}>{data.sentiment.label}</strong> with {data.sentiment.confidence}% confidence.
-              {data.fairValue.upside > 10 ? ` The stock appears undervalued with ${data.fairValue.upside}% upside to fair value.` : data.fairValue.upside < -10 ? ` Valuations appear stretched with limited upside.` : ` Fairly valued at current levels.`}
-            </div>
-          </div>
-
-          {/* Sector Alert */}
-          <div style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: "0.65rem", color: "#f59e0b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Sector Watch — {data.sector}</div>
-            <div style={{ fontSize: "0.72rem", color: "#94a3b8", lineHeight: 1.5 }}>
-              {data.sector} sector showing {data.hero.changePercent > 0 ? "positive" : "mixed"} momentum. Institutional flows remain {data.fundamentals.fiiHolding > 20 ? "supportive" : "cautious"}. Monitor RBI policy and global cues for sector direction.
-            </div>
-          </div>
-
-          {/* Key Levels */}
-          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
-            <div style={{ fontSize: "0.65rem", color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Key Levels</div>
-            {[
-              { label: "Support", value: `₹${data.technicals.support.toLocaleString()}`, color: "#10b981" },
-              { label: "Resistance", value: `₹${data.technicals.resistance.toLocaleString()}`, color: "#ef4444" },
-              { label: "Target", value: `₹${data.analystConsensus.targetPrice.toLocaleString()}`, color: "#818cf8" },
-              { label: "Stop Loss", value: `₹${(data.technicals.support * 0.97).toFixed(0)}`, color: "#ef4444" },
-            ].map(l => (
-              <div key={l.label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: "0.72rem" }}>
-                <span style={{ color: "#64748b" }}>{l.label}</span>
-                <span style={{ color: l.color, fontWeight: 700 }}>{l.value}</span>
-              </div>
-            ))}
-          </div>
-        </aside>
-      </main>
+        </footer>
+      </div>
     </div>
   );
 }
