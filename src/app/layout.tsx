@@ -13,9 +13,14 @@ export const viewport: Viewport = {
   themeColor: "#0A0E1A",
 };
 
+const SITE_URL = process.env.AUTH_URL || "https://whitetiger-research.vercel.app";
+const TITLE = "White Tiger — AI-Powered Global Investment Intelligence";
+const DESCRIPTION = "Institutional-grade analysis across stocks, crypto, forex, commodities, bonds, derivatives & real estate — powered by AI.";
+
 export const metadata: Metadata = {
-  title: "White Tiger — AI-Powered Global Investment Intelligence",
-  description: "Institutional-grade analysis across stocks, crypto, forex, commodities, bonds, derivatives & real estate — powered by AI.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
   keywords: "stock research, NSE, BSE, AI investing, DCF valuation, India stocks, crypto, forex, derivatives",
   manifest: "/manifest.json",
   icons: {
@@ -26,6 +31,20 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "White Tiger",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "White Tiger",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    images: [{ url: "/apple-icon.png", width: 512, height: 512, alt: "White Tiger" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/apple-icon.png"],
   },
 };
 

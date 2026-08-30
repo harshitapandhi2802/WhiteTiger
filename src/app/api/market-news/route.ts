@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cacheHeaders } from "@/lib/services/apiGuard";
 
 /* ══════════════════════════════════════════════════════════════════
    WHITE TIGER — Live Market News Aggregator
@@ -176,7 +177,7 @@ export async function GET(request: Request) {
       count: cached.items.length,
       cachedAt: new Date(cached.ts).toISOString(),
       cached: true,
-    });
+    }, { headers: cacheHeaders(300) });
   }
 
   // Get feeds for this tab
@@ -221,5 +222,5 @@ export async function GET(request: Request) {
     count: items.length,
     generatedAt: new Date().toISOString(),
     sources: [...new Set(items.map(i => i.source))],
-  });
+  }, { headers: cacheHeaders(300) });
 }

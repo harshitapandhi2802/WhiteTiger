@@ -19,13 +19,13 @@ const PLANS = [
   {
     name: "Pro", price: "₹499", period: "/month",
     analyses: 100, color: "#4A9EFF", primary: true,
-    features: ["Supply chain mapping", "Ownership analysis", "Derivatives AI", "Tax intelligence", "All features below"],
+    features: ["Supply chain mapping", "Ownership analysis", "Derivatives AI", "All features below"],
     cta: "Get Pro",
   },
   {
     name: "Elite", price: "₹999", period: "/month",
     analyses: 300, color: "#7c4dff", primary: false,
-    features: ["PDF report upload", "Portfolio watchlist", "Wealth advisory AI", "Dedicated support", "All features below"],
+    features: ["PDF report upload", "Portfolio watchlist", "Dedicated support", "All features below"],
     cta: "Get Elite",
   },
 ];

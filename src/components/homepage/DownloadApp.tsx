@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Reveal, SectionHeader } from "./shared";
 import { Monitor, Smartphone, Download, Share2, Plus, Check, ArrowRight } from "lucide-react";
 
@@ -20,6 +21,7 @@ function detectPlatform(): Platform {
 }
 
 export default function DownloadApp() {
+  const router = useRouter();
   const [platform, setPlatform] = useState<Platform>("unknown");
   const [installed, setInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
@@ -56,7 +58,7 @@ export default function DownloadApp() {
       deferredPrompt.current = null;
     } else {
       // Fallback — direct to /analyze and let browser prompt
-      window.location.href = "/analyze";
+      router.push("/analyze");
     }
   };
 

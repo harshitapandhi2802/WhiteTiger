@@ -74,7 +74,7 @@ export default function DashboardPreview() {
             display: "flex", gap: 3, marginBottom: 20,
             background: "rgba(255,255,255,0.02)", borderRadius: 12, padding: 4, width: "fit-content",
           }}>
-            {["Stocks", "Crypto", "Forex", "Real Estate", "Bonds", "F&O", "Tax", "Wealth"].map((t, i) => (
+            {["Stocks", "Crypto", "Forex", "Real Estate", "Bonds", "F&O"].map((t, i) => (
               <div key={t} style={{
                 padding: "8px 18px", borderRadius: 10,
                 fontSize: "0.72rem", fontWeight: 600,

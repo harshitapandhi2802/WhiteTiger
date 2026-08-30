@@ -102,6 +102,38 @@ const BENCHMARKS: Record<string, string> = {
   "Sectoral": "Nifty 500 TRI",
 };
 
+// ─── Benchmark returns (category-level, deterministic) ──────────
+// Approximate index returns per category benchmark so funds can be shown
+// "vs benchmark". Same for all funds in a category, seeded for stability.
+export interface BenchmarkReturns {
+  index: string;
+  return1y: number;
+  return3y: number;
+  return5y: number;
+}
+
+const BENCHMARK_BASE: Record<string, { r1y: number; r3y: number; r5y: number }> = {
+  "Large Cap":  { r1y: 14.5, r3y: 15.2, r5y: 15.8 },
+  "Mid Cap":    { r1y: 22.0, r3y: 24.5, r5y: 23.0 },
+  "Small Cap":  { r1y: 25.0, r3y: 27.0, r5y: 26.5 },
+  "Flexi Cap":  { r1y: 16.0, r3y: 17.5, r5y: 17.8 },
+  "ELSS":       { r1y: 16.0, r3y: 17.5, r5y: 17.8 },
+  "Index":      { r1y: 13.0, r3y: 14.0, r5y: 14.5 },
+  "Hybrid":     { r1y: 11.5, r3y: 12.0, r5y: 12.5 },
+  "Debt":       { r1y: 7.2, r3y: 6.8, r5y: 7.0 },
+  "Sectoral":   { r1y: 18.0, r3y: 19.0, r5y: 18.5 },
+};
+
+export function getBenchmarkReturns(category: string): BenchmarkReturns {
+  const base = BENCHMARK_BASE[category] || BENCHMARK_BASE["Flexi Cap"];
+  return {
+    index: BENCHMARKS[category] || "Nifty 500 TRI",
+    return1y: base.r1y,
+    return3y: base.r3y,
+    return5y: base.r5y,
+  };
+}
+
 const SAMPLE_HOLDINGS = [
   { name: "HDFC Bank", sector: "Financial Services" },
   { name: "ICICI Bank", sector: "Financial Services" },

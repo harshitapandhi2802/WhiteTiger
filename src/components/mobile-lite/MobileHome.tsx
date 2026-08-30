@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   TrendingUp, Bitcoin, DollarSign, Building2, PiggyBank,
-  Shield, Layers, FileText, Target, Flame, Globe,
+  Shield, Layers, Flame, Globe,
   Search, ArrowUpRight, ArrowDownRight, ChevronRight,
   Zap, Sparkles, Bell, User, Home, BarChart3,
 } from "lucide-react";
@@ -15,7 +15,7 @@ import {
    Clean, breathable, lightweight
    ══════════════════════════════════════════════════════════════════ */
 
-type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
+type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 
 type MarketItem = {
   name: string;
@@ -145,8 +145,6 @@ function QuickAccessGrid({ onTabSelect }: { onTabSelect: (tab: MainTab) => void 
     { id: "debt", icon: <Shield size={22} />, label: "Bonds", color: "#14b8a6" },
     { id: "realestate", icon: <Building2 size={22} />, label: "Real Estate", color: "#C5A572" },
     { id: "derivatives", icon: <Layers size={22} />, label: "F&O", color: "#F87171" },
-    { id: "wealth", icon: <Target size={22} />, label: "Wealth", color: "#7BB8FF" },
-    { id: "tax", icon: <FileText size={22} />, label: "Tax", color: "#4A9EFF" },
     { id: "international", icon: <Globe size={22} />, label: "Global", color: "#818cf8" },
   ];
 

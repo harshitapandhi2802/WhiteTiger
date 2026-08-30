@@ -48,7 +48,7 @@ export default function Footer() {
             fontSize: "0.68rem", fontWeight: 700, color: "rgba(255,255,255,0.5)",
             textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 18,
           }}>Intelligence</div>
-          {["Real Estate", "Tax Planning", "Wealth Advisory", "Bonds", "Mutual Funds"].map((t) => (
+          {["Real Estate", "Bonds", "Mutual Funds"].map((t) => (
             <Link key={t} href="/analyze" style={{
               display: "block", fontSize: "0.85rem",
               color: "rgba(255,255,255,0.3)", textDecoration: "none",

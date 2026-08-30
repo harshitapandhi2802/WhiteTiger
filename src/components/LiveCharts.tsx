@@ -69,7 +69,7 @@ export function TradingViewChart({
   type,
 }: {
   symbol: string;
-  type: "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
+  type: "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 }) {
   const tvSymbol = useMemo(() => {
     if (type === "international") return symbol;

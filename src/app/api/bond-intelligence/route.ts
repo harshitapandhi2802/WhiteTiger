@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/services/apiGuard";
+import { fetchLiveYields } from "@/lib/services/livePrice";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(req, { scope: "bond-intelligence", limit: 5, windowMs: 60000 });
+  if (limited) return limited;
   const { symbol, name, issuer, coupon, tenure, rating, category, yieldApprox } = await req.json();
 
   if (!symbol) {
     return NextResponse.json({ error: "Bond symbol required" }, { status: 400 });
   }
 
+  // Anchor the report to the live sovereign curve where available.
+  const yields = await fetchLiveYields();
+  const benchmarkLine = yields.india10Y
+    ? `LIVE BENCHMARK CURVE (use as the anchor for the yield curve and spreads): India 10Y G-Sec = ${yields.india10Y}%${yields.us10Y ? `, US 10Y = ${yields.us10Y}%` : ""}${yields.us2Y ? `, US 2Y = ${yields.us2Y}%` : ""} (live from TradingView). Position this bond's YTM as a realistic spread over the India 10Y G-Sec given its rating and tenure.`
+    : `No live benchmark curve was available; treat all curve figures as estimates.`;
+
   const prompt = `You are a Bloomberg Terminal + BlackRock Aladdin + JPMorgan Fixed Income Research intelligence engine.
 
 Generate a COMPLETE institutional-grade fixed income intelligence report for **${name || symbol}** (${symbol}).
 Issuer: ${issuer || "Unknown"}, Coupon: ${coupon || "N/A"}, Tenure: ${tenure || "N/A"}, Rating: ${rating || "N/A"}, Category: ${category || "Bond"}, Yield: ${yieldApprox || "N/A"}.
+
+${benchmarkLine}
 
 You MUST respond with ONLY a valid JSON object (no markdown, no backticks, no explanation) matching this exact structure:
 
@@ -103,6 +115,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no backticks, no ex
 }
 
 REQUIREMENTS:
+- Anchor yieldToMaturity and currentYield to the provided reference Yield/Coupon above; do not invent a yield far from it.
 - Generate realistic data based on Indian fixed income market conditions as of May 2026
 - Include 6-7 institutional views from major banks (Goldman Sachs, JPMorgan, Morgan Stanley, HSBC, Nomura, Barclays, Citi)
 - Include 5-6 trade ideas relevant to this bond/category
@@ -163,6 +176,14 @@ REQUIREMENTS:
       bondName: name || symbol,
       issuer: issuer || "Unknown",
       generatedAt: new Date().toISOString(),
+      // Bond yields are AI estimates, now anchored to a LIVE benchmark curve
+      // (India/US G-Sec) where available; the specific bond's YTM is a modelled
+      // spread over that live anchor, not a live RBI/CCIL quote for this ISIN.
+      dataProvenance: yields.india10Y ? "anchored-estimate" : "estimate",
+      liveBenchmarks: yields.india10Y ? yields : null,
+      dataNote: yields.india10Y
+        ? `Yields are modelled as a spread over the LIVE India 10Y G-Sec (${yields.india10Y}%, TradingView). The specific bond's YTM/spread is an estimate, not a live RBI/CCIL quote for this ISIN — verify before transacting.`
+        : "Yields, prices and spreads are AI estimates anchored to the bond's reference coupon/yield — not a live RBI/CCIL quote. Verify before transacting.",
       ...intelligence,
     });
   } catch (err) {

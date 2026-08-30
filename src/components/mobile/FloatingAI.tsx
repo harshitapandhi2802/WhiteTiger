@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Zap, X, TrendingUp, BookOpen, Lightbulb, ChevronRight } from "lucide-react";
 
 /* ══════════════════════════════════════════════════════════════════
@@ -8,6 +9,7 @@ import { Zap, X, TrendingUp, BookOpen, Lightbulb, ChevronRight } from "lucide-re
    ══════════════════════════════════════════════════════════════════ */
 
 export default function FloatingAI() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const actions = [
@@ -43,7 +45,7 @@ export default function FloatingAI() {
           {actions.map((a, i) => (
             <button
               key={a.label}
-              onClick={() => { setOpen(false); window.location.href = "/analyze"; }}
+              onClick={() => { setOpen(false); router.push("/analyze"); }}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "14px 18px",

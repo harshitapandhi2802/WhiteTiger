@@ -2,8 +2,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  BarChart3, Globe, Shield, Zap, TrendingUp, Building2,
-  Landmark, Calculator, ArrowRight,
+  BarChart3, Globe, Shield, Zap, Building2,
+  Landmark, ArrowRight,
 } from "lucide-react";
 import { Reveal, SectionHeader } from "./shared";
 
@@ -39,22 +39,10 @@ const FEATURES = [
     metrics: ["Yield Curves", "Credit Risk", "Duration"],
   },
   {
-    icon: <Calculator size={26} />, color: "#F87171",
-    title: "Tax Intelligence",
-    desc: "AI-powered tax optimization with regime comparison, capital gains estimator & ₹46,800+ savings strategies.",
-    metrics: ["Old vs New", "Tax Calendar", "LTCG/STCG"],
-  },
-  {
     icon: <Shield size={26} />, color: "#4A9EFF",
     title: "Derivatives Agent",
     desc: "AI quant analysis for F&O with option chain intelligence, volatility heatmaps & IV percentile tracking.",
     metrics: ["Option Chain", "IV Analysis", "Strategy AI"],
-  },
-  {
-    icon: <TrendingUp size={26} />, color: "#7BB8FF",
-    title: "Wealth Advisory",
-    desc: "Personalized portfolio construction, asset allocation, SIP strategies & mutual fund intelligence for long-term wealth.",
-    metrics: ["Asset Alloc", "SIP Plans", "Goal Mapping"],
   },
 ];
 

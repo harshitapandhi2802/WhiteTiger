@@ -1354,6 +1354,268 @@ export function getStateByCode(code: string): IndiaState | undefined {
   return INDIA_STATES.find(s => s.code === code);
 }
 
+/* ═════════════════════════════════════════════════════════════════
+   LOCALITY-LEVEL DATA — White Tiger's Moat
+   Deep micro-market intelligence for major Indian cities
+   ═════════════════════════════════════════════════════════════════ */
+
+export interface Locality {
+  name: string;
+  city: string;
+  avgPriceSqft: number;
+  appreciation: number;
+  rentalYield: number;
+  demandTrend: "Hot" | "Warm" | "Cool";
+  infraScore: number;
+  liquidityScore: number;
+  nearbyInfra: string[];
+  type: "Ultra-Luxury" | "Premium" | "Mid-Range" | "Affordable" | "Emerging";
+  aiRecommendation: "Strong Buy" | "Buy" | "Hold" | "Wait" | "Avoid";
+  aiReason: string;
+  schools: number;
+  hospitals: number;
+  futureGrowthProb: number; // 0-100
+}
+
+export const LOCALITIES: Record<string, Locality[]> = {
+  Mumbai: [
+    { name: "Bandra West", city: "Mumbai", avgPriceSqft: 42000, appreciation: 8, rentalYield: 2.8, demandTrend: "Warm", infraScore: 9, liquidityScore: 10, nearbyInfra: ["Metro Line 9", "Bandra-Worli Sea Link"], type: "Ultra-Luxury", aiRecommendation: "Hold", aiReason: "Peak pricing — limited upside, but trophy asset value holds.", schools: 45, hospitals: 12, futureGrowthProb: 55 },
+    { name: "Powai", city: "Mumbai", avgPriceSqft: 22000, appreciation: 12, rentalYield: 3.5, demandTrend: "Hot", infraScore: 8, liquidityScore: 8, nearbyInfra: ["JVLR", "Eastern Express Highway", "Metro Line 6"], type: "Premium", aiRecommendation: "Buy", aiReason: "IIT-B ecosystem + lake lifestyle driving sustained IT professional demand.", schools: 30, hospitals: 8, futureGrowthProb: 72 },
+    { name: "Andheri East", city: "Mumbai", avgPriceSqft: 18000, appreciation: 10, rentalYield: 4.0, demandTrend: "Hot", infraScore: 8, liquidityScore: 9, nearbyInfra: ["Metro Line 1", "MIDC", "SEEPZ"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "Best rental yield in MMR suburbs; metro + commercial demand.", schools: 38, hospitals: 10, futureGrowthProb: 68 },
+    { name: "Panvel", city: "Mumbai", avgPriceSqft: 7500, appreciation: 28, rentalYield: 4.5, demandTrend: "Hot", infraScore: 7, liquidityScore: 6, nearbyInfra: ["Navi Mumbai Airport", "Mumbai Trans Harbour Link", "CIDCO Smart City"], type: "Emerging", aiRecommendation: "Strong Buy", aiReason: "Airport catalyst — 30-50% upside in 3-5 years. Ground floor opportunity.", schools: 15, hospitals: 4, futureGrowthProb: 92 },
+    { name: "Worli", city: "Mumbai", avgPriceSqft: 38000, appreciation: 12, rentalYield: 2.5, demandTrend: "Warm", infraScore: 9, liquidityScore: 9, nearbyInfra: ["Bandra-Worli Sea Link", "Coastal Road", "Metro Line 3"], type: "Ultra-Luxury", aiRecommendation: "Hold", aiReason: "Coastal Road completion will add premium. Already expensive.", schools: 20, hospitals: 6, futureGrowthProb: 60 },
+    { name: "Thane West", city: "Mumbai", avgPriceSqft: 14000, appreciation: 13, rentalYield: 3.8, demandTrend: "Hot", infraScore: 7, liquidityScore: 8, nearbyInfra: ["Metro Line 4", "Ghodbunder Road widening", "Thane-Borivali Tunnel"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "Thane-Borivali tunnel will cut commute to 20min — huge upside catalyst.", schools: 35, hospitals: 8, futureGrowthProb: 78 },
+    { name: "Ulwe", city: "Mumbai", avgPriceSqft: 6800, appreciation: 35, rentalYield: 4.2, demandTrend: "Hot", infraScore: 6, liquidityScore: 5, nearbyInfra: ["Navi Mumbai Airport", "MTHL", "Proposed Metro"], type: "Emerging", aiRecommendation: "Strong Buy", aiReason: "Highest appreciation in MMR — airport + MTHL creating new city center.", schools: 8, hospitals: 3, futureGrowthProb: 95 },
+    { name: "BKC", city: "Mumbai", avgPriceSqft: 48000, appreciation: 16, rentalYield: 3.0, demandTrend: "Hot", infraScore: 10, liquidityScore: 10, nearbyInfra: ["Metro Line 3", "Metro Line 9", "Eastern Freeway"], type: "Ultra-Luxury", aiRecommendation: "Buy", aiReason: "India's most valuable commercial district. Metro making it accessible.", schools: 10, hospitals: 5, futureGrowthProb: 65 },
+  ],
+  Bengaluru: [
+    { name: "Whitefield", city: "Bengaluru", avgPriceSqft: 8500, appreciation: 22, rentalYield: 4.5, demandTrend: "Hot", infraScore: 7, liquidityScore: 8, nearbyInfra: ["Metro Purple Line Extension", "ITPL", "Whitefield Station"], type: "Mid-Range", aiRecommendation: "Strong Buy", aiReason: "Metro arrival transforming India's biggest IT hub. 20%+ growth sustaining.", schools: 40, hospitals: 8, futureGrowthProb: 88 },
+    { name: "Sarjapur Road", city: "Bengaluru", avgPriceSqft: 7800, appreciation: 25, rentalYield: 4.2, demandTrend: "Hot", infraScore: 6, liquidityScore: 7, nearbyInfra: ["Peripheral Ring Road", "ORR Connection", "IT Parks"], type: "Mid-Range", aiRecommendation: "Strong Buy", aiReason: "Fastest-growing IT corridor — PRR will be transformational.", schools: 35, hospitals: 6, futureGrowthProb: 90 },
+    { name: "Koramangala", city: "Bengaluru", avgPriceSqft: 14000, appreciation: 10, rentalYield: 3.8, demandTrend: "Warm", infraScore: 8, liquidityScore: 9, nearbyInfra: ["HSR Layout Metro", "Silk Board Junction upgrade"], type: "Premium", aiRecommendation: "Hold", aiReason: "Startup capital of India — always in demand but limited new supply.", schools: 25, hospitals: 10, futureGrowthProb: 60 },
+    { name: "Devanahalli", city: "Bengaluru", avgPriceSqft: 5500, appreciation: 28, rentalYield: 4.0, demandTrend: "Hot", infraScore: 6, liquidityScore: 5, nearbyInfra: ["KIA Airport", "Aerospace SEZ", "BIAL IT Park"], type: "Emerging", aiRecommendation: "Strong Buy", aiReason: "Airport + aerospace SEZ creating next Whitefield. Early mover advantage.", schools: 10, hospitals: 3, futureGrowthProb: 93 },
+    { name: "Electronic City", city: "Bengaluru", avgPriceSqft: 6200, appreciation: 20, rentalYield: 4.8, demandTrend: "Hot", infraScore: 7, liquidityScore: 7, nearbyInfra: ["Metro Green Line", "NICE Road", "Infosys Campus"], type: "Affordable", aiRecommendation: "Buy", aiReason: "Best rental yield in Bengaluru. Metro Phase 2 creating price convergence.", schools: 20, hospitals: 5, futureGrowthProb: 82 },
+    { name: "Hebbal", city: "Bengaluru", avgPriceSqft: 9500, appreciation: 15, rentalYield: 3.5, demandTrend: "Warm", infraScore: 8, liquidityScore: 8, nearbyInfra: ["Hebbal Flyover", "Bellary Road", "Manyata Tech Park"], type: "Premium", aiRecommendation: "Buy", aiReason: "North Bengaluru gateway — Manyata employment anchoring demand.", schools: 22, hospitals: 6, futureGrowthProb: 72 },
+  ],
+  Hyderabad: [
+    { name: "Gachibowli", city: "Hyderabad", avgPriceSqft: 8200, appreciation: 22, rentalYield: 4.5, demandTrend: "Hot", infraScore: 8, liquidityScore: 8, nearbyInfra: ["ORR", "HITEC City", "ISB", "Microsoft Campus"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "India's best tech corridor — consistent 20%+ growth with strong fundamentals.", schools: 30, hospitals: 8, futureGrowthProb: 85 },
+    { name: "Kokapet", city: "Hyderabad", avgPriceSqft: 9500, appreciation: 30, rentalYield: 3.8, demandTrend: "Hot", infraScore: 7, liquidityScore: 7, nearbyInfra: ["Financial District", "ORR", "Proposed Metro Extension"], type: "Premium", aiRecommendation: "Strong Buy", aiReason: "Financial District adjacency + luxury positioning = next Banjara Hills.", schools: 15, hospitals: 4, futureGrowthProb: 92 },
+    { name: "Shamshabad", city: "Hyderabad", avgPriceSqft: 4500, appreciation: 35, rentalYield: 4.2, demandTrend: "Hot", infraScore: 6, liquidityScore: 5, nearbyInfra: ["RGIA Airport", "Pharma City", "ORR"], type: "Emerging", aiRecommendation: "Strong Buy", aiReason: "Airport + Pharma City = highest conviction long-term play in Indian RE.", schools: 8, hospitals: 3, futureGrowthProb: 95 },
+    { name: "Banjara Hills", city: "Hyderabad", avgPriceSqft: 15000, appreciation: 8, rentalYield: 2.8, demandTrend: "Warm", infraScore: 9, liquidityScore: 9, nearbyInfra: ["Road No. 12", "Hussain Sagar", "Metro Green Line"], type: "Ultra-Luxury", aiRecommendation: "Hold", aiReason: "Heritage luxury market — price floor is high, limited appreciation.", schools: 20, hospitals: 12, futureGrowthProb: 45 },
+    { name: "Kondapur", city: "Hyderabad", avgPriceSqft: 7500, appreciation: 20, rentalYield: 4.5, demandTrend: "Hot", infraScore: 8, liquidityScore: 8, nearbyInfra: ["HITEC City", "Metro Blue Line", "ORR"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "Core IT demand zone — metro + road connectivity driving rental demand.", schools: 25, hospitals: 6, futureGrowthProb: 80 },
+  ],
+  Pune: [
+    { name: "Hinjewadi", city: "Pune", avgPriceSqft: 7500, appreciation: 18, rentalYield: 4.2, demandTrend: "Hot", infraScore: 7, liquidityScore: 7, nearbyInfra: ["Pune Metro", "Ring Road", "IT Parks Phase 1-3"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "Pune's IT engine — metro arrival will transform accessibility.", schools: 20, hospitals: 4, futureGrowthProb: 82 },
+    { name: "Kharadi", city: "Pune", avgPriceSqft: 9000, appreciation: 16, rentalYield: 4.0, demandTrend: "Hot", infraScore: 8, liquidityScore: 8, nearbyInfra: ["EON IT Park", "Pune Airport proximity", "Ring Road"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "Best mix of IT employment + connectivity in east Pune.", schools: 18, hospitals: 5, futureGrowthProb: 78 },
+    { name: "Wakad", city: "Pune", avgPriceSqft: 7200, appreciation: 15, rentalYield: 4.5, demandTrend: "Hot", infraScore: 7, liquidityScore: 7, nearbyInfra: ["Mumbai-Pune Expressway", "Hinjewadi IT Park"], type: "Affordable", aiRecommendation: "Buy", aiReason: "Affordable Hinjewadi spillover with strong rental demand.", schools: 15, hospitals: 4, futureGrowthProb: 75 },
+    { name: "Baner", city: "Pune", avgPriceSqft: 10500, appreciation: 12, rentalYield: 3.5, demandTrend: "Warm", infraScore: 8, liquidityScore: 8, nearbyInfra: ["Pune Metro", "University Road", "Pashan Link Road"], type: "Premium", aiRecommendation: "Hold", aiReason: "Established premium market — steady but limited explosive upside.", schools: 22, hospitals: 6, futureGrowthProb: 62 },
+  ],
+  Gurgaon: [
+    { name: "Golf Course Road", city: "Gurgaon", avgPriceSqft: 22000, appreciation: 18, rentalYield: 3.0, demandTrend: "Hot", infraScore: 8, liquidityScore: 9, nearbyInfra: ["Rapid Metro", "NH-48", "Commercial Belt"], type: "Ultra-Luxury", aiRecommendation: "Buy", aiReason: "India's premium corporate address — expat demand sustaining prices.", schools: 15, hospitals: 6, futureGrowthProb: 70 },
+    { name: "Dwarka Expressway", city: "Gurgaon", avgPriceSqft: 9000, appreciation: 25, rentalYield: 3.8, demandTrend: "Hot", infraScore: 7, liquidityScore: 6, nearbyInfra: ["Dwarka Expressway (completed)", "Metro Extension", "IGI Airport proximity"], type: "Emerging", aiRecommendation: "Strong Buy", aiReason: "Expressway completion = transformational. Massive delivery + price surge.", schools: 12, hospitals: 3, futureGrowthProb: 88 },
+    { name: "Sohna Road", city: "Gurgaon", avgPriceSqft: 7500, appreciation: 15, rentalYield: 4.0, demandTrend: "Warm", infraScore: 6, liquidityScore: 6, nearbyInfra: ["KMP Expressway", "Southern Peripheral Road"], type: "Affordable", aiRecommendation: "Buy", aiReason: "Affordable Gurgaon entry — KMP expressway improving connectivity.", schools: 10, hospitals: 4, futureGrowthProb: 72 },
+  ],
+  Chennai: [
+    { name: "OMR (IT Corridor)", city: "Chennai", avgPriceSqft: 7500, appreciation: 12, rentalYield: 4.0, demandTrend: "Hot", infraScore: 7, liquidityScore: 7, nearbyInfra: ["IT Expressway", "MRTS Extension", "SIPCOT IT Park"], type: "Mid-Range", aiRecommendation: "Buy", aiReason: "Chennai's IT backbone — consistent demand from TCS, Infosys, Cognizant.", schools: 25, hospitals: 6, futureGrowthProb: 75 },
+    { name: "Porur-Poonamallee", city: "Chennai", avgPriceSqft: 5500, appreciation: 14, rentalYield: 4.2, demandTrend: "Hot", infraScore: 6, liquidityScore: 6, nearbyInfra: ["Chennai Metro Phase 2", "Mount-Poonamallee Road"], type: "Affordable", aiRecommendation: "Buy", aiReason: "Metro Phase 2 will transform west Chennai connectivity.", schools: 15, hospitals: 4, futureGrowthProb: 78 },
+    { name: "Anna Nagar", city: "Chennai", avgPriceSqft: 12000, appreciation: 8, rentalYield: 3.0, demandTrend: "Warm", infraScore: 9, liquidityScore: 9, nearbyInfra: ["Metro Blue Line", "Anna University proximity"], type: "Premium", aiRecommendation: "Hold", aiReason: "Chennai's most liveable locality — premium positioning, limited land.", schools: 30, hospitals: 8, futureGrowthProb: 55 },
+  ],
+  "North Goa": [
+    { name: "Assagao", city: "North Goa", avgPriceSqft: 12000, appreciation: 20, rentalYield: 6.0, demandTrend: "Hot", infraScore: 5, liquidityScore: 6, nearbyInfra: ["Mopa Airport", "NH-66"], type: "Premium", aiRecommendation: "Buy", aiReason: "India's Airbnb capital — 6%+ yields from remote worker demand.", schools: 5, hospitals: 2, futureGrowthProb: 80 },
+    { name: "Siolim", city: "North Goa", avgPriceSqft: 10000, appreciation: 18, rentalYield: 5.5, demandTrend: "Hot", infraScore: 5, liquidityScore: 6, nearbyInfra: ["Chapora River", "Mopa Airport"], type: "Premium", aiRecommendation: "Buy", aiReason: "Premium village lifestyle — European expat + startup community.", schools: 4, hospitals: 2, futureGrowthProb: 75 },
+  ],
+};
+
+export function getLocalities(cityName: string): Locality[] {
+  return LOCALITIES[cityName] || [];
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   LEV-INSPIRED: LENDER DATABASE
+   Indian Banks, NBFCs, HFCs + Global Lenders for CRE financing
+   ═════════════════════════════════════════════════════════════════ */
+
+export interface CRELender {
+  id: string;
+  name: string;
+  type: "Bank" | "NBFC" | "HFC" | "Insurance" | "PE Fund" | "Foreign Bank" | "DFI" | "REIT Platform";
+  logo: string;
+  country: string;
+  flag: string;
+  products: string[];
+  minLoan: string;
+  maxLoan: string;
+  interestRange: string;
+  ltv: number;
+  tenure: string;
+  processingFee: string;
+  speciality: string;
+  rating: number; // 1-5
+  speed: "Fast" | "Medium" | "Slow";
+  flexibility: "High" | "Medium" | "Low";
+  appetite: ("Residential" | "Commercial" | "Industrial" | "Retail" | "Hospitality" | "Mixed-Use" | "Land" | "Redevelopment" | "Warehousing" | "Data Center")[];
+  activeDeals: number;
+  recentActivity: string;
+  contactAvailable: boolean;
+}
+
+export const CRE_LENDERS: CRELender[] = [
+  // Indian Banks
+  { id: "sbi", name: "State Bank of India", type: "Bank", logo: "🏛️", country: "India", flag: "🇮🇳", products: ["Home Loan", "Commercial Property Loan", "Construction Finance", "LAP"], minLoan: "₹5L", maxLoan: "₹10Cr+", interestRange: "8.25-9.50%", ltv: 80, tenure: "5-30yr", processingFee: "0.35%", speciality: "Largest home loan book in India. Government-backed. Lowest rates for salaried.", rating: 4, speed: "Slow", flexibility: "Low", appetite: ["Residential", "Commercial", "Industrial"], activeDeals: 2845, recentActivity: "Launched green home loan at 25bps discount", contactAvailable: true },
+  { id: "hdfc", name: "HDFC Bank", type: "Bank", logo: "🏦", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Commercial Purchase", "Builder Finance", "LRD"], minLoan: "₹10L", maxLoan: "₹50Cr+", interestRange: "8.35-9.75%", ltv: 75, tenure: "5-30yr", processingFee: "0.50%", speciality: "Premium processing speed. Largest private home loan lender. Strong corporate lending arm.", rating: 5, speed: "Fast", flexibility: "Medium", appetite: ["Residential", "Commercial", "Mixed-Use", "Retail"], activeDeals: 3120, recentActivity: "Expanded LRD product for Grade-A offices", contactAvailable: true },
+  { id: "icici", name: "ICICI Bank", type: "Bank", logo: "🏦", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Commercial RE Loan", "Construction Finance"], minLoan: "₹10L", maxLoan: "₹25Cr+", interestRange: "8.40-9.65%", ltv: 75, tenure: "5-30yr", processingFee: "0.50%", speciality: "Strong digital process. Fast disbursal. Good for IT professionals.", rating: 4, speed: "Fast", flexibility: "Medium", appetite: ["Residential", "Commercial", "Industrial", "Warehousing"], activeDeals: 2560, recentActivity: "AI-powered instant approval for pre-approved customers", contactAvailable: true },
+  { id: "axis", name: "Axis Bank", type: "Bank", logo: "🏦", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Commercial Loan", "Builder Finance"], minLoan: "₹5L", maxLoan: "₹15Cr+", interestRange: "8.50-9.90%", ltv: 75, tenure: "5-25yr", processingFee: "1.00%", speciality: "Flexible eligibility. Good for self-employed. Quick processing.", rating: 4, speed: "Fast", flexibility: "High", appetite: ["Residential", "Commercial", "Retail"], activeDeals: 1890, recentActivity: "Launched express LAP with 5-day disbursal", contactAvailable: true },
+  { id: "kotak", name: "Kotak Mahindra Bank", type: "Bank", logo: "🏦", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Commercial Loan", "Construction Finance"], minLoan: "₹10L", maxLoan: "₹20Cr+", interestRange: "8.60-10.00%", ltv: 75, tenure: "5-25yr", processingFee: "0.50%", speciality: "Premium segment focus. Wealth management integration. HNI-friendly.", rating: 4, speed: "Medium", flexibility: "Medium", appetite: ["Residential", "Commercial", "Mixed-Use"], activeDeals: 1340, recentActivity: "HNI home loan with zero processing fee above ₹5Cr", contactAvailable: true },
+  { id: "bob", name: "Bank of Baroda", type: "Bank", logo: "🏛️", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Commercial Loan"], minLoan: "₹5L", maxLoan: "₹10Cr+", interestRange: "8.30-9.40%", ltv: 80, tenure: "5-30yr", processingFee: "0.25%", speciality: "Competitive rates for government employees. Large NRI lending presence.", rating: 3, speed: "Slow", flexibility: "Low", appetite: ["Residential", "Commercial"], activeDeals: 980, recentActivity: "NRI home loan with video KYC process", contactAvailable: true },
+  // NBFCs
+  { id: "bajaj", name: "Bajaj Finance", type: "NBFC", logo: "⚡", country: "India", flag: "🇮🇳", products: ["LAP", "Developer Finance", "Commercial Purchase", "Lease Rental Discounting"], minLoan: "₹25L", maxLoan: "₹50Cr+", interestRange: "9.50-12.50%", ltv: 65, tenure: "3-15yr", processingFee: "1-2%", speciality: "Fastest NBFC disbursal. Aggressive developer finance. Flexible LAP.", rating: 5, speed: "Fast", flexibility: "High", appetite: ["Commercial", "Residential", "Retail", "Industrial", "Warehousing"], activeDeals: 2100, recentActivity: "₹1,000Cr developer finance line for Tier-2 cities", contactAvailable: true },
+  { id: "piramal", name: "Piramal Capital", type: "NBFC", logo: "🏗️", country: "India", flag: "🇮🇳", products: ["Construction Finance", "Structured Debt", "Mezzanine", "Last-Mile Funding"], minLoan: "₹50Cr", maxLoan: "₹2,000Cr+", interestRange: "12-18%", ltv: 70, tenure: "1-5yr", processingFee: "1-2%", speciality: "India's largest CRE NBFC. Structured finance specialist. Developer-focused.", rating: 5, speed: "Medium", flexibility: "High", appetite: ["Residential", "Commercial", "Mixed-Use", "Redevelopment", "Hospitality"], activeDeals: 340, recentActivity: "₹5,000Cr AIF for premium residential developers", contactAvailable: true },
+  { id: "iifl", name: "IIFL Finance", type: "NBFC", logo: "💰", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Construction Finance", "Developer Loan"], minLoan: "₹10L", maxLoan: "₹25Cr+", interestRange: "9.25-13.00%", ltv: 70, tenure: "3-20yr", processingFee: "1-2%", speciality: "Self-employed friendly. Informal income assessment. Fast for LAP.", rating: 4, speed: "Fast", flexibility: "High", appetite: ["Residential", "Commercial", "Retail"], activeDeals: 1450, recentActivity: "Digital LAP with 3-day disbursal launched", contactAvailable: true },
+  // HFCs
+  { id: "lichf", name: "LIC Housing Finance", type: "HFC", logo: "🏠", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Developer Finance", "NRI Home Loan"], minLoan: "₹5L", maxLoan: "₹15Cr+", interestRange: "8.35-9.60%", ltv: 80, tenure: "5-30yr", processingFee: "0.50%", speciality: "LIC parentage. Competitive rates. Strong NRI product suite.", rating: 4, speed: "Medium", flexibility: "Medium", appetite: ["Residential", "Commercial"], activeDeals: 1680, recentActivity: "Special scheme for women borrowers — 5bps concession", contactAvailable: true },
+  { id: "pnb-hfl", name: "PNB Housing Finance", type: "HFC", logo: "🏠", country: "India", flag: "🇮🇳", products: ["Home Loan", "LAP", "Construction Finance"], minLoan: "₹5L", maxLoan: "₹10Cr+", interestRange: "8.50-10.00%", ltv: 80, tenure: "5-25yr", processingFee: "0.50%", speciality: "Strong in North India. Good for affordable housing segment.", rating: 3, speed: "Medium", flexibility: "Medium", appetite: ["Residential"], activeDeals: 920, recentActivity: "Affordable housing push — ₹15L loans at 8.50%", contactAvailable: true },
+  // International / PE
+  { id: "blackstone", name: "Blackstone Real Estate", type: "PE Fund", logo: "🦅", country: "US", flag: "🇺🇸", products: ["Equity Investment", "Platform Deals", "Portfolio Acquisition", "Development JV"], minLoan: "₹500Cr", maxLoan: "₹10,000Cr+", interestRange: "15-22% IRR target", ltv: 0, tenure: "5-10yr", processingFee: "Structured", speciality: "World's largest RE PE fund. India's largest office/warehouse investor. Embassy & Nexus REIT sponsor.", rating: 5, speed: "Slow", flexibility: "Medium", appetite: ["Commercial", "Industrial", "Warehousing", "Data Center", "Retail"], activeDeals: 85, recentActivity: "₹8,000Cr data center platform in India", contactAvailable: false },
+  { id: "brookfield", name: "Brookfield Asset Mgmt", type: "PE Fund", logo: "🌲", country: "Canada", flag: "🇨🇦", products: ["Equity Investment", "Structured Debt", "Platform Deals", "REIT Sponsorship"], minLoan: "₹200Cr", maxLoan: "₹5,000Cr+", interestRange: "14-20% IRR target", ltv: 0, tenure: "5-10yr", processingFee: "Structured", speciality: "India office REIT sponsor. Strong infrastructure-linked RE thesis. GCC demand play.", rating: 5, speed: "Slow", flexibility: "Medium", appetite: ["Commercial", "Mixed-Use", "Industrial", "Data Center"], activeDeals: 42, recentActivity: "₹3,500Cr office acquisition in Bengaluru", contactAvailable: false },
+  { id: "adia", name: "ADIA (Abu Dhabi)", type: "DFI", logo: "🏰", country: "UAE", flag: "🇦🇪", products: ["Sovereign Investment", "Platform JV", "Portfolio Acquisition"], minLoan: "₹1,000Cr", maxLoan: "₹25,000Cr+", interestRange: "12-18% IRR target", ltv: 0, tenure: "7-15yr", processingFee: "Structured", speciality: "World's third-largest sovereign wealth fund. Long-term capital partner for premium assets.", rating: 5, speed: "Slow", flexibility: "Low", appetite: ["Commercial", "Residential", "Mixed-Use", "Hospitality"], activeDeals: 18, recentActivity: "₹2,000Cr residential platform in Mumbai", contactAvailable: false },
+  { id: "sc", name: "Standard Chartered", type: "Foreign Bank", logo: "🌐", country: "UK", flag: "🇬🇧", products: ["CRE Term Loan", "Construction Finance", "LAP", "LRD"], minLoan: "₹1Cr", maxLoan: "₹100Cr+", interestRange: "9.50-11.50%", ltv: 65, tenure: "3-15yr", processingFee: "1%", speciality: "Cross-border RE expertise. Strong for MNC corporate real estate. NRI-friendly.", rating: 4, speed: "Medium", flexibility: "Medium", appetite: ["Commercial", "Residential", "Industrial"], activeDeals: 280, recentActivity: "Cross-border NRI mortgage program expanded", contactAvailable: true },
+];
+
+/* ═════════════════════════════════════════════════════════════════
+   LEV-INSPIRED: DEAL PIPELINE & QUOTE MATRIX
+   Deal lifecycle management + financing term comparison
+   ═════════════════════════════════════════════════════════════════ */
+
+export type DealStatus = "Prospecting" | "Due Diligence" | "Financing" | "Term Sheet" | "Under Contract" | "Closed" | "Dead";
+
+export interface CREDeal {
+  id: string;
+  propertyName: string;
+  address: string;
+  city: string;
+  state: string;
+  assetType: "Residential" | "Commercial" | "Industrial" | "Retail" | "Hospitality" | "Mixed-Use" | "Land" | "Warehousing";
+  dealSize: string;
+  askPrice: string;
+  capRate: number;
+  noi: string;
+  sqft: string;
+  status: DealStatus;
+  priority: "High" | "Medium" | "Low";
+  createdAt: string;
+  updatedAt: string;
+  lendersContacted: number;
+  quotesReceived: number;
+  assignee: string;
+  notes: string;
+}
+
+export const SAMPLE_DEALS: CREDeal[] = [
+  { id: "D001", propertyName: "Brigade Gateway Tower B", address: "Rajajinagar, Bengaluru", city: "Bengaluru", state: "Karnataka", assetType: "Commercial", dealSize: "₹180Cr", askPrice: "₹12,500/sqft", capRate: 7.8, noi: "₹14Cr/yr", sqft: "1,44,000", status: "Term Sheet", priority: "High", createdAt: "2026-05-10", updatedAt: "2026-05-27", lendersContacted: 12, quotesReceived: 4, assignee: "Deal Team A", notes: "HDFC & Bajaj best terms. Closing expected June." },
+  { id: "D002", propertyName: "Godrej Platinum Vikhroli", address: "LBS Marg, Mumbai", city: "Mumbai", state: "Maharashtra", assetType: "Residential", dealSize: "₹45Cr", askPrice: "₹28,000/sqft", capRate: 3.2, noi: "₹1.4Cr/yr", sqft: "16,000", status: "Financing", priority: "High", createdAt: "2026-05-15", updatedAt: "2026-05-26", lendersContacted: 8, quotesReceived: 3, assignee: "Deal Team B", notes: "Pre-approved buyers. Developer financing available." },
+  { id: "D003", propertyName: "DLF Cyber Park Phase 3", address: "Sector 20, Gurgaon", city: "Gurgaon", state: "Haryana", assetType: "Commercial", dealSize: "₹320Cr", askPrice: "₹14,000/sqft", capRate: 8.5, noi: "₹27.2Cr/yr", sqft: "2,28,000", status: "Due Diligence", priority: "High", createdAt: "2026-05-01", updatedAt: "2026-05-25", lendersContacted: 6, quotesReceived: 0, assignee: "Deal Team A", notes: "Large ticket. Exploring Piramal + HDFC combination." },
+  { id: "D004", propertyName: "Phoenix MarketCity Expansion", address: "Viman Nagar, Pune", city: "Pune", state: "Maharashtra", assetType: "Retail", dealSize: "₹95Cr", askPrice: "₹18,000/sqft", capRate: 9.2, noi: "₹8.7Cr/yr", sqft: "52,800", status: "Prospecting", priority: "Medium", createdAt: "2026-05-20", updatedAt: "2026-05-24", lendersContacted: 0, quotesReceived: 0, assignee: "Deal Team C", notes: "Initial assessment. Tenant mix strong." },
+  { id: "D005", propertyName: "IndoSpace Logistics Park", address: "Chakan, Pune", city: "Pune", state: "Maharashtra", assetType: "Warehousing", dealSize: "₹210Cr", askPrice: "₹3,200/sqft", capRate: 8.8, noi: "₹18.5Cr/yr", sqft: "6,56,000", status: "Under Contract", priority: "High", createdAt: "2026-04-15", updatedAt: "2026-05-22", lendersContacted: 10, quotesReceived: 5, assignee: "Deal Team A", notes: "Blackstone interest confirmed. Closing in 2 weeks." },
+  { id: "D006", propertyName: "Kokapet Financial Towers", address: "Kokapet, Hyderabad", city: "Hyderabad", state: "Telangana", assetType: "Commercial", dealSize: "₹140Cr", askPrice: "₹9,800/sqft", capRate: 7.5, noi: "₹10.5Cr/yr", sqft: "1,42,800", status: "Financing", priority: "Medium", createdAt: "2026-05-08", updatedAt: "2026-05-26", lendersContacted: 9, quotesReceived: 2, assignee: "Deal Team B", notes: "Growing IT demand. Axis and ICICI quoting." },
+  { id: "D007", propertyName: "Prestige Golfshire Villas", address: "Devanahalli, Bengaluru", city: "Bengaluru", state: "Karnataka", assetType: "Residential", dealSize: "₹28Cr", askPrice: "₹6,200/sqft", capRate: 3.8, noi: "₹1.1Cr/yr", sqft: "45,000", status: "Prospecting", priority: "Low", createdAt: "2026-05-22", updatedAt: "2026-05-25", lendersContacted: 0, quotesReceived: 0, assignee: "Deal Team C", notes: "Airport zone play. Long-term appreciation thesis." },
+  { id: "D008", propertyName: "Taj Hospitality Goa", address: "Candolim, North Goa", city: "North Goa", state: "Goa", assetType: "Hospitality", dealSize: "₹75Cr", askPrice: "₹22,000/sqft", capRate: 10.5, noi: "₹7.9Cr/yr", sqft: "34,000", status: "Dead", priority: "Low", createdAt: "2026-04-01", updatedAt: "2026-05-15", lendersContacted: 4, quotesReceived: 1, assignee: "Deal Team B", notes: "Regulatory issues. CRZ clearance pending." },
+];
+
+export interface FinancingQuote {
+  id: string;
+  dealId: string;
+  lenderId: string;
+  lenderName: string;
+  lenderType: string;
+  loanAmount: string;
+  interestRate: number;
+  rateType: "Fixed" | "Floating" | "Hybrid";
+  ltv: number;
+  tenure: string;
+  amortization: string;
+  ioPeriod: string;
+  prepaymentPenalty: string;
+  recourse: "Full" | "Partial" | "Non-Recourse";
+  processingFee: string;
+  disbursalTime: string;
+  specialConditions: string;
+  status: "Received" | "Under Review" | "Accepted" | "Rejected" | "Expired";
+  receivedDate: string;
+  expiryDate: string;
+  aiScore: number; // White Tiger AI score 0-100
+  aiReason: string;
+}
+
+export const SAMPLE_QUOTES: FinancingQuote[] = [
+  { id: "Q001", dealId: "D001", lenderId: "hdfc", lenderName: "HDFC Bank", lenderType: "Bank", loanAmount: "₹126Cr", interestRate: 9.15, rateType: "Floating", ltv: 70, tenure: "10yr", amortization: "20yr", ioPeriod: "2yr", prepaymentPenalty: "2% (Yr 1-3), Nil after", recourse: "Partial", processingFee: "0.50%", disbursalTime: "21 days", specialConditions: "DSRA of 3 months required. Personal guarantee of promoter.", status: "Under Review", receivedDate: "2026-05-24", expiryDate: "2026-06-07", aiScore: 88, aiReason: "Best rate among received quotes. HDFC's strong track record reduces execution risk. IO period provides cash flow flexibility." },
+  { id: "Q002", dealId: "D001", lenderId: "bajaj", lenderName: "Bajaj Finance", lenderType: "NBFC", loanAmount: "₹108Cr", interestRate: 10.25, rateType: "Floating", ltv: 60, tenure: "7yr", amortization: "15yr", ioPeriod: "1yr", prepaymentPenalty: "3% (Yr 1-5)", recourse: "Full", processingFee: "1.50%", disbursalTime: "14 days", specialConditions: "Faster disbursal. Quarterly prepayment window. Corporate guarantee needed.", status: "Received", receivedDate: "2026-05-25", expiryDate: "2026-06-08", aiScore: 72, aiReason: "Higher rate but fastest disbursal. Full recourse is a negative. Good as backup option." },
+  { id: "Q003", dealId: "D001", lenderId: "icici", lenderName: "ICICI Bank", lenderType: "Bank", loanAmount: "₹117Cr", interestRate: 9.35, rateType: "Floating", ltv: 65, tenure: "10yr", amortization: "20yr", ioPeriod: "18mo", prepaymentPenalty: "2% (Yr 1-2), Nil after", recourse: "Partial", processingFee: "0.50%", disbursalTime: "25 days", specialConditions: "Escrow account for lease rentals. 12-month DSRA.", status: "Under Review", receivedDate: "2026-05-23", expiryDate: "2026-06-06", aiScore: 82, aiReason: "Competitive rate. Slightly lower LTV than HDFC. Escrow requirement reduces flexibility." },
+  { id: "Q004", dealId: "D001", lenderId: "axis", lenderName: "Axis Bank", lenderType: "Bank", loanAmount: "₹108Cr", interestRate: 9.50, rateType: "Hybrid", ltv: 60, tenure: "8yr", amortization: "18yr", ioPeriod: "2yr", prepaymentPenalty: "Nil", recourse: "Partial", processingFee: "0.75%", disbursalTime: "18 days", specialConditions: "Fixed rate for 3yr, then floating. No prepayment penalty is unique.", status: "Received", receivedDate: "2026-05-26", expiryDate: "2026-06-09", aiScore: 79, aiReason: "Zero prepayment penalty is attractive for exit flexibility. Hybrid structure provides initial rate certainty." },
+  { id: "Q005", dealId: "D002", lenderId: "hdfc", lenderName: "HDFC Bank", lenderType: "Bank", loanAmount: "₹31.5Cr", interestRate: 8.65, rateType: "Floating", ltv: 70, tenure: "20yr", amortization: "20yr", ioPeriod: "None", prepaymentPenalty: "Nil (Floating)", recourse: "Full", processingFee: "0.50%", disbursalTime: "15 days", specialConditions: "Standard residential terms. Pre-approved CIBIL required.", status: "Accepted", receivedDate: "2026-05-18", expiryDate: "2026-06-01", aiScore: 92, aiReason: "Best residential rate in market. Zero prepayment on floating. Standard home loan terms — clean execution." },
+  { id: "Q006", dealId: "D002", lenderId: "sbi", lenderName: "SBI", lenderType: "Bank", loanAmount: "₹36Cr", interestRate: 8.40, rateType: "Floating", ltv: 80, tenure: "25yr", amortization: "25yr", ioPeriod: "None", prepaymentPenalty: "Nil", recourse: "Full", processingFee: "0.35%", disbursalTime: "30 days", specialConditions: "Best LTV and lowest rate but slowest processing. Requires additional documentation.", status: "Under Review", receivedDate: "2026-05-20", expiryDate: "2026-06-03", aiScore: 85, aiReason: "Lowest rate and highest LTV. SBI processing speed is a risk factor but terms are most borrower-friendly." },
+];
+
+/* ═════════════════════════════════════════════════════════════════
+   LEV-INSPIRED: OUTREACH & CRM TRACKING
+   ═════════════════════════════════════════════════════════════════ */
+
+export interface OutreachRecord {
+  lenderId: string;
+  lenderName: string;
+  dealId: string;
+  status: "Sent" | "Opened" | "Replied" | "Interested" | "Passed" | "Term Sheet" | "No Response";
+  sentDate: string;
+  lastActivity: string;
+  followUps: number;
+  notes: string;
+}
+
+export const SAMPLE_OUTREACH: OutreachRecord[] = [
+  { lenderId: "hdfc", lenderName: "HDFC Bank", dealId: "D001", status: "Term Sheet", sentDate: "2026-05-12", lastActivity: "2026-05-24", followUps: 2, notes: "Strong interest. Term sheet received. Best rate so far." },
+  { lenderId: "bajaj", lenderName: "Bajaj Finance", dealId: "D001", status: "Term Sheet", sentDate: "2026-05-12", lastActivity: "2026-05-25", followUps: 1, notes: "Quick response. Higher rate but faster execution." },
+  { lenderId: "icici", lenderName: "ICICI Bank", dealId: "D001", status: "Term Sheet", sentDate: "2026-05-13", lastActivity: "2026-05-23", followUps: 2, notes: "Competitive. Escrow requirement needs negotiation." },
+  { lenderId: "axis", lenderName: "Axis Bank", dealId: "D001", status: "Term Sheet", sentDate: "2026-05-14", lastActivity: "2026-05-26", followUps: 1, notes: "Latest quote. Zero prepayment is attractive." },
+  { lenderId: "kotak", lenderName: "Kotak Mahindra", dealId: "D001", status: "Interested", sentDate: "2026-05-15", lastActivity: "2026-05-22", followUps: 3, notes: "Reviewing. May need more time." },
+  { lenderId: "sbi", lenderName: "SBI", dealId: "D001", status: "No Response", sentDate: "2026-05-12", lastActivity: "2026-05-12", followUps: 4, notes: "No response despite multiple follow-ups. Government bank delays." },
+  { lenderId: "piramal", lenderName: "Piramal Capital", dealId: "D001", status: "Passed", sentDate: "2026-05-13", lastActivity: "2026-05-18", followUps: 0, notes: "Passed — deal size below their minimum threshold." },
+  { lenderId: "lichf", lenderName: "LIC HFL", dealId: "D001", status: "Replied", sentDate: "2026-05-14", lastActivity: "2026-05-21", followUps: 2, notes: "Reviewing internally. Expected response next week." },
+  { lenderId: "sc", lenderName: "Std Chartered", dealId: "D001", status: "Interested", sentDate: "2026-05-16", lastActivity: "2026-05-24", followUps: 1, notes: "Interested but needs cross-border compliance check." },
+  { lenderId: "iifl", lenderName: "IIFL Finance", dealId: "D001", status: "Opened", sentDate: "2026-05-18", lastActivity: "2026-05-20", followUps: 2, notes: "Email opened but no response yet." },
+  { lenderId: "bob", lenderName: "Bank of Baroda", dealId: "D001", status: "Replied", sentDate: "2026-05-15", lastActivity: "2026-05-23", followUps: 1, notes: "Need additional documentation. Rate expected to be competitive." },
+  { lenderId: "pnb-hfl", lenderName: "PNB HFL", dealId: "D001", status: "Passed", sentDate: "2026-05-14", lastActivity: "2026-05-17", followUps: 0, notes: "Passed — commercial property outside their focus." },
+];
+
+export function getLenderById(id: string): CRELender | undefined {
+  return CRE_LENDERS.find(l => l.id === id);
+}
+
+export function matchLenders(assetType: string, dealSize: number): CRELender[] {
+  return CRE_LENDERS.filter(l => l.appetite.includes(assetType as CRELender["appetite"][0])).sort((a, b) => b.rating - a.rating);
+}
+
+export function getQuotesForDeal(dealId: string): FinancingQuote[] {
+  return SAMPLE_QUOTES.filter(q => q.dealId === dealId).sort((a, b) => b.aiScore - a.aiScore);
+}
+
+export function getOutreachForDeal(dealId: string): OutreachRecord[] {
+  return SAMPLE_OUTREACH.filter(o => o.dealId === dealId);
+}
+
+export function getDealsByStatus(status: DealStatus): CREDeal[] {
+  return SAMPLE_DEALS.filter(d => d.status === status);
+}
+
+export const DEAL_STATUSES: DealStatus[] = ["Prospecting", "Due Diligence", "Financing", "Term Sheet", "Under Contract", "Closed", "Dead"];
+
+export const DEAL_STATUS_COLORS: Record<DealStatus, string> = {
+  "Prospecting": "#818CF8",
+  "Due Diligence": "#4A9EFF",
+  "Financing": "#FBBF24",
+  "Term Sheet": "#FB923C",
+  "Under Contract": "#34D399",
+  "Closed": "#22C55E",
+  "Dead": "#EF4444",
+};
+
 // ── Helper: India industry stats ──
 export const INDIA_RE_STATS = {
   industrySize: "₹72 Lakh Cr",

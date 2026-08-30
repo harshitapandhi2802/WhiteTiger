@@ -2,588 +2,124 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   TrendingUp, Search, AlertCircle, Zap, ChevronDown, Shield, Globe,
   Package, Users, Anchor, BarChart3, Target, Activity, FileText,
   X, Check, Layers, Flame, Bitcoin, Coins, Droplets, Factory,
   DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, RefreshCw, Building2,
-  Brain, Cpu, Pill, Car, Landmark, Wifi, Monitor, Gem, Sparkles, ChevronLeft
+  Pill, Car, Wifi, Monitor, ChevronLeft
 } from "lucide-react";
-import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan } from "@/lib/usage";
-import { searchStocks, NSE_STOCKS, STOCK_SECTORS as LIB_STOCK_SECTORS, MCAP_FILTERS, type StockEntry } from "@/lib/stocks";
+import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan, validatePlanServerSide } from "@/lib/usage";
+import { useUser, clearUser, type WtUser } from "@/lib/auth";
+import { isAllowedEmail } from "@/lib/allowlist";
+import { SectionLandingGrid, SECTIONS, type SectionId } from "@/components/SectionLandingGrid";
+const AuthGate = dynamic(() => import("@/components/auth/AuthGate").then(m => ({ default: m.AuthGate })), { ssr: false });
+const PrivateBetaGate = dynamic(() => import("@/components/auth/PrivateBetaGate").then(m => ({ default: m.PrivateBetaGate })), { ssr: false });
+const WelcomeIntro = dynamic(() => import("@/components/WelcomeIntro").then(m => ({ default: m.WelcomeIntro })), { ssr: false });
+const SectionTransition = dynamic(() => import("@/components/SectionTransition").then(m => ({ default: m.SectionTransition })), { ssr: false });
+import { searchStocks, NSE_STOCKS, type StockEntry } from "@/lib/stocks";
 import { searchCommodities, MCX_COMMODITIES, COMMODITY_CATEGORIES, type CommodityEntry } from "@/lib/commodities";
 import { searchCrypto, CRYPTO_LIST, CRYPTO_CATEGORIES, type CryptoEntry } from "@/lib/crypto";
 import { searchCurrencies, CURRENCY_LIST, CURRENCY_CATEGORIES, type CurrencyEntry } from "@/lib/currencies";
 import { searchMutualFunds, MUTUAL_FUNDS, MF_CATEGORIES, type MutualFundEntry } from "@/lib/mutualfunds";
 import { searchBonds, BONDS_LIST, BOND_CATEGORIES, type BondEntry } from "@/lib/bonds";
 import { INTL_INDICES, INTL_STOCKS, INTL_COUNTRIES, getIndicesByCountry, getStocksForIndex } from "@/lib/international";
+/* ── Lightweight, always-needed components (keep static) ── */
 import { ScoreGauge, ScenarioTable, TagList, renderMarkdown, getRatingBadge, getOutlookBadge } from "@/components/DashboardWidgets";
 import { MiniSparkline, TradingViewChart, MarketTicker, ScrollingTicker, MarketPulseBar, LiveChartGrid } from "@/components/LiveCharts";
-import { IntelligenceColumn } from "@/components/IntelligenceColumn";
-import { DerivativesPanel } from "@/components/DerivativesPanel";
-import { IndianDerivativesPage } from "@/components/IndianDerivatives";
-import { GlobalDerivativesTerminal } from "@/components/GlobalDerivatives";
-import { DerivativesAgentDashboard } from "@/components/DerivativesAgent";
-import { RealEstateDashboard } from "@/components/RealEstateDashboard";
-import { RealEstatePanel } from "@/components/RealEstatePanel";
-import FXIntelligenceDashboard from "@/components/FXIntelligenceDashboard";
-import FXPlatform from "@/components/fx/FXPlatform";
-import WealthAdvisoryDashboard from "@/components/WealthAdvisoryDashboard";
-import TaxIntelligenceDashboard from "@/components/TaxIntelligenceDashboard";
-import MFPlatform from "@/components/mf/MFPlatform";
-import BondsPlatform from "@/components/bonds/BondsPlatform";
-import CryptoPlatform from "@/components/crypto/CryptoPlatform";
-import { DataHealthMonitor } from "@/components/DataHealth";
-import SplashScreen from "@/components/mobile/SplashScreen";
-import FloatingAI from "@/components/mobile/FloatingAI";
-import MobileHome from "@/components/mobile-lite/MobileHome";
-import MobileMarkets from "@/components/mobile-lite/MobileMarkets";
-import MobileSearch from "@/components/mobile-lite/MobileSearch";
-import BottomNav from "@/components/mobile-lite/BottomNav";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TabLoadingSkeleton } from "@/components/LoadingSkeleton";
+import { GlobalDisclaimer, MarketStatusIndicator, TrustFooter } from "@/components/TrustBadges";
 import {
   useStockPrices, useCommodityPrices, useForexRates, useMFNavs, useInternationalPrices,
 } from "@/hooks/useMarketData";
 
-type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
+/* ── Heavy tab components — dynamic imports for code splitting ── */
+const IntelligenceColumn = dynamic(() => import("@/components/IntelligenceColumn").then(m => ({ default: m.IntelligenceColumn })), { ssr: false });
+const DerivativesPanel = dynamic(() => import("@/components/DerivativesPanel").then(m => ({ default: m.DerivativesPanel })), { ssr: false });
+const IndianDerivativesPage = dynamic(() => import("@/components/IndianDerivatives").then(m => ({ default: m.IndianDerivativesPage })), { loading: () => <TabLoadingSkeleton label="Loading derivatives..." />, ssr: false });
+const GlobalDerivativesTerminal = dynamic(() => import("@/components/GlobalDerivatives").then(m => ({ default: m.GlobalDerivativesTerminal })), { loading: () => <TabLoadingSkeleton label="Loading global derivatives..." />, ssr: false });
+const DerivativesAgentDashboard = dynamic(() => import("@/components/DerivativesAgent").then(m => ({ default: m.DerivativesAgentDashboard })), { loading: () => <TabLoadingSkeleton label="Loading derivatives agent..." />, ssr: false });
+const RealEstateExplorer = dynamic(() => import("@/components/real-estate/RealEstateExplorer"), { loading: () => <TabLoadingSkeleton label="Loading real estate..." />, ssr: false });
+const FXIntelligenceDashboard = dynamic(() => import("@/components/FXIntelligenceDashboard"), { loading: () => <TabLoadingSkeleton label="Loading FX dashboard..." />, ssr: false });
+const FXPlatform = dynamic(() => import("@/components/fx/FXPlatform"), { loading: () => <TabLoadingSkeleton label="Loading FX platform..." />, ssr: false });
+const MFExplorer = dynamic(() => import("@/components/mf/MFExplorer"), { loading: () => <TabLoadingSkeleton label="Loading mutual funds..." />, ssr: false });
+const BondsPlatform = dynamic(() => import("@/components/bonds/BondsPlatform"), { loading: () => <TabLoadingSkeleton label="Loading bonds..." />, ssr: false });
+const CryptoPlatform = dynamic(() => import("@/components/crypto/CryptoPlatform"), { loading: () => <TabLoadingSkeleton label="Loading crypto..." />, ssr: false });
+const DataHealthMonitor = dynamic(() => import("@/components/DataHealth").then(m => ({ default: m.DataHealthMonitor })), { ssr: false });
+const SplashScreen = dynamic(() => import("@/components/mobile/SplashScreen"), { ssr: false });
+const FloatingAI = dynamic(() => import("@/components/mobile/FloatingAI"), { ssr: false });
+const MobileHome = dynamic(() => import("@/components/mobile-lite/MobileHome"), { ssr: false });
+const MobileMarkets = dynamic(() => import("@/components/mobile-lite/MobileMarkets"), { ssr: false });
+const MobileSearch = dynamic(() => import("@/components/mobile-lite/MobileSearch"), { ssr: false });
+const BottomNav = dynamic(() => import("@/components/mobile-lite/BottomNav"), { ssr: false });
+const StocksExplorer = dynamic(() => import("@/components/stocks/StocksExplorer"), { loading: () => <TabLoadingSkeleton label="Loading stocks explorer..." />, ssr: false });
+
+type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 type ResultView = "dashboard" | "report";
 
 declare global { interface Window { Razorpay: new (o: Record<string, unknown>) => { open: () => void }; } }
 
-/* ═══ Stock Sector Categories — from lib, limited for dashboard ═══ */
-const STOCK_SECTORS = LIB_STOCK_SECTORS.slice(0, 20); // show top 20 sectors on dashboard
+/* StocksExplorer extracted to /src/components/stocks/StocksExplorer.tsx (dynamic import above) */
 
-/* Top 50 stocks for the main dashboard — curated for visibility */
-const TOP_50_TICKERS = new Set([
-  "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", "BHARTIARTL.NS", "SBIN.NS",
-  "ITC.NS", "HINDUNILVR.NS", "KOTAKBANK.NS", "LT.NS", "AXISBANK.NS", "ASIANPAINT.NS", "MARUTI.NS",
-  "TITAN.NS", "BAJFINANCE.NS", "SUNPHARMA.NS", "WIPRO.NS", "HCLTECH.NS", "TATAMOTORS.NS",
-  "ULTRACEMCO.NS", "NESTLEIND.NS", "POWERGRID.NS", "NTPC.NS", "M&M.NS", "BAJAJFINSV.NS",
-  "TECHM.NS", "TATASTEEL.NS", "INDUSINDBK.NS", "ADANIENT.NS", "ADANIPORTS.NS", "ADANIGREEN.NS",
-  "GRASIM.NS", "CIPLA.NS", "DRREDDY.NS", "COALINDIA.NS", "EICHERMOT.NS", "BRITANNIA.NS",
-  "DIVISLAB.NS", "BAJAJ-AUTO.NS", "HEROMOTOCO.NS", "JSWSTEEL.NS", "SBILIFE.NS", "HDFCLIFE.NS",
-  "APOLLOHOSP.NS", "TATACONSUM.NS", "HINDALCO.NS", "BPCL.NS", "ONGC.NS", "ZOMATO.NS",
-]);
-
-/* ═══ Stock Card Component ═══ */
-function StockCard({ s, stockPrices }: { s: StockEntry; stockPrices: Record<string, { price: number; changePercent: number; name?: string }> }) {
-  const sym = s.ticker.replace(".NS", "");
-  const livePrice = stockPrices[sym];
-  const change = livePrice?.changePercent || 0;
-  const slug = sym.toLowerCase().replace(/[^a-z0-9]/g, "-");
-  const nseUrl = `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(sym)}`;
-  return (
-    <button key={s.ticker} onClick={() => { window.location.href = `/stocks/${slug}`; }} className="card fx-pair-card" style={{
-      padding: 0, textAlign: "left", cursor: "pointer",
-      border: "0.5px solid var(--border)", background: "var(--bg-midnight)", overflow: "hidden", transition: "all 0.2s ease-out", position: "relative",
-    }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: change >= 0 ? "var(--success)" : "var(--danger)" }} />
-      {/* Official NSE Link — top right */}
-      <a
-        href={nseUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={e => e.stopPropagation()}
-        title={`View ${sym} on NSE India`}
-        style={{
-          position: "absolute", top: 8, right: 8, zIndex: 2,
-          display: "flex", alignItems: "center", gap: 3,
-          padding: "3px 8px", borderRadius: 6,
-          background: "rgba(74,158,255,0.06)", border: "0.5px solid rgba(74,158,255,0.12)",
-          color: "#4A9EFF", fontSize: "0.52rem", fontWeight: 600,
-          textDecoration: "none", transition: "all 0.2s",
-        }}
-      >
-        NSE <ArrowUpRight size={10} />
-      </a>
-      <div style={{ padding: "14px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)", marginBottom: 2 }}>{s.name}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: "0.66rem", color: "var(--text-muted)", fontWeight: 600 }}>{sym}</span>
-            <span className="badge badge-gray" style={{ padding: "1px 6px", fontSize: "0.56rem" }}>{s.sector}</span>
-          </div>
-        </div>
-        <MiniSparkline seed={s.ticker} positive={change >= 0} width={58} height={24} />
-      </div>
-      <div style={{ padding: "0 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        {livePrice ? (
-          <>
-            <span style={{ fontSize: "1rem", fontWeight: 800, color: "var(--text-primary)" }}>₹{livePrice.price.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
-            <span style={{
-              fontSize: "0.74rem", fontWeight: 700,
-              color: change >= 0 ? "var(--success)" : "var(--danger)",
-              background: change >= 0 ? "var(--success-bg)" : "var(--danger-bg)",
-              padding: "2px 7px", borderRadius: 5, display: "flex", alignItems: "center", gap: 2,
-            }}>
-              {change >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
-              {Math.abs(change).toFixed(2)}%
-            </span>
-          </>
-        ) : (
-          <span style={{ fontSize: "0.78rem", color: "var(--accent)", fontWeight: 600 }}>View Analysis →</span>
-        )}
-      </div>
-    </button>
-  );
-}
-
-/* ═══ Sector Definitions for Stocks Explorer ═══ */
-interface SectorDef {
-  name: string; key: string; color: string; icon: React.ReactNode;
-  niftyIndex?: string; sectors: string[]; aiStory: string;
-}
-
-const SECTOR_DEFS: SectorDef[] = [
-  { name: "IT & Tech", key: "it", color: "#6366f1", icon: <Cpu size={18} />, niftyIndex: "NIFTY IT", sectors: ["IT", "Tech"], aiStory: "IT stocks track US tech spending, dollar strength, and AI-driven demand shifts." },
-  { name: "Financial Services", key: "finance", color: "#0ea5e9", icon: <Landmark size={18} />, niftyIndex: "NIFTY FIN SERVICE", sectors: ["Banking", "NBFC", "Insurance", "Fintech"], aiStory: "Banks benefit from credit growth and rate cuts; NBFCs from rural recovery." },
-  { name: "Banking", key: "banking", color: "#2563eb", icon: <Building2 size={18} />, niftyIndex: "NIFTY BANK", sectors: ["Banking"], aiStory: "NIM expansion + credit growth acceleration. RBI rate cycle is the key driver." },
-  { name: "Auto & EV", key: "auto", color: "#f59e0b", icon: <Car size={18} />, niftyIndex: "NIFTY AUTO", sectors: ["Auto"], aiStory: "Rural demand recovery + EV transition + export order books driving momentum." },
-  { name: "Pharma & Health", key: "pharma", color: "#10b981", icon: <Pill size={18} />, niftyIndex: "NIFTY PHARMA", sectors: ["Pharma", "Healthcare"], aiStory: "US FDA approvals, specialty segment growth, and CDMO opportunity in focus." },
-  { name: "FMCG", key: "fmcg", color: "#84cc16", icon: <Package size={18} />, niftyIndex: "NIFTY FMCG", sectors: ["FMCG"], aiStory: "Volume growth recovery depends on rural demand and input cost trends." },
-  { name: "Energy & Oil", key: "energy", color: "#ef4444", icon: <Flame size={18} />, niftyIndex: "NIFTY ENERGY", sectors: ["Oil & Gas", "Power", "Renewable Energy"], aiStory: "Oil prices, government policy on renewables, and power demand drive this sector." },
-  { name: "Metals & Mining", key: "metals", color: "#78716c", icon: <Gem size={18} />, niftyIndex: "NIFTY METAL", sectors: ["Metals"], aiStory: "China demand, global steel prices, and LME inventory levels are key drivers." },
-  { name: "Realty", key: "realty", color: "#c084fc", icon: <Building2 size={18} />, niftyIndex: "NIFTY REALTY", sectors: ["Real Estate"], aiStory: "Interest rate cycle, inventory clearance, and premium housing demand drive realty." },
-  { name: "Infrastructure", key: "infra", color: "#f97316", icon: <Factory size={18} />, niftyIndex: "NIFTY INFRA", sectors: ["Infrastructure", "Capital Goods", "Railways", "Cement"], aiStory: "Government capex push + roads/railways/defense infrastructure at all-time highs." },
-  { name: "Telecom", key: "telecom", color: "#14b8a6", icon: <Wifi size={18} />, sectors: ["Telecom"], aiStory: "ARPU growth, 5G monetization, and consolidation in the sector." },
-  { name: "PSU & Defence", key: "psu", color: "#3b82f6", icon: <Shield size={18} />, niftyIndex: "NIFTY PSE", sectors: ["Defense"], aiStory: "Defense order flows and government disinvestment plans drive PSU/defence stocks." },
-  { name: "Media & Entertainment", key: "media", color: "#ec4899", icon: <Monitor size={18} />, niftyIndex: "NIFTY MEDIA", sectors: ["Media"], aiStory: "Digital advertising growth and OTT subscriber economics in focus." },
-  { name: "Consumption", key: "consumption", color: "#a855f7", icon: <Sparkles size={18} />, sectors: ["Consumer", "Retail", "Hospitality", "Education", "Paints"], aiStory: "Discretionary spending, premiumization, and wedding/festive season demand." },
-  { name: "Chemicals", key: "chemicals", color: "#06b6d4", icon: <Layers size={18} />, sectors: ["Chemicals", "Fertilizers"], aiStory: "China+1 theme, specialty chemical margins, and agrochemical demand cycle." },
-  { name: "Others", key: "others", color: "#6b7280", icon: <Globe size={18} />, sectors: ["Textiles", "Logistics", "Aviation", "Sugar", "Paper", "Electronics", "EMS", "ETF"], aiStory: "Diverse set of stocks spanning niche themes and emerging opportunities." },
-];
-
-/* ═══ INDEX DATA ═══ */
-interface IndexData { name: string; shortName: string; color: string; constituents: number; description: string; }
-const INDICES: IndexData[] = [
-  { name: "NIFTY 50", shortName: "NIFTY", color: "#6366f1", constituents: 50, description: "India's benchmark — Top 50 companies by market cap" },
-  { name: "SENSEX", shortName: "SENSEX", color: "#ef4444", constituents: 30, description: "BSE benchmark — 30 largest companies" },
-  { name: "BANK NIFTY", shortName: "BANKNIFTY", color: "#2563eb", constituents: 12, description: "Top banking stocks — interest rate sensitive" },
-  { name: "NIFTY MIDCAP 100", shortName: "MIDCAP", color: "#f59e0b", constituents: 100, description: "Mid-sized growth companies — higher beta" },
-  { name: "NIFTY SMALLCAP 250", shortName: "SMALLCAP", color: "#10b981", constituents: 250, description: "Small companies — high growth, high risk" },
-  { name: "NIFTY FIN SERVICE", shortName: "FINNIFTY", color: "#0ea5e9", constituents: 20, description: "Banks, NBFCs, Insurance — financial ecosystem" },
-];
-
-/* ═══ Seeded RNG for deterministic data ═══ */
-function seededRng(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) { h = ((h << 5) - h + seed.charCodeAt(i)) | 0; }
-  return () => { h = (h * 16807 + 0) % 2147483647; return (h & 0x7fffffff) / 0x7fffffff; };
-}
-
-function genSectorData(def: SectorDef, stocks: StockEntry[], liveStocks: Record<string, { price: number; changePercent: number; name?: string }>) {
-  const sectorStocks = stocks.filter(s => def.sectors.includes(s.sector));
-  const rng = seededRng(def.key + new Date().toDateString());
-  let avgChange = ((rng() * 6 - 2) * 100 | 0) / 100;
-  let topGainer = { name: "-", change: 0 };
-  let topLoser = { name: "-", change: 0 };
-  const withPrices = sectorStocks.map(s => {
-    const sym = s.ticker.replace(".NS", "");
-    const lp = liveStocks[sym];
-    const chg = lp ? lp.changePercent : ((rng() * 8 - 3) * 100 | 0) / 100;
-    return { ...s, change: chg };
-  }).sort((a, b) => b.change - a.change);
-  if (withPrices.length > 0) {
-    avgChange = Number((withPrices.reduce((a, b) => a + b.change, 0) / withPrices.length).toFixed(2));
-    topGainer = { name: withPrices[0].name, change: withPrices[0].change };
-    topLoser = { name: withPrices[withPrices.length - 1].name, change: withPrices[withPrices.length - 1].change };
-  }
-  const sentiment = avgChange > 1.5 ? "Bullish" : avgChange > 0 ? "Mildly Bullish" : avgChange > -1 ? "Neutral" : "Bearish";
-  return { ...def, stockCount: sectorStocks.length, avgChange, topGainer, topLoser, sentiment, heatColor: avgChange > 2 ? "#059669" : avgChange > 0.5 ? "#10b981" : avgChange > -0.5 ? "#6b7280" : avgChange > -2 ? "#f87171" : "#dc2626" };
-}
-
-function genIndexValues(idx: IndexData) {
-  const rng = seededRng(idx.shortName + new Date().toDateString());
-  const bases: Record<string, number> = { NIFTY: 24812, SENSEX: 81340, BANKNIFTY: 52340, MIDCAP: 58200, SMALLCAP: 17450, FINNIFTY: 24100 };
-  const base = bases[idx.shortName] || 20000;
-  const change = ((rng() * 4 - 1.5) * 100 | 0) / 100;
-  const value = base + Math.round(base * change / 100);
-  const sentiment = change > 1 ? "Bullish" : change > 0 ? "Positive" : change > -1 ? "Neutral" : "Bearish";
-  return { ...idx, value, change, sentiment };
-}
-
-/* ═══ Sector-First Stocks Explorer Component (DARK THEME) ═══ */
-function StocksExplorer({ stockPrices, forexPrices }: { stockPrices: Record<string, { price: number; changePercent: number; name?: string }>; forexPrices: Record<string, { rate: number; change24h: number }> }) {
-  const [activeSector, setActiveSector] = useState<SectorDef | null>(null);
-  const [view, setView] = useState<"sectors" | "list" | "heatmap">("sectors");
-  const [mcap, setMcap] = useState("All");
-  const [explorerSearch, setExplorerSearch] = useState("");
-  const [visibleCount, setVisibleCount] = useState(50);
-
-  const indices = useMemo(() => INDICES.map(genIndexValues), []);
-  const sectorData = useMemo(() => SECTOR_DEFS.map(def => genSectorData(def, NSE_STOCKS, stockPrices)), [stockPrices]);
-
-  const filtered = useMemo(() => {
-    let stocks = NSE_STOCKS as StockEntry[];
-    if (activeSector) stocks = stocks.filter(s => activeSector.sectors.includes(s.sector));
-    if (mcap !== "All") {
-      const map: Record<string, string> = { "Large Cap": "large", "Mid Cap": "mid", "Small Cap": "small", "SME/Micro": "sme" };
-      stocks = stocks.filter(s => s.mcapType === map[mcap]);
-    }
-    if (explorerSearch.trim()) {
-      const q = explorerSearch.toLowerCase();
-      stocks = stocks.filter(s => s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().replace(".ns", "").includes(q) || s.sector.toLowerCase().includes(q));
-    }
-    return stocks;
-  }, [activeSector, mcap, explorerSearch]);
-
-  const visible = filtered.slice(0, visibleCount);
-
-  const openSector = (def: SectorDef) => { setActiveSector(def); setView("list"); setVisibleCount(50); setExplorerSearch(""); setMcap("All"); };
-  const backToSectors = () => { setActiveSector(null); setView("sectors"); setVisibleCount(50); setExplorerSearch(""); };
-
-  const activeSectorData = activeSector ? sectorData.find(s => s.key === activeSector.key) : null;
-  const rng = seededRng("market-" + new Date().toDateString());
-  const niftyChange = ((rng() * 3 - 1) * 100 | 0) / 100;
-
-  /* Stock row renderer (shared between sector detail + list view) */
-  const renderStockRow = (s: StockEntry, i: number) => {
-    const sym = s.ticker.replace(".NS", "");
-    const slug = sym.toLowerCase().replace(/[^a-z0-9]/g, "-");
-    const lp = stockPrices[sym];
-    let h = 0; for (let c = 0; c < s.ticker.length; c++) { h = ((h << 5) - h) + s.ticker.charCodeAt(c); h |= 0; }
-    const price = lp ? lp.price : Math.abs(h % 9000) + 50;
-    const change = lp ? lp.changePercent : ((h % 800) - 400) / 100;
-    return (
-      <Link key={`${s.ticker}-${i}`} href={`/stocks/${slug}`} style={{ textDecoration: "none", color: "inherit" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "32px 1.8fr 0.8fr 0.7fr 80px", alignItems: "center", padding: "12px 18px", borderBottom: "1px solid var(--border)", transition: "all 0.15s", cursor: "pointer" }}
-          onMouseOver={e => { e.currentTarget.style.background = "var(--bg-card-hover)"; }} onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}>
-          <span style={{ fontSize: "0.66rem", color: "var(--text-muted)", fontWeight: 600 }}>{i + 1}</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--text-primary)" }}>{s.name}</div>
-            <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", display: "flex", gap: 6, marginTop: 2 }}>
-              <span>{sym}</span>
-              {s.mcapType && <span style={{ background: s.mcapType === "large" ? "rgba(59,130,246,0.15)" : s.mcapType === "mid" ? "rgba(245,158,11,0.15)" : "rgba(236,72,153,0.15)", color: s.mcapType === "large" ? "#60a5fa" : s.mcapType === "mid" ? "#fbbf24" : "#f472b6", padding: "0 5px", borderRadius: 3, fontSize: "0.54rem", fontWeight: 700, textTransform: "uppercase" }}>{s.mcapType}</span>}
-            </div>
-          </div>
-          <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text-primary)", textAlign: "right" }}>₹{price.toLocaleString("en-IN")}</div>
-          <div style={{ textAlign: "right" }}>
-            <span style={{ fontSize: "0.76rem", fontWeight: 700, color: change >= 0 ? "var(--success)" : "var(--danger)", display: "inline-flex", alignItems: "center", gap: 2 }}>
-              {change >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />} {Math.abs(change).toFixed(2)}%
-            </span>
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}><MiniSparkline seed={s.ticker} positive={change >= 0} width={60} height={22} /></div>
-        </div>
-      </Link>
-    );
-  };
-
-  /* Mcap filter buttons */
-  const renderMcapFilters = () => (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-      <div style={{ display: "flex", gap: 4 }}>
-        {MCAP_FILTERS.map(m => (
-          <button key={m} onClick={() => { setMcap(m); setVisibleCount(50); }} style={{
-            padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: "0.68rem", fontWeight: 600,
-            background: mcap === m ? "var(--accent)" : "var(--bg-slate)", color: mcap === m ? "#fff" : "var(--text-secondary)",
-          }}>{m}</button>
-        ))}
-      </div>
-      <span style={{ marginLeft: "auto", fontSize: "0.74rem", color: "var(--text-muted)", fontWeight: 600 }}>{filtered.length} stocks</span>
-    </div>
-  );
-
-  /* Stock table container */
-  const renderStockTable = () => (
-    <>
-      <div style={{ background: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "32px 1.8fr 0.8fr 0.7fr 80px", padding: "10px 18px", borderBottom: "1px solid var(--border)", fontSize: "0.62rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-          <span>#</span><span>Company</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Change</span><span style={{ textAlign: "right" }}>Trend</span>
-        </div>
-        {visible.map((s: StockEntry, i: number) => renderStockRow(s, i))}
-      </div>
-      {visibleCount < filtered.length && (
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <button onClick={() => setVisibleCount(v => v + 50)} style={{ padding: "10px 32px", borderRadius: 10, border: "1px solid var(--border)", background: "var(--bg-card)", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)" }}>
-            Load More ({(filtered.length - visibleCount).toLocaleString()} remaining)
-          </button>
-        </div>
-      )}
-      {filtered.length === 0 && (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
-          <Search size={32} style={{ color: "var(--text-muted)", marginBottom: 12, opacity: 0.3 }} />
-          <div style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 8, color: "var(--text-primary)" }}>No stocks found</div>
-          <div style={{ fontSize: "0.82rem" }}>Try a different search term or adjust your filters.</div>
-        </div>
-      )}
-    </>
-  );
-
-  return (
-    <div>
-      {/* ── View Mode Toggle + Search ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {activeSector ? (
-            <button onClick={backToSectors} style={{ color: "var(--accent)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: "0.76rem", fontWeight: 600 }}>
-              <ChevronLeft size={14} /> Market Overview
-            </button>
-          ) : (
-            <div style={{ display: "flex", gap: 2, background: "var(--bg-slate)", borderRadius: 8, padding: 2 }}>
-              {(["sectors", "list", "heatmap"] as const).map(v => (
-                <button key={v} onClick={() => setView(v)} style={{
-                  padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer",
-                  fontSize: "0.72rem", fontWeight: 600, textTransform: "capitalize",
-                  background: view === v ? "var(--accent)" : "transparent",
-                  color: view === v ? "#fff" : "var(--text-secondary)",
-                }}>{v === "heatmap" ? "Heat Map" : v === "sectors" ? "Sectors" : "All Stocks"}</button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div style={{ position: "relative", width: 260 }}>
-          <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-          <input value={explorerSearch} onChange={e => { setExplorerSearch(e.target.value); setVisibleCount(50); if (e.target.value && !activeSector) setView("list"); }}
-            placeholder="Search stocks, sectors..."
-            style={{ width: "100%", padding: "9px 14px 9px 32px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--bg-slate)", color: "var(--text-primary)", fontSize: "0.78rem", outline: "none" }}
-          />
-        </div>
-      </div>
-
-      {/* Charts */}
-      <LiveChartGrid tab="stocks" />
-
-      <MarketTicker items={
-        Object.keys(stockPrices).length > 0
-          ? [
-              ...(stockPrices.NIFTY50 ? [{ label: "NIFTY 50", value: stockPrices.NIFTY50.price.toLocaleString("en-IN"), change: stockPrices.NIFTY50.changePercent }] : []),
-              ...(stockPrices.SENSEX ? [{ label: "SENSEX", value: stockPrices.SENSEX.price.toLocaleString("en-IN"), change: stockPrices.SENSEX.changePercent }] : []),
-              ...(stockPrices.BANKNIFTY ? [{ label: "BANK NIFTY", value: stockPrices.BANKNIFTY.price.toLocaleString("en-IN"), change: stockPrices.BANKNIFTY.changePercent }] : []),
-              ...(forexPrices.USDINR ? [{ label: "USD/INR", value: `₹${forexPrices.USDINR.rate.toFixed(2)}`, change: forexPrices.USDINR.change24h }] : []),
-            ]
-          : [{ label: "Loading...", value: "—" }]
-      } />
-
-      {/* ═══ SECTOR DETAIL VIEW ═══ */}
-      {activeSector && activeSectorData && (
-        <>
-          <div style={{ background: `linear-gradient(135deg, ${activeSector.color}10, ${activeSector.color}20)`, borderRadius: 16, padding: "24px 28px", marginBottom: 20, border: `1px solid ${activeSector.color}30` }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                  <Brain size={16} style={{ color: activeSector.color }} />
-                  <span style={{ fontSize: "0.72rem", fontWeight: 700, color: activeSector.color, textTransform: "uppercase", letterSpacing: "0.04em" }}>AI Sector Story</span>
-                </div>
-                <p style={{ fontSize: "0.88rem", color: "var(--text-primary)", lineHeight: 1.6, margin: 0 }}>{activeSector.aiStory}</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12 }}>
-                  <span style={{ fontSize: "0.66rem", fontWeight: 700, padding: "3px 10px", borderRadius: 5, background: activeSectorData.avgChange >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)", color: activeSectorData.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>
-                    {activeSectorData.sentiment}
-                  </span>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-muted)" }}>·</span>
-                  <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>
-                    Avg: <strong style={{ color: activeSectorData.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>{activeSectorData.avgChange > 0 ? "+" : ""}{activeSectorData.avgChange}%</strong>
-                  </span>
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, minWidth: 240 }}>
-                <div style={{ background: "var(--bg-card)", borderRadius: 10, padding: "12px 16px", border: "1px solid var(--border)" }}>
-                  <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Top Gainer</div>
-                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{activeSectorData.topGainer.name.split(" ").slice(0, 2).join(" ")}</div>
-                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--success)" }}>+{activeSectorData.topGainer.change.toFixed(2)}%</div>
-                </div>
-                <div style={{ background: "var(--bg-card)", borderRadius: 10, padding: "12px 16px", border: "1px solid var(--border)" }}>
-                  <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>Top Loser</div>
-                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{activeSectorData.topLoser.name.split(" ").slice(0, 2).join(" ")}</div>
-                  <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--danger)" }}>{activeSectorData.topLoser.change.toFixed(2)}%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {renderMcapFilters()}
-          {renderStockTable()}
-        </>
-      )}
-
-      {/* ═══ SECTOR-FIRST OVERVIEW ═══ */}
-      {!activeSector && view === "sectors" && (
-        <>
-          {/* Market Indices */}
-          <section style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <Activity size={16} style={{ color: "var(--accent)" }} />
-              <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "var(--text-primary)" }}>Market Indices</span>
-              <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 500 }}>Live market pulse</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-              {indices.map((idx) => (
-                <div key={idx.shortName} style={{ background: "var(--bg-card)", borderRadius: 14, padding: "18px 18px 14px", border: "1px solid var(--border)", position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: idx.color }} />
-                  <div style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>{idx.shortName}</div>
-                  <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "var(--text-primary)", marginBottom: 4 }}>{idx.value.toLocaleString("en-IN")}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
-                    {idx.change >= 0 ? <ArrowUpRight size={12} style={{ color: "var(--success)" }} /> : <ArrowDownRight size={12} style={{ color: "var(--danger)" }} />}
-                    <span style={{ fontSize: "0.76rem", fontWeight: 700, color: idx.change >= 0 ? "var(--success)" : "var(--danger)" }}>{idx.change > 0 ? "+" : ""}{idx.change}%</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "0.56rem", fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: idx.change >= 0 ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)", color: idx.change >= 0 ? "var(--success)" : "var(--danger)" }}>{idx.sentiment}</span>
-                    <MiniSparkline seed={idx.shortName} positive={idx.change >= 0} width={50} height={18} />
-                  </div>
-                  <div style={{ fontSize: "0.52rem", color: "var(--text-muted)", marginTop: 6 }}>{idx.description}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* AI Market Brief */}
-          <section style={{ marginBottom: 24 }}>
-            <div style={{ background: "linear-gradient(135deg, var(--bg-card), var(--bg-slate))", borderRadius: 16, padding: "22px 28px", color: "#fff", position: "relative", overflow: "hidden", border: "1px solid var(--border)" }}>
-              <div style={{ position: "absolute", top: -40, right: -40, width: 140, height: 140, borderRadius: "50%", background: "radial-gradient(circle, rgba(74,158,255,0.08) 0%, transparent 70%)" }} />
-              <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "flex-start", gap: 20 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg, var(--accent), #a855f7)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Brain size={18} style={{ color: "#fff" }} />
-                </div>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 800, color: "var(--text-primary)" }}>AI Market Intelligence</span>
-                    <span style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</span>
-                  </div>
-                  <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.65, margin: 0 }}>
-                    {niftyChange > 0
-                      ? "Markets are showing strength with broad-based participation. Banking and infrastructure sectors are leading the rally driven by strong credit growth data and government capex push. FIIs are net buyers, signaling renewed confidence."
-                      : "Markets are consolidating after a strong rally phase. Global headwinds from rising US bond yields and Dollar Index strength are weighing on sentiment. Mid and small-caps are showing relative outperformance with selective buying."
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Sector Explorer */}
-          <section style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <BarChart3 size={16} style={{ color: "var(--accent)" }} />
-              <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "var(--text-primary)" }}>Sector Explorer</span>
-              <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 500 }}>Click any sector to explore stocks</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-              {sectorData.map((sec) => (
-                <button key={sec.key} onClick={() => openSector(sec)} style={{
-                  background: "var(--bg-card)", borderRadius: 14, padding: "20px 20px 16px", border: "1px solid var(--border)", textAlign: "left", cursor: "pointer", transition: "all 0.2s", position: "relative", overflow: "hidden",
-                }} onMouseOver={e => { e.currentTarget.style.borderColor = sec.color; e.currentTarget.style.boxShadow = `0 4px 20px ${sec.color}20`; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                  onMouseOut={e => { e.currentTarget.style.borderColor = "rgba(232,237,245,0.08)"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}>
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: sec.heatColor, opacity: 0.8 }} />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${sec.color}18`, display: "flex", alignItems: "center", justifyContent: "center", color: sec.color }}>{sec.icon}</div>
-                      <div>
-                        <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{sec.name}</div>
-                        <div style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 500 }}>{sec.stockCount} stocks</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.92rem", fontWeight: 800, color: sec.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>{sec.avgChange > 0 ? "+" : ""}{sec.avgChange}%</div>
-                      <div style={{ fontSize: "0.54rem", fontWeight: 600, padding: "2px 6px", borderRadius: 3, background: sec.sentiment.includes("Bull") ? "rgba(52,211,153,0.12)" : sec.sentiment.includes("Bear") ? "rgba(248,113,113,0.12)" : "rgba(140,153,176,0.1)", color: sec.sentiment.includes("Bull") ? "var(--success)" : sec.sentiment.includes("Bear") ? "var(--danger)" : "var(--text-secondary)" }}>{sec.sentiment}</div>
-                    </div>
-                  </div>
-                  <div style={{ marginBottom: 10 }}><MiniSparkline seed={sec.key} positive={sec.avgChange >= 0} width={200} height={28} /></div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6rem" }}>
-                    <span style={{ color: "var(--success)" }}>▲ {sec.topGainer.name.split(" ")[0]}</span>
-                    <span style={{ color: "var(--danger)" }}>▼ {sec.topLoser.name.split(" ")[0]}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* "What This Means" AI Cards */}
-          <section style={{ marginBottom: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <Zap size={16} style={{ color: "var(--warning)" }} />
-              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text-primary)" }}>What This Means</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-              {[
-                { text: "Rising oil prices may negatively affect paint, aviation, and chemical companies while benefiting upstream oil & gas stocks.", color: "#ef4444", sector: "Energy vs Consumption" },
-                { text: "Lower interest rates support real estate, auto (financing), and banking stocks through cheaper credit and higher loan growth.", color: "#60a5fa", sector: "Rates vs Financials" },
-                { text: "Rupee weakness benefits IT exporters (revenue in USD) but pressures importers like oil marketing companies and electronics.", color: "var(--success)", sector: "FX vs IT/Energy" },
-              ].map((card, i) => (
-                <div key={i} style={{ background: "var(--bg-card)", borderRadius: 12, padding: "18px 20px", border: "1px solid var(--border)", borderLeft: `3px solid ${card.color}` }}>
-                  <div style={{ fontSize: "0.58rem", fontWeight: 700, color: card.color, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 8 }}>{card.sector}</div>
-                  <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.55, margin: 0 }}>{card.text}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Link to full explorer */}
-          <div style={{ textAlign: "center", marginTop: 8 }}>
-            <Link href="/stocks" style={{
-              padding: "12px 28px", borderRadius: 10, fontSize: "0.82rem", fontWeight: 700, textDecoration: "none",
-              background: "linear-gradient(135deg, var(--accent-deep), var(--accent))", color: "#fff",
-              display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 2px 12px rgba(74,158,255,0.2)",
-            }}>
-              Full Stock Explorer — All {NSE_STOCKS.length}+ NSE Stocks →
-            </Link>
-          </div>
-        </>
-      )}
-
-      {/* ═══ HEATMAP VIEW ═══ */}
-      {!activeSector && view === "heatmap" && (
-        <section>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-            <Flame size={16} style={{ color: "var(--danger)" }} />
-            <span style={{ fontSize: "0.92rem", fontWeight: 800, color: "var(--text-primary)" }}>Market Heatmap</span>
-            <span style={{ fontSize: "0.62rem", color: "var(--text-muted)" }}>Size = relative market cap · Color = daily change</span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 3, background: "var(--bg-card)", borderRadius: 16, padding: 16, border: "1px solid var(--border)" }}>
-            {sectorData.map((sec) => {
-              const sectorStocks = (NSE_STOCKS as StockEntry[]).filter(s => sec.sectors.includes(s.sector)).slice(0, 12);
-              return (
-                <div key={sec.key} style={{ flex: `${Math.max(sec.stockCount, 8)} 0 0`, minWidth: 120 }}>
-                  <div style={{ fontSize: "0.58rem", fontWeight: 700, color: sec.color, marginBottom: 4, paddingLeft: 4 }}>{sec.name}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                    {sectorStocks.map(s => {
-                      const sym = s.ticker.replace(".NS", "");
-                      const lp = stockPrices[sym];
-                      let h2 = 0;
-                      for (let c = 0; c < s.ticker.length; c++) { h2 = ((h2 << 5) - h2) + s.ticker.charCodeAt(c); h2 |= 0; }
-                      const chg = lp ? lp.changePercent : ((h2 % 800) - 400) / 100;
-                      const intensity = Math.min(Math.abs(chg) / 4, 1);
-                      const bg = chg >= 0 ? `rgba(52, 211, 153, ${0.12 + intensity * 0.45})` : `rgba(248, 113, 113, ${0.12 + intensity * 0.45})`;
-                      const size = s.mcapType === "large" ? 72 : s.mcapType === "mid" ? 58 : 48;
-                      return (
-                        <Link key={sym} href={`/stocks/${sym.toLowerCase().replace(/[^a-z0-9]/g, "-")}`} style={{ textDecoration: "none" }}>
-                          <div style={{ width: size, height: size, borderRadius: 6, background: bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "transform 0.15s" }}
-                            onMouseOver={e => e.currentTarget.style.transform = "scale(1.08)"} onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}>
-                            <span style={{ fontSize: "0.54rem", fontWeight: 700, color: chg >= 0 ? "#6ee7b7" : "#fca5a5" }}>{sym.slice(0, 6)}</span>
-                            <span style={{ fontSize: "0.52rem", fontWeight: 800, color: chg >= 0 ? "var(--success)" : "var(--danger)" }}>{chg >= 0 ? "+" : ""}{chg.toFixed(1)}%</span>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 14 }}>
-            {[{ bg: "rgba(248,113,113,0.5)", label: "Strong Decline" }, { bg: "rgba(248,113,113,0.15)", label: "Mild Decline" }, { bg: "rgba(52,211,153,0.15)", label: "Mild Gain" }, { bg: "rgba(52,211,153,0.5)", label: "Strong Gain" }].map(l => (
-              <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <div style={{ width: 18, height: 10, borderRadius: 2, background: l.bg }} />
-                <span style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ═══ ALL STOCKS LIST VIEW ═══ */}
-      {!activeSector && view === "list" && (
-        <>
-          {renderMcapFilters()}
-          {renderStockTable()}
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════ */
 export default function AnalyzePage() {
   const router = useRouter();
   const [mainTab, setMainTab] = useState<MainTab>("stocks");
   const [resultView, setResultView] = useState<ResultView>("dashboard");
+
+  // Landing dashboard + auth gate
+  const user = useUser();
+  // Private-beta allowlist: anyone whose stored email isn't on the list is
+  // automatically evicted on mount so previously-onboarded testers no longer
+  // see the app. The stored email (if any) is remembered for one render so
+  // the gate can show a clear "not allowed" message.
+  const [evictedEmail, setEvictedEmail] = useState<string | null>(null);
+  useEffect(() => {
+    if (user && !isAllowedEmail(user.email)) {
+      setEvictedEmail(user.email);
+      clearUser();
+    }
+  }, [user]);
+  const allowed = !!user && isAllowedEmail(user.email);
+
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
+  const [pendingSection, setPendingSection] = useState<SectionId | null>(null);
+  // Themed transition animation between landing and a section
+  const [transitioningTo, setTransitioningTo] = useState<SectionId | null>(null);
+  // Skip welcome on subsequent navigations within the same session
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("wt-welcome-seen") === "1") setShowWelcome(false);
+  }, []);
+  const handleStartAnalyzing = useCallback(() => {
+    try { sessionStorage.setItem("wt-welcome-seen", "1"); } catch { /* ignore */ }
+    setShowWelcome(false);
+  }, []);
+  const enterSection = useCallback((id: SectionId) => {
+    // Play themed animation, then drop into the section.
+    setTransitioningTo(id);
+  }, []);
+  const completeTransition = useCallback(() => {
+    if (transitioningTo) {
+      setMainTab(transitioningTo as MainTab);
+      setShowLanding(false);
+    }
+    setTransitioningTo(null);
+  }, [transitioningTo]);
+  const handlePickSection = useCallback((id: SectionId) => {
+    if (!user) { setPendingSection(id); return; }
+    enterSection(id);
+  }, [user, enterSection]);
+  const handleAuthed = useCallback((_u: WtUser) => {
+    if (pendingSection) enterSection(pendingSection);
+    setPendingSection(null);
+  }, [pendingSection, enterSection]);
+  const goHome = useCallback(() => setShowLanding(true), []);
+  const pickedSectionDef = pendingSection ? SECTIONS.find(s => s.id === pendingSection) : undefined;
+  const currentSectionDef = !showLanding ? SECTIONS.find(s => s.id === mainTab) : undefined;
 
   // Stock state
   const [stockQuery, setStockQuery] = useState("");
@@ -729,6 +265,9 @@ export default function AnalyzePage() {
   useEffect(() => {
     setRemaining(remainingAnalyses());
     setCurrentPlan(getPlan().plan);
+    // Confirm any paid plan with the server — a fabricated localStorage plan
+    // lacks a valid signed token and is downgraded to free.
+    validatePlanServerSide().then(p => { setCurrentPlan(p.plan); setRemaining(remainingAnalyses()); }).catch(() => {});
     if (!document.getElementById("razorpay-script")) {
       const s = document.createElement("script");
       s.id = "razorpay-script"; s.src = "https://checkout.razorpay.com/v1/checkout.js"; s.async = true;
@@ -800,7 +339,7 @@ export default function AnalyzePage() {
 
   function selectStock(s: StockEntry) {
     const slug = s.ticker.replace(".NS", "").replace(".BO", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
-    window.location.href = `/stocks/${slug}`;
+    router.push(`/stocks/${slug}`);
   }
 
   /* ── Commodity search ── */
@@ -874,7 +413,7 @@ export default function AnalyzePage() {
       const t = stockTicker || stockQuery.trim().toUpperCase();
       if (!t) return;
       const slug = t.replace(".NS", "").replace(".BO", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
-      window.location.href = `/stocks/${slug}`;
+      router.push(`/stocks/${slug}`);
       return;
     } else if (mainTab === "commodities") {
       const sym = commSymbol || commQuery.trim().toUpperCase();
@@ -932,7 +471,7 @@ export default function AnalyzePage() {
         handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           const v = await fetch("/api/payment/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...response, plan }) });
           const vd = await v.json();
-          if (vd.verified) { activatePlan(plan, response.razorpay_payment_id); setRemaining(remainingAnalyses()); setCurrentPlan(plan); setPaymentSuccess(data.planName); setTimeout(() => setShowUpgrade(false), 2000); }
+          if (vd.verified) { activatePlan(plan, response.razorpay_payment_id, vd.entitlement); setRemaining(remainingAnalyses()); setCurrentPlan(plan); setPaymentSuccess(data.planName); setTimeout(() => setShowUpgrade(false), 2000); }
           else setError("Payment verification failed.");
           setPaymentLoading("");
         },
@@ -958,6 +497,11 @@ export default function AnalyzePage() {
 
   const sc = (scores as Record<string, unknown>)?.scores as Record<string, number> | undefined;
 
+  // Private-beta wall — replaces the entire app for non-allowlisted visitors.
+  if (!allowed) {
+    return <PrivateBetaGate rejectedEmail={evictedEmail} />;
+  }
+
   return (
     <div style={{ background: "var(--bg-secondary)", minHeight: "100vh" }}>
       {/* ── Splash Screen ── */}
@@ -969,10 +513,10 @@ export default function AnalyzePage() {
       )}
 
       {/* ── Floating AI Button (desktop only, mobile has nav) ── */}
-      {!isMobile && <FloatingAI />}
+      {!isMobile && !showWelcome && <FloatingAI />}
 
       {/* ══════ MOBILE EXPERIENCE ══════ */}
-      {isMobile && mobileView !== "tab" && (
+      {!showWelcome && !showLanding && isMobile && mobileView !== "tab" && (
         <>
           {/* Mobile Views */}
           {mobileView === "home" && (
@@ -1050,8 +594,32 @@ export default function AnalyzePage() {
         </>
       )}
 
+      {/* ══════ ANIMATED WELCOME INTRO (first arrival in /analyze) ══════ */}
+      {showWelcome && (
+        <WelcomeIntro onStart={handleStartAnalyzing} userName={user?.name} />
+      )}
+
+      {/* ══════ LANDING DASHBOARD (after Start Analyzing) ══════ */}
+      {!showWelcome && showLanding && (
+        <SectionLandingGrid onPick={handlePickSection} user={user} />
+      )}
+
+      {/* ══════ AUTH GATE (shown when guest clicks a section) ══════ */}
+      {pendingSection !== null && (
+        <AuthGate
+          targetSection={pickedSectionDef ? { label: pickedSectionDef.label, color: pickedSectionDef.color } : undefined}
+          onAuthed={handleAuthed}
+          onClose={() => setPendingSection(null)}
+        />
+      )}
+
+      {/* ══════ SECTION TRANSITION (themed animation) ══════ */}
+      {transitioningTo !== null && (
+        <SectionTransition sectionId={transitioningTo} onComplete={completeTransition} />
+      )}
+
       {/* ══════ DESKTOP + MOBILE-TAB EXPERIENCE ══════ */}
-      {(!isMobile || mobileView === "tab") && (
+      {!showWelcome && !showLanding && (!isMobile || mobileView === "tab") && (
       <>
 
       {/* Mobile back button when viewing a specific tab */}
@@ -1147,41 +715,36 @@ export default function AnalyzePage() {
       {/* ── Navbar ── */}
       <div className="navbar">
         <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none", flexShrink: 0 }}>
+          <button onClick={goHome} title="Back to dashboard" style={{
+            display: "flex", alignItems: "center", gap: 8, background: "transparent", border: "none",
+            cursor: "pointer", padding: 0, flexShrink: 0,
+          }}>
             <Image src="/logo.png" alt="White Tiger" width={30} height={30} style={{ borderRadius: 6 }} />
             <span className="wt-brand-text" style={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--text-primary)" }}>White Tiger</span>
-          </Link>
+          </button>
 
-          {/* Main Tabs — scrollable on mobile */}
-          <div className="wt-tabs-scroll" style={{ marginLeft: 12, background: "var(--bg-secondary)", borderRadius: 10, padding: 3 }}>
-            {([
-              { id: "stocks" as MainTab, label: "Stocks", icon: <TrendingUp size={14} />, color: "#4A9EFF" },
-              { id: "commodities" as MainTab, label: "Commodities", icon: <Flame size={14} />, color: "#FBBF24" },
-              { id: "crypto" as MainTab, label: "Crypto", icon: <Bitcoin size={14} />, color: "#f7931a" },
-              { id: "currency" as MainTab, label: "Forex", icon: <DollarSign size={14} />, color: "#34D399" },
-              { id: "mutualfunds" as MainTab, label: "MF", icon: <PiggyBank size={14} />, color: "#a78bfa" },
-              { id: "debt" as MainTab, label: "Bonds", icon: <Shield size={14} />, color: "#34D399" },
-              { id: "international" as MainTab, label: "Global", icon: <Globe size={14} />, color: "#4A9EFF" },
-              { id: "realestate" as MainTab, label: "Real Estate", icon: <Building2 size={14} />, color: "#C5A572" },
-              { id: "derivatives" as MainTab, label: "F&O", icon: <Layers size={14} />, color: "#F87171" },
-              { id: "wealth" as MainTab, label: "Wealth", icon: <Target size={14} />, color: "#7BB8FF" },
-              { id: "tax" as MainTab, label: "Tax", icon: <FileText size={14} />, color: "#4A9EFF" },
-            ]).map(t => (
-              <button key={t.id} onClick={() => switchMainTab(t.id)} style={{
+          {/* Current section pill + back-to-dashboard (replaces the multi-tab strip) */}
+          {currentSectionDef && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 12 }}>
+              <button onClick={goHome} title="Back to dashboard" style={{
                 display: "flex", alignItems: "center", gap: 5,
-                padding: "7px 14px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0,
-                border: mainTab === t.id ? "0.5px solid rgba(232,237,245,0.08)" : "0.5px solid transparent",
-                background: mainTab === t.id ? "var(--bg-slate)" : "transparent",
-                color: mainTab === t.id ? t.color : "var(--text-muted)",
-                fontWeight: mainTab === t.id ? 600 : 500, fontSize: "0.82rem", cursor: "pointer",
-                boxShadow: "none",
-                transition: "all 0.2s ease-out",
-              }}>{t.icon} {t.label}</button>
-            ))}
-          </div>
+                padding: "6px 11px", borderRadius: 8,
+                background: "rgba(255,255,255,0.04)", border: "0.5px solid var(--border)",
+                color: "var(--text-muted)", fontSize: "0.72rem", fontWeight: 700, cursor: "pointer",
+              }}>← Dashboard</button>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 7, padding: "6px 12px", borderRadius: 8,
+                background: `${currentSectionDef.color}14`, border: `0.5px solid ${currentSectionDef.color}33`,
+              }}>
+                <span style={{ color: currentSectionDef.color, display: "flex" }}>{currentSectionDef.icon}</span>
+                <span style={{ fontSize: "0.82rem", fontWeight: 700, color: currentSectionDef.color }}>{currentSectionDef.label}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="wt-desktop-right" style={{ alignItems: "center", gap: 14, flexShrink: 0 }}>
+          <MarketStatusIndicator />
           {currentPlan !== "free" && <span className="badge badge-blue" style={{ textTransform: "uppercase" }}>{currentPlan}</span>}
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
             <span style={{ color: "var(--accent)", fontWeight: 700 }}>{remaining}</span> left
@@ -1190,6 +753,27 @@ export default function AnalyzePage() {
             <button onClick={() => setShowUpgrade(true)} className="btn-primary" style={{ padding: "6px 14px", fontSize: "0.8rem" }}>
               <Zap size={13} /> Upgrade
             </button>
+          )}
+          {user && (
+            <div title={user.email} style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "4px 10px 4px 4px",
+              borderRadius: 99, background: "rgba(255,255,255,0.04)", border: "0.5px solid var(--border)",
+            }}>
+              {user.picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.picture} alt="" width={22} height={22} style={{ borderRadius: "50%" }} />
+              ) : (
+                <span style={{ width: 22, height: 22, borderRadius: "50%", background: "linear-gradient(135deg,#4A9EFF,#A78BFA)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.66rem", fontWeight: 800 }}>
+                  {(user.name || user.email)[0]?.toUpperCase()}
+                </span>
+              )}
+              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-primary)", maxWidth: 110, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {user.name?.split(" ")[0] || user.email.split("@")[0]}
+              </span>
+              <button onClick={() => { clearUser(); setShowLanding(true); }} title="Sign out" style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, fontSize: "0.62rem", fontWeight: 700 }}>
+                Sign out
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -1260,8 +844,6 @@ export default function AnalyzePage() {
                 { id: "international" as MainTab, icon: <Globe size={22} />, label: "Global", color: "#4A9EFF" },
                 { id: "realestate" as MainTab, icon: <Building2 size={22} />, label: "Real Estate", color: "#C5A572" },
                 { id: "derivatives" as MainTab, icon: <Layers size={22} />, label: "F&O", color: "#F87171" },
-                { id: "wealth" as MainTab, icon: <Target size={22} />, label: "Wealth", color: "#7BB8FF" },
-                { id: "tax" as MainTab, icon: <FileText size={22} />, label: "Tax", color: "#4A9EFF" },
               ]).map(t => (
                 <button key={t.id} onClick={() => { switchMainTab(t.id); setShowMoreMenu(false); }} style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
@@ -1374,7 +956,7 @@ export default function AnalyzePage() {
                   {showCommDrop && (
                     <div className="search-dropdown">
                       {commSuggestions.map((c, i) => (
-                        <div key={c.symbol + i} className={`search-item ${i === commIdx ? "active" : ""}`} onClick={() => { const slug = c.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); window.location.href = `/commodities/${slug}`; }}>
+                        <div key={c.symbol + i} className={`search-item ${i === commIdx ? "active" : ""}`} onClick={() => { const slug = c.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); router.push(`/commodities/${slug}`); }}>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{c.name}</div>
                             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{c.category} · {c.unit}</div>
@@ -1495,7 +1077,7 @@ export default function AnalyzePage() {
                     const catColor = c.category === "Energy" ? "#e65100" : c.category === "Precious Metals" ? "#f9a825" : c.category === "Base Metals" ? "#0d47a1" : c.category === "Agriculture" ? "#2e7d32" : "#7c3aed";
                     const slug = c.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, "");
                     return (
-                      <div key={c.symbol + c.exchange} onClick={() => { window.location.href = `/commodities/${slug}`; }} className="card fx-pair-card" style={{
+                      <div key={c.symbol + c.exchange} onClick={() => { router.push(`/commodities/${slug}`); }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
                         border: "1px solid var(--border)", background: "#fff", transition: "all 0.3s", position: "relative",
                         borderTop: `3px solid ${catColor}`,
@@ -1606,7 +1188,9 @@ export default function AnalyzePage() {
             </div>
 
             {!analysis && !loading && (
-              <CryptoPlatform />
+              <ErrorBoundary fallbackLabel="Crypto">
+                <CryptoPlatform />
+              </ErrorBoundary>
             )}
           </div>
         )}
@@ -1678,11 +1262,13 @@ export default function AnalyzePage() {
                   <MarketTicker items={[{ label: "Loading forex rates...", value: "—" }]} />
                 )}
                 {/* FX Intelligence Platform */}
-                <FXPlatform
-                  pair={currSelected?.pair || "USD/INR"}
-                  base={currSelected?.base || "USD"}
-                  quote={currSelected?.quote || "INR"}
-                />
+                <ErrorBoundary fallbackLabel="Forex">
+                  <FXPlatform
+                    pair={currSelected?.pair || "USD/INR"}
+                    base={currSelected?.base || "USD"}
+                    quote={currSelected?.quote || "INR"}
+                  />
+                </ErrorBoundary>
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1707,7 +1293,7 @@ export default function AnalyzePage() {
                     const changeVal = fxPrice ? fxPrice.change24h : (isPositive ? 0.12 : -0.08);
                     const currSymbolDisplay = c.quote === "INR" ? "₹" : c.quote === "JPY" ? "¥" : c.quote === "Index" ? "" : "$";
                     return (
-                      <button key={c.symbol} onClick={() => { selectCurrency(c); setFxIntelPair(c); window.location.href = `/currency/${c.symbol.toLowerCase()}`; }} className="card fx-pair-card" style={{
+                      <button key={c.symbol} onClick={() => { selectCurrency(c); setFxIntelPair(c); router.push(`/currency/${c.symbol.toLowerCase()}`); }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
                         border: currSymbol === c.symbol ? "2px solid var(--accent)" : "1px solid var(--border)",
                         background: "#fff", transition: "all 0.3s", position: "relative",
@@ -1778,7 +1364,7 @@ export default function AnalyzePage() {
                   {showMfDrop && (
                     <div className="search-dropdown">
                       {mfSuggestions.map((f, i) => (
-                        <div key={f.symbol} className={`search-item ${i === mfIdx ? "active" : ""}`} onClick={() => { const slug = f.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); window.location.href = `/mf-intelligence/${slug}`; }}>
+                        <div key={f.symbol} className={`search-item ${i === mfIdx ? "active" : ""}`} onClick={() => { const slug = f.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); router.push(`/mf-intelligence/${slug}`); }}>
                           <div>
                             <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{f.name}</div>
                             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{f.amc} · {f.category}</div>
@@ -1809,9 +1395,9 @@ export default function AnalyzePage() {
             </div>
 
             {!analysis && !loading && (
-              <div>
-                <MFPlatform />
-              </div>
+              <ErrorBoundary fallbackLabel="Mutual Funds">
+                <MFExplorer />
+              </ErrorBoundary>
             )}
           </div>
         )}
@@ -1872,7 +1458,9 @@ export default function AnalyzePage() {
             </div>
 
             {!analysis && !loading && (
-              <BondsPlatform />
+              <ErrorBoundary fallbackLabel="Bonds">
+                <BondsPlatform />
+              </ErrorBoundary>
             )}
           </div>
         )}
@@ -2593,26 +2181,23 @@ export default function AnalyzePage() {
           </div>
         )}
 
-        {/* Empty state — Stocks */}
+        {/* Stocks Explorer — Institutional Grade */}
         {!analysis && !loading && !error && mainTab === "stocks" && (
-          <StocksExplorer stockPrices={stockPrices} forexPrices={forexPrices} />
+          <ErrorBoundary fallbackLabel="Stocks Explorer">
+            <StocksExplorer stockPrices={stockPrices} forexPrices={forexPrices} />
+          </ErrorBoundary>
         )}
 
         {/* ══════ DERIVATIVES (F&O) TAB ══════ */}
         {/* ══════ REAL ESTATE TAB ══════ */}
         {mainTab === "realestate" && (
-          <RealEstateDashboard />
-        )}
-
-        {mainTab === "wealth" && (
-          <WealthAdvisoryDashboard />
-        )}
-
-        {mainTab === "tax" && (
-          <TaxIntelligenceDashboard />
+          <ErrorBoundary fallbackLabel="Real Estate">
+            <RealEstateExplorer />
+          </ErrorBoundary>
         )}
 
         {mainTab === "derivatives" && (
+  <ErrorBoundary fallbackLabel="Derivatives">
   <div>
     {/* AI Derivatives Agent */}
     <DerivativesAgentDashboard />
@@ -2638,18 +2223,13 @@ export default function AnalyzePage() {
       <IndianDerivativesPage />
     </div>
   </div>
+  </ErrorBoundary>
 )}
 
       </div>
 
         {/* Right: Contextual Intelligence Panel (desktop only) */}
-        {mainTab === "realestate" && (
-        <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
-          <div style={{ position: "sticky", top: 20 }}>
-            <RealEstatePanel />
-          </div>
-        </div>
-        )}
+        {/* Real Estate sidebar integrated into RealEstateExplorer */}
         {mainTab !== "derivatives" && mainTab !== "realestate" && mainTab !== "crypto" && (
         <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
@@ -2712,6 +2292,25 @@ export default function AnalyzePage() {
       </div>
       {/* Data Health Monitor */}
       <DataHealthMonitor />
+
+      {/* ── Trust Footer & Disclaimer ── */}
+      <div style={{ marginTop: 32, padding: "0 20px 20px" }}>
+        <GlobalDisclaimer compact />
+        <TrustFooter sources={["NSE", "Yahoo Finance", "CoinDCX", "AMFI", "TradingView"]} />
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "center", alignItems: "center",
+          marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)",
+          fontSize: "0.72rem", color: "var(--text-muted)",
+        }}>
+          <Link href="/about" style={{ color: "var(--text-muted)", textDecoration: "none" }}>About</Link>
+          <span style={{ opacity: 0.3 }}>·</span>
+          <Link href="/terms" style={{ color: "var(--text-muted)", textDecoration: "none" }}>Terms of Service</Link>
+          <span style={{ opacity: 0.3 }}>·</span>
+          <Link href="/privacy" style={{ color: "var(--text-muted)", textDecoration: "none" }}>Privacy Policy</Link>
+          <span style={{ opacity: 0.3 }}>·</span>
+          <span>© {new Date().getFullYear()} White Tiger — Educational use only, not investment advice.</span>
+        </div>
+      </div>
 
       </>
       )}

@@ -86,6 +86,56 @@ const cache = new Map<string, CacheEntry<unknown>>();
 const healthMetrics: Record<string, { errors: number; lastSuccess: number; lastLatency: number }> = {};
 let fetchInProgress = new Map<string, Promise<unknown>>();
 
+// ─── Circuit Breaker — temporarily disables failing endpoints ───
+interface CircuitState { failures: number; lastFailure: number; open: boolean; }
+const circuits = new Map<string, CircuitState>();
+const CIRCUIT_THRESHOLD = 3;     // failures before opening
+const CIRCUIT_RESET_MS = 60_000; // 1 min cooldown
+
+function isCircuitOpen(key: string): boolean {
+  const c = circuits.get(key);
+  if (!c || !c.open) return false;
+  if (Date.now() - c.lastFailure > CIRCUIT_RESET_MS) {
+    c.open = false; c.failures = 0; // half-open / reset
+    return false;
+  }
+  return true;
+}
+
+function recordCircuitSuccess(key: string): void {
+  const c = circuits.get(key);
+  if (c) { c.failures = 0; c.open = false; }
+}
+
+function recordCircuitFailure(key: string): void {
+  let c = circuits.get(key);
+  if (!c) { c = { failures: 0, lastFailure: 0, open: false }; circuits.set(key, c); }
+  c.failures++;
+  c.lastFailure = Date.now();
+  if (c.failures >= CIRCUIT_THRESHOLD) c.open = true;
+}
+
+// ─── Retry with exponential backoff ─────────────────────────────
+async function fetchWithRetry<T>(
+  fn: () => Promise<T>, retries = 2, baseDelay = 500, circuitKey?: string
+): Promise<T> {
+  if (circuitKey && isCircuitOpen(circuitKey)) {
+    throw new Error(`Circuit open for ${circuitKey}`);
+  }
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const result = await fn();
+      if (circuitKey) recordCircuitSuccess(circuitKey);
+      return result;
+    } catch (err) {
+      if (circuitKey) recordCircuitFailure(circuitKey);
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, attempt)));
+    }
+  }
+  throw new Error("fetchWithRetry exhausted");
+}
+
 // ─── Deduplication: prevent concurrent identical fetches ─────────
 function deduplicatedFetch<T>(key: string, fetcher: () => Promise<T>): Promise<T> {
   const existing = fetchInProgress.get(key);

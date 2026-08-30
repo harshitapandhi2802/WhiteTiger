@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   generateCuratedLists, generateMFCopilot, simulateSIP, planGoal,
   getSuitability, getBeginnerExplanations, getMarketImpacts,
@@ -69,6 +70,7 @@ function fINR(n: number) { return n >= 1e7 ? `₹${(n / 1e7).toFixed(2)} Cr` : n
    ═══════════════════════════════════════════════════════════════ */
 
 export default function MFPlatform() {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<MFSection>("discover");
 
   // SIP Simulator state
@@ -172,7 +174,7 @@ export default function MFPlatform() {
               const spark = generateMFSparkline(fund.name.slice(0, 10), 20);
               const slug = fund.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, "");
               return (
-                <div key={fi} onClick={() => { window.location.href = `/mf-intelligence/${slug}`; }} style={{
+                <div key={fi} onClick={() => { router.push(`/mf-intelligence/${slug}`); }} style={{
                   padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0",
                   cursor: "pointer", transition: "all 0.2s", position: "relative", overflow: "hidden",
                 }}>

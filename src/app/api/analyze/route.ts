@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/services/apiGuard";
+import { fetchLiveStockPrice } from "@/lib/services/livePrice";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(req, { scope: "analyze", limit: 5, windowMs: 60000 });
+  if (limited) return limited;
   const { ticker, companyName } = await req.json();
 
   if (!ticker) {
@@ -8,6 +12,12 @@ export async function POST(req: NextRequest) {
   }
 
   const name = companyName || ticker;
+
+  // D1 — Ground the report in a LIVE price instead of the model's stale memory.
+  const live = await fetchLiveStockPrice(ticker);
+  const priceLine = live
+    ? `- Current Market Price: ₹${live.price.toFixed(2)} (LIVE, from ${live.source} as of ${new Date(live.asOf).toISOString()}). Use THIS exact figure as the current price everywhere in your analysis; do not substitute a remembered price.`
+    : `- Current Market Price: state that a live price could not be fetched and clearly label any price you use as an estimate.`;
 
   const prompt = `You are a senior equity research analyst at a top-tier Indian investment bank (Goldman Sachs / Morgan Stanley India caliber) with deep expertise in geopolitical risk, global macro, commodity markets, supply chain intelligence, and Indian markets.
 
@@ -29,8 +39,8 @@ Explain in 2-3 sentences with macro/geopolitical context.
 
 **Fair Value Estimate (DCF):**
 - Fair Value: ₹[X] per share
-- Current Market Price: ~₹[Y] (estimate)
-- Upside/Downside: [Z]%
+${priceLine}
+- Upside/Downside: [Z]% (compute from the live current price above)
 - WACC: X% | Terminal Growth Rate: Y% | Horizon: 5 years
 Brief DCF reasoning.
 
@@ -254,7 +264,23 @@ All scores are 1-10 (1=worst/highest risk, 10=best/lowest risk). Fill ALL fields
       }
     }
 
-    return NextResponse.json({ analysis, scores, ticker, companyName });
+    // D1 — Authoritative override: force the live price into the scores and
+    // recompute upside from it so the dashboard never shows a hallucinated price.
+    if (scores && live) {
+      scores.currentPrice = +live.price.toFixed(2);
+      const tgt = Number(scores.targetPrice) || Number(scores.fairValue) || 0;
+      if (tgt > 0) scores.upside = +(((tgt - live.price) / live.price) * 100).toFixed(1);
+      scores.priceSource = live.source;
+      scores.priceAsOf = live.asOf;
+    }
+
+    return NextResponse.json({
+      analysis,
+      scores,
+      ticker,
+      companyName,
+      livePrice: live ? { price: +live.price.toFixed(2), changePercent: +live.changePercent.toFixed(2), source: live.source, asOf: live.asOf } : null,
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error("Analysis error:", msg);

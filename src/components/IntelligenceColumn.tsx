@@ -12,7 +12,7 @@ type NewsItem = {
   sentiment: "bullish" | "bearish" | "neutral";
 };
 
-type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
+type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 
 const SOURCE_COLORS: Record<string, { bg: string; color: string }> = {
   RBI:   { bg: "rgba(230,81,0,0.10)", color: "#e65100" },

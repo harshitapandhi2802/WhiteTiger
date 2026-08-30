@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/services/apiGuard";
 
 export const maxDuration = 60;
 
@@ -562,6 +563,8 @@ function generateLocalData(fundName: string, amc: string, category: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(req, { scope: "mf-intelligence", limit: 5, windowMs: 60000 });
+  if (limited) return limited;
   const { fundName, amc, category } = await req.json();
   if (!fundName) return NextResponse.json({ error: "Fund name required" }, { status: 400 });
 

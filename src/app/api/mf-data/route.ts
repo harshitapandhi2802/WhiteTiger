@@ -4,8 +4,10 @@ import {
   searchSchemes,
   filterSchemes,
   findEnrichment,
+  resolveNav,
   INDUSTRY_STATS,
 } from "@/lib/amfi-service";
+import { cacheHeaders } from "@/lib/services/apiGuard";
 
 export const maxDuration = 60;
 
@@ -167,6 +169,22 @@ export async function GET(req: NextRequest) {
           categories: data.categories,
           total: data.categories.length,
         });
+      }
+
+      case "navmatch": {
+        // Resolve live AMFI NAVs for a batch of curated fund names (pipe-separated).
+        // Used to overlay real NAVs on fund cards instead of synthetic estimates (D2).
+        const namesParam = searchParams.get("names") || "";
+        const names = namesParam.split("|").map(n => n.trim()).filter(Boolean).slice(0, 30);
+        const navs: Record<string, { nav: number; navDate: string; schemeName: string } | null> = {};
+        for (const n of names) {
+          const m = resolveNav(data, n);
+          navs[n] = m ? { nav: m.nav, navDate: m.navDate, schemeName: m.schemeName } : null;
+        }
+        return NextResponse.json(
+          { success: true, navs, navDate: data.navDate },
+          { headers: cacheHeaders(3600) }
+        );
       }
 
       default:

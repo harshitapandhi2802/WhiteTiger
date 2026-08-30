@@ -243,6 +243,23 @@ function AIIntelligenceSection({ entry }: { entry: BondEntry }) {
                       <span>Duration: {data.overview.duration?.toFixed(2)}</span>
                       <span>DV01: {data.overview.dv01?.toFixed(4)}</span>
                     </div>
+                    {/* Live G-Sec benchmark anchor */}
+                    {data.liveBenchmarks?.india10Y && (
+                      <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", fontSize: "0.62rem", fontWeight: 700 }}>
+                        <span style={{ padding: "3px 9px", borderRadius: 6, background: "rgba(105,240,174,0.18)", color: "#69f0ae" }}>
+                          ● LIVE India 10Y G-Sec: {data.liveBenchmarks.india10Y}%
+                        </span>
+                        {data.liveBenchmarks.us10Y && (
+                          <span style={{ padding: "3px 9px", borderRadius: 6, background: "rgba(255,255,255,0.12)" }}>US 10Y: {data.liveBenchmarks.us10Y}%</span>
+                        )}
+                      </div>
+                    )}
+                    {/* D5 — provenance: bond yields are estimates anchored to the live curve */}
+                    {data.dataNote && (
+                      <div style={{ marginTop: 10, padding: "6px 10px", borderRadius: 8, background: "rgba(255,255,255,0.12)", fontSize: "0.6rem", fontWeight: 600, lineHeight: 1.4 }}>
+                        ⚠ {data.dataNote}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
                     {[

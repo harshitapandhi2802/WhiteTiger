@@ -106,6 +106,25 @@ body {
   border-radius: var(--radius);
 }
 
+/* Standardized interactive (clickable) card — consistent hover across all tabs.
+   Opt in by adding class="card card-interactive" to any clickable card so the
+   lift + accent-border feedback is identical everywhere (fixes inconsistent
+   hover states flagged in the platform audit). */
+.card-interactive {
+  cursor: pointer;
+  transition: transform 0.18s ease-out, background 0.18s ease-out, border-color 0.18s ease-out, box-shadow 0.18s ease-out;
+}
+.card-interactive:hover {
+  transform: translateY(-2px);
+  background: var(--bg-slate);
+  border-color: var(--border-accent, rgba(74, 158, 255, 0.4));
+  box-shadow: var(--shadow-md, 0 6px 20px rgba(0, 0, 0, 0.25));
+}
+.card-interactive:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease-out;
+}
+
 /* ══════════════════════════════════════════════════════════
    BUTTONS — Clean, institutional
    ══════════════════════════════════════════════════════════ */
@@ -696,4 +715,14 @@ body {
   .search-item:active {
     background: var(--bg-slate) !important;
   }
+}
+
+/* ══ White Tiger — Global Trust Animations ══ */
+@keyframes wtPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes wtShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

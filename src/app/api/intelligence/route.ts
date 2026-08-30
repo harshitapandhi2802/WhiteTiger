@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cacheHeaders } from "@/lib/services/apiGuard";
 
 const TOPICS_BY_TAB: Record<string, string> = {
   stocks:
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
   // Return cached data if fresh
   const cached = cache[tab];
   if (cached && Date.now() - cached.ts < CACHE_TTL) {
-    return NextResponse.json({ articles: cached.articles, generatedAt: new Date(cached.ts).toISOString(), cached: true });
+    return NextResponse.json({ articles: cached.articles, generatedAt: new Date(cached.ts).toISOString(), cached: true }, { headers: cacheHeaders(600) });
   }
 
   if (!apiKey) {
@@ -176,7 +177,7 @@ Return ONLY a valid JSON array of 6 objects. Start with [ and end with ]. No oth
     // Cache the result
     cache[tab] = { articles, ts: Date.now() };
 
-    return NextResponse.json({ articles, generatedAt: new Date().toISOString() });
+    return NextResponse.json({ articles, generatedAt: new Date().toISOString() }, { headers: cacheHeaders(600) });
   } catch {
     // Any error — return fallback
     const fb = FALLBACK[tab] || FALLBACK.stocks;

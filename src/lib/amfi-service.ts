@@ -249,6 +249,34 @@ export function searchSchemes(data: AMFIData, query: string, limit = 50): AMFISc
 }
 
 /**
+ * Resolve the best live NAV for a curated fund name. Prefers the
+ * Direct + Growth plan (the canonical NAV investors compare against).
+ * Returns null when there is no confident match so callers can fall back.
+ */
+export function resolveNav(
+  data: AMFIData,
+  fundName: string
+): { nav: number; navDate: string; schemeName: string; schemeCode: number } | null {
+  const matches = searchSchemes(data, fundName, 25);
+  if (!matches.length) return null;
+
+  const prefer = (s: AMFIScheme) => {
+    const n = s.schemeName.toLowerCase();
+    let p = 0;
+    if (n.includes("direct")) p += 2;
+    if (n.includes("growth")) p += 2;
+    if (n.includes("idcw") || n.includes("dividend") || n.includes("payout") || n.includes("reinvest")) p -= 2;
+    return p;
+  };
+
+  // Highest search relevance is preserved by searchSchemes order; within the
+  // top band, prefer Direct-Growth.
+  const top = matches.slice(0, 8).sort((a, b) => prefer(b) - prefer(a))[0];
+  if (!top || !(top.nav > 0)) return null;
+  return { nav: top.nav, navDate: top.navDate, schemeName: top.schemeName, schemeCode: top.schemeCode };
+}
+
+/**
  * Filter schemes by category
  */
 export function filterSchemes(
@@ -401,6 +429,8 @@ export function findEnrichment(amfiAmcName: string): AMCEnrichment | null {
 export const INDUSTRY_STATS = {
   // Source: AMFI Monthly Data — May 2026 estimates
   // These are approximate and should be validated against latest AMFI releases
+  asOf: "May 2026",
+  isEstimate: true,
   totalAUM: "₹75L+ Cr",
   totalAUMNote: "Computed from live AMFI data + industry reports",
   monthlySIPFlows: "₹26,632 Cr",

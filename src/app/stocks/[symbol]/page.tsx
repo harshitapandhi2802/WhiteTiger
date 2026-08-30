@@ -10,6 +10,10 @@ import {
   Award, Database, FileWarning,
 } from "lucide-react";
 import { NSE_STOCKS } from "@/lib/stocks";
+import dynamicImport from "next/dynamic";
+
+// BI Suite loaded on demand (large component, only renders when stock page opens)
+const BusinessIntelligenceSuite = dynamicImport(() => import("@/components/stocks/BusinessIntelligenceSuite").then(m => ({ default: m.BusinessIntelligenceSuite })), { ssr: false });
 
 /* ═══════════════════════════════════════════════════════════════
    TYPE DEFINITIONS
@@ -17,6 +21,7 @@ import { NSE_STOCKS } from "@/lib/stocks";
 interface StockData {
   success: boolean; symbol: string; companyName: string; sector: string; industry: string;
   source: string; generatedAt: string;
+  fundamentalsProvenance?: { priceSource: string; priceAsOf: string | null; fundamentalsSource: string; fundamentalsAsOf: string; note: string };
   hero: { cmp: number; changePercent: number; volume: number; mcap: number; pe: number; pb: number; eps: number; bookValue: number; divYield: number; weekHigh52: number; weekLow52: number; faceValue: number };
   sentiment: { label: string; confidence: number };
   aiScores: { overallScore: number; qualityScore: number; valuationScore: number; momentumScore: number; growthScore: number; riskScore: number };
@@ -313,6 +318,18 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                   {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                   {isPositive ? "+" : ""}{data.hero.changePercent}%
                 </div>
+                {/* D5 — price provenance */}
+                {(() => {
+                  const live = data.source?.startsWith("live");
+                  const src = data.fundamentalsProvenance?.priceSource;
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end", marginTop: 4, fontSize: "0.56rem", fontWeight: 700 }}>
+                      <span style={{ padding: "1px 6px", borderRadius: 4, background: live ? "rgba(74,222,128,0.12)" : "rgba(251,191,36,0.12)", color: live ? "#4ade80" : "#fbbf24" }}>
+                        {live ? `● LIVE${src ? ` · ${src}` : ""}` : "● EST — verify on NSE"}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* White Tiger Score Badge */}
@@ -708,7 +725,28 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </div>
             ))}
           </div>
+          {/* D5 — fundamentals provenance */}
+          {data.fundamentalsProvenance && (() => {
+            const fp = data.fundamentalsProvenance!;
+            const liveF = fp.fundamentalsSource !== "static-profile";
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: "0.62rem", color: liveF ? "#059669" : "#b45309" }}>
+                <Info size={11} />
+                <span style={{ fontWeight: 600 }}>
+                  {liveF
+                    ? `Valuation metrics live from ${fp.fundamentalsSource}.`
+                    : `Valuation metrics are estimates as of ${fp.fundamentalsAsOf} — verify the latest on NSE/screener.`}
+                </span>
+              </div>
+            );
+          })()}
         </section>
+
+        {/* ════════════════════════════════════════════════════════
+            BUSINESS INTELLIGENCE SUITE — 5 institutional sub-tabs
+            (Business · Industry · Competitors · Ownership · AI Analyst)
+            ════════════════════════════════════════════════════════ */}
+        <BusinessIntelligenceSuite ticker={data.symbol} companyName={data.companyName} />
 
         {/* ════════════════════════════════════════════════════════
             SECTION 2: WHY IS THIS STOCK MOVING?

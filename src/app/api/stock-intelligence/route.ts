@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchLiveCommodityPrices } from "@/lib/services/livePrice";
 
 export const maxDuration = 60;
 
@@ -43,6 +44,11 @@ const STOCK_PROFILES: Record<string, StockProfile> = {
   "TITAN": { name: "Titan Company Ltd", sector: "Consumer", industry: "Jewellery & Watches", mcap: 320000, pe: 82.5, pb: 18.5, divYield: 0.3, roe: 25.8, roce: 28.2, debtEquity: 0.45, promoterHolding: 52.9, fiiHolding: 18.5, diiHolding: 12.8, revenue: 52000, pat: 3800, ebitdaMargin: 12.5, eps: 42.8, bookValue: 195, faceValue: 1, weekHigh52: 3885, weekLow52: 2980 },
   "ADANIPORTS": { name: "Adani Ports & SEZ Ltd", sector: "Infrastructure", industry: "Ports & Logistics", mcap: 320000, pe: 32.5, pb: 5.8, divYield: 0.4, roe: 18.2, roce: 12.5, debtEquity: 0.82, promoterHolding: 65.2, fiiHolding: 14.5, diiHolding: 12.8, revenue: 28000, pat: 9800, ebitdaMargin: 52.5, eps: 45.2, bookValue: 248, faceValue: 2, weekHigh52: 1620, weekLow52: 1050 },
 };
+
+// As-of date for the hand-maintained STOCK_PROFILES fundamentals (D4). When a
+// live feed (TradingView/Yahoo) supplies PE/mcap these are overridden; otherwise
+// the UI should show this date + a "verify on NSE" note.
+const FUNDAMENTALS_ASOF = "Q4 FY26 (Mar 2026)";
 
 function generateStockIntelligence(ticker: string, name: string) {
   const sym = ticker.replace(".NS", "").replace(".BO", "");
@@ -788,10 +794,26 @@ export async function POST(req: NextRequest) {
   const { ticker, companyName } = await req.json();
   if (!ticker) return NextResponse.json({ error: "Ticker required" }, { status: 400 });
 
-  // Fetch REAL live price first
-  const realPrice = await fetchRealPrice(ticker);
+  // Fetch REAL live price + live commodity benchmarks in parallel
+  const [realPrice, liveCommodities] = await Promise.all([
+    fetchRealPrice(ticker),
+    fetchLiveCommodityPrices(),
+  ]);
 
   const data = generateStockIntelligence(ticker, companyName || ticker);
+
+  // D3 — Replace fabricated commodity prices with live benchmarks. Where no
+  // live price is available, show "live price unavailable" instead of a fake number.
+  if (data.geopoliticalImpact?.commodityExposure) {
+    const fmt = (p: number, unit: string) => `${unit.startsWith("$") ? "$" : ""}${p.toLocaleString("en-US", { maximumFractionDigits: unit === "$/lb" ? 2 : 0 })}${unit.replace("$", "")}`;
+    for (const c of data.geopoliticalImpact.commodityExposure) {
+      const n = c.commodity.toLowerCase();
+      if (n.includes("crude") && liveCommodities.crude) c.currentPrice = `${fmt(liveCommodities.crude.price, liveCommodities.crude.unit)} (live)`;
+      else if (n.includes("gold") && liveCommodities.gold) c.currentPrice = `${fmt(liveCommodities.gold.price, liveCommodities.gold.unit)} (live)`;
+      else if ((n.includes("steel") || n.includes("metal") || n.includes("copper")) && liveCommodities.copper) { c.commodity = "Copper (LME, metals proxy)"; c.currentPrice = `${fmt(liveCommodities.copper.price, liveCommodities.copper.unit)} (live)`; }
+      else c.currentPrice = "live price unavailable";
+    }
+  }
 
   // Override with real price data
   if (realPrice) {
@@ -907,6 +929,19 @@ export async function POST(req: NextRequest) {
     // Mark the source
     data.source = `live-${realPrice.source}`;
   }
+
+  // D4 — Stamp fundamentals provenance so the UI can show users whether the
+  // PE/mcap/financials are live or a dated hand-maintained profile estimate.
+  const liveFundamentals = !!(realPrice && realPrice.pe > 0);
+  (data as typeof data & { fundamentalsProvenance?: unknown }).fundamentalsProvenance = {
+    priceSource: realPrice ? realPrice.source : "estimate",
+    priceAsOf: realPrice ? new Date().toISOString() : null,
+    fundamentalsSource: liveFundamentals ? realPrice!.source : "static-profile",
+    fundamentalsAsOf: liveFundamentals ? new Date().toISOString() : FUNDAMENTALS_ASOF,
+    note: liveFundamentals
+      ? "Valuation metrics are live."
+      : "Valuation metrics (PE, mcap, ROE) are hand-maintained estimates — verify the latest on NSE/screener before deciding.",
+  };
 
   // ═══════════════════════════════════════════════════════════
   // TRUST INTELLIGENCE LAYER

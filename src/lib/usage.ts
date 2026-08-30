@@ -1,6 +1,16 @@
 const FREE_LIMIT = 5;
-const STORAGE_KEY = "ml_usage";
-const PLAN_KEY = "ml_plan";
+const STORAGE_KEY = "wt_usage";
+const PLAN_KEY = "wt_plan";
+
+// Migration: move old keys to new ones (one-time)
+if (typeof window !== "undefined") {
+  try {
+    const oldUsage = localStorage.getItem("ml_usage");
+    const oldPlan = localStorage.getItem("ml_plan");
+    if (oldUsage) { localStorage.setItem("wt_usage", oldUsage); localStorage.removeItem("ml_usage"); }
+    if (oldPlan) { localStorage.setItem("wt_plan", oldPlan); localStorage.removeItem("ml_plan"); }
+  } catch { /* ignore */ }
+}
 
 interface UsageData {
   count: number;
@@ -13,6 +23,7 @@ export interface PlanData {
   paymentId?: string;
   activatedAt?: string;
   expiresAt?: string;
+  token?: string; // server-signed entitlement (HMAC) — verified server-side
 }
 
 const PLAN_LIMITS: Record<string, number> = {
@@ -43,7 +54,7 @@ export function getPlan(): PlanData {
   }
 }
 
-export function activatePlan(plan: string, paymentId: string): void {
+export function activatePlan(plan: string, paymentId: string, token?: string): void {
   if (typeof window === "undefined") return;
   const now = new Date();
   const expires = new Date(now);
@@ -55,11 +66,40 @@ export function activatePlan(plan: string, paymentId: string): void {
     paymentId,
     activatedAt: now.toISOString(),
     expiresAt: expires.toISOString(),
+    token,
   };
   localStorage.setItem(PLAN_KEY, JSON.stringify(data));
 
   const usage = getUsage();
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ count: usage.count, month: currentMonth() }));
+}
+
+/**
+ * Confirms a stored paid plan with the server. A hand-fabricated localStorage
+ * plan won't carry a valid HMAC token, so this downgrades it to free.
+ * Free plans need no check. Returns the effective plan after validation.
+ */
+export async function validatePlanServerSide(): Promise<PlanData> {
+  if (typeof window === "undefined") return { plan: "free", limit: FREE_LIMIT };
+  const current = getPlan();
+  if (current.plan === "free") return current;
+  try {
+    const res = await fetch("/api/payment/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: current.token }),
+    });
+    const v = await res.json();
+    if (!v.valid || v.plan !== current.plan) {
+      // Tampered / expired / unsigned paid plan → reset to free.
+      localStorage.removeItem(PLAN_KEY);
+      return { plan: "free", limit: FREE_LIMIT };
+    }
+    return current;
+  } catch {
+    // Network failure: don't punish a paying user — keep current plan.
+    return current;
+  }
 }
 
 export function getUsage(): UsageData {

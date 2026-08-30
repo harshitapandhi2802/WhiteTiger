@@ -2,7 +2,7 @@
 import { useState } from "react";
 import {
   TrendingUp, Bitcoin, DollarSign, Building2, PiggyBank,
-  Shield, Layers, FileText, Target, Flame, Globe,
+  Shield, Layers, Flame, Globe,
   ChevronLeft, ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 
@@ -11,7 +11,7 @@ import {
    Clean scrollable list of all market categories
    ══════════════════════════════════════════════════════════════════ */
 
-type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate" | "wealth" | "tax";
+type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 
 const MARKETS: { id: MainTab; icon: React.ReactNode; label: string; desc: string; color: string }[] = [
   { id: "stocks", icon: <TrendingUp size={22} />, label: "Stocks", desc: "NSE · 3,000+ stocks", color: "#4A9EFF" },
@@ -23,8 +23,6 @@ const MARKETS: { id: MainTab; icon: React.ReactNode; label: string; desc: string
   { id: "international", icon: <Globe size={22} />, label: "Global Markets", desc: "S&P 500 · NASDAQ · DAX", color: "#818cf8" },
   { id: "realestate", icon: <Building2 size={22} />, label: "Real Estate", desc: "Cities · REITs · Trends", color: "#C5A572" },
   { id: "derivatives", icon: <Layers size={22} />, label: "F&O", desc: "Options · Futures · IV", color: "#F87171" },
-  { id: "wealth", icon: <Target size={22} />, label: "Wealth Advisory", desc: "Portfolio · Planning", color: "#7BB8FF" },
-  { id: "tax", icon: <FileText size={22} />, label: "Tax Intelligence", desc: "Savings · ITR · LTCG", color: "#4A9EFF" },
 ];
 
 export default function MobileMarkets({

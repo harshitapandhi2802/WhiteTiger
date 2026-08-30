@@ -10,7 +10,6 @@ const ROWS: [string, boolean, boolean, boolean][] = [
   ["Geopolitical Risk Scoring", true, false, false],
   ["MCX Oil & Metal Analysis", true, false, false],
   ["Derivatives AI Agent", true, false, false],
-  ["Tax Intelligence", true, false, false],
   ["8+ Risk Scores Per Asset", true, false, false],
   ["Basic Financials", true, true, true],
 ];

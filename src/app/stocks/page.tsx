@@ -106,15 +106,20 @@ function genSectorData(def: SectorDef, stocks: StockEntry[], liveStocks: Record<
   };
 }
 
-/* ═══ Generate index data ═══ */
-function genIndexValues(idx: IndexData) {
-  const rng = seededRng(idx.shortName + new Date().toDateString());
-  const bases: Record<string, number> = { NIFTY: 24812, SENSEX: 81340, BANKNIFTY: 52340, MIDCAP: 58200, SMALLCAP: 17450, FINNIFTY: 24100 };
-  const base = bases[idx.shortName] || 20000;
-  const change = ((rng() * 4 - 1.5) * 100 | 0) / 100;
-  const value = base + Math.round(base * change / 100);
-  const sentiment = change > 1 ? "Bullish" : change > 0 ? "Positive" : change > -1 ? "Neutral" : "Bearish";
-  return { ...idx, value, change, sentiment };
+/* ═══ Generate index data — uses LIVE feed, never hardcoded bases ═══ */
+const INDEX_LIVE_KEY: Record<string, string> = {
+  NIFTY: "NIFTY50", SENSEX: "SENSEX", BANKNIFTY: "BANKNIFTY",
+  MIDCAP: "NIFTYMIDCAP100", SMALLCAP: "NIFTYSMALLCAP250", FINNIFTY: "FINNIFTY",
+};
+function genIndexValues(idx: IndexData, liveStocks: Record<string, { price: number; changePercent: number }>) {
+  const key = INDEX_LIVE_KEY[idx.shortName] || idx.shortName;
+  const lp = liveStocks[key];
+  if (lp && lp.price > 0) {
+    const change = +(lp.changePercent || 0).toFixed(2);
+    const sentiment = change > 1 ? "Bullish" : change > 0 ? "Positive" : change > -1 ? "Neutral" : "Bearish";
+    return { ...idx, value: lp.price as number | null, change: change as number | null, sentiment, isLive: true };
+  }
+  return { ...idx, value: null as number | null, change: null as number | null, sentiment: "—", isLive: false };
 }
 
 /* ═══ Stock Row ═══ */
@@ -170,7 +175,7 @@ export default function StockExplorerPage() {
   const { data: liveStocks } = useStockPrices();
 
   // Index data
-  const indices = useMemo(() => INDICES.map(genIndexValues), []);
+  const indices = useMemo(() => INDICES.map(idx => genIndexValues(idx, liveStocks)), [liveStocks]);
 
   // Sector data with live metrics
   const sectorData = useMemo(() =>
@@ -225,7 +230,7 @@ export default function StockExplorerPage() {
 
   // Market narrative
   const rng = seededRng("market-" + new Date().toDateString());
-  const niftyChange = ((rng() * 3 - 1) * 100 | 0) / 100;
+  const niftyChange = +(liveStocks["NIFTY50"]?.changePercent ?? 0).toFixed(2);
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8f9fb", fontFamily: "'Inter', -apple-system, sans-serif" }}>
@@ -394,19 +399,36 @@ export default function StockExplorerPage() {
                   }}>
                     {/* Top color accent */}
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: idx.color }} />
-                    <div style={{ fontSize: "0.62rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>{idx.shortName}</div>
-                    <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "#1a1a2e", marginBottom: 4 }}>{idx.value.toLocaleString("en-IN")}</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                      <div style={{ fontSize: "0.62rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em" }}>{idx.shortName}</div>
+                      <span title={idx.isLive ? "Live from market feed" : "Live data unavailable"} style={{
+                        fontSize: "0.46rem", fontWeight: 800, padding: "1px 5px", borderRadius: 3, letterSpacing: "0.04em",
+                        background: idx.isLive ? "#dcfce7" : "#f3f4f6",
+                        color: idx.isLive ? "#059669" : "#6b7280",
+                      }}>{idx.isLive ? "● LIVE" : "—"}</span>
+                    </div>
+                    <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "#1a1a2e", marginBottom: 4 }}>
+                      {idx.value != null ? Number(idx.value).toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "—"}
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
-                      {idx.change >= 0 ? <ArrowUpRight size={12} style={{ color: "#059669" }} /> : <ArrowDownRight size={12} style={{ color: "#dc2626" }} />}
-                      <span style={{ fontSize: "0.76rem", fontWeight: 700, color: idx.change >= 0 ? "#059669" : "#dc2626" }}>
-                        {idx.change > 0 ? "+" : ""}{idx.change}%
-                      </span>
+                      {idx.change != null ? (
+                        <>
+                          {idx.change >= 0 ? <ArrowUpRight size={12} style={{ color: "#059669" }} /> : <ArrowDownRight size={12} style={{ color: "#dc2626" }} />}
+                          <span style={{ fontSize: "0.76rem", fontWeight: 700, color: idx.change >= 0 ? "#059669" : "#dc2626" }}>
+                            {idx.change > 0 ? "+" : ""}{idx.change}%
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: "0.66rem", color: "#6b7280", fontWeight: 600 }}>data unavailable</span>
+                      )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "0.56rem", fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: idx.change >= 0 ? "#f0fdf4" : "#fef2f2", color: idx.change >= 0 ? "#059669" : "#dc2626" }}>
+                      <span style={{ fontSize: "0.56rem", fontWeight: 600, padding: "2px 7px", borderRadius: 4,
+                        background: idx.change != null ? (idx.change >= 0 ? "#f0fdf4" : "#fef2f2") : "#f3f4f6",
+                        color: idx.change != null ? (idx.change >= 0 ? "#059669" : "#dc2626") : "#6b7280" }}>
                         {idx.sentiment}
                       </span>
-                      <MiniSparkline seed={idx.shortName} positive={idx.change >= 0} width={50} height={18} />
+                      <MiniSparkline seed={idx.shortName} positive={(idx.change ?? 0) >= 0} width={50} height={18} />
                     </div>
                     <div style={{ fontSize: "0.52rem", color: "#9ca3af", marginTop: 6 }}>{idx.description}</div>
                   </div>

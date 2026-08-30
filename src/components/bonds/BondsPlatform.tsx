@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   generateSovereignYields, generateBondCopilot, analyzeYieldCurve,
   getLongDurationBonds, generateBondStories, getBondEquityImpacts,
@@ -57,6 +58,7 @@ const dirColors: Record<string, { c: string; bg: string }> = {
    ═══════════════════════════════════════════════════════════════ */
 
 export default function BondsPlatform() {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<BondSection>("overview");
   const [debtCategory, setDebtCategory] = useState("All");
   const [glossaryCat, setGlossaryCat] = useState("All");
@@ -150,7 +152,7 @@ export default function BondsPlatform() {
             const ratingColor = b.rating === "Sovereign" ? "#00897b" : b.rating === "AAA" ? "#2962ff" : b.rating === "AA+" ? "#7c3aed" : "#ff9800";
             const spark = generateBondSparkline(b.symbol, 20);
             return (
-              <div key={b.symbol} onClick={() => { window.location.href = `/bonds/${b.symbol.toLowerCase()}`; }}
+              <div key={b.symbol} onClick={() => { router.push(`/bonds/${b.symbol.toLowerCase()}`); }}
                 style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${ratingColor}`, cursor: "pointer", transition: "all 0.2s" }}>
                 <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e293b", marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
                 <div style={{ fontSize: "0.62rem", color: "#94a3b8", marginBottom: 8 }}>{b.issuer} · {b.tenure}</div>

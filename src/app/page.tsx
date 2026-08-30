@@ -1,4 +1,6 @@
 "use client";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import HeroSection from "@/components/homepage/HeroSection";
 import MarketTicker from "@/components/homepage/MarketTicker";
 import StatsBar from "@/components/homepage/StatsBar";
@@ -12,6 +14,13 @@ import PricingSection from "@/components/homepage/PricingSection";
 import DownloadApp from "@/components/homepage/DownloadApp";
 import CTASection from "@/components/homepage/CTASection";
 import Footer from "@/components/homepage/Footer";
+import { useUser, clearUser } from "@/lib/auth";
+import { isAllowedEmail } from "@/lib/allowlist";
+
+const PrivateBetaGate = dynamic(
+  () => import("@/components/auth/PrivateBetaGate").then(m => ({ default: m.PrivateBetaGate })),
+  { ssr: false }
+);
 
 /* ══════════════════════════════════════════════════════════════════
    WHITE TIGER — LUXURY AI FINANCIAL INTELLIGENCE PLATFORM
@@ -20,6 +29,26 @@ import Footer from "@/components/homepage/Footer";
    ══════════════════════════════════════════════════════════════════ */
 
 export default function LandingPage() {
+  // Private-beta lock: identical to /analyze. Auto-evict any stored
+  // non-allowlisted user and render the gate instead of the marketing site.
+  const user = useUser();
+  const [evictedEmail, setEvictedEmail] = useState<string | null>(null);
+  // Wait for the client-side useUser hook to settle before deciding what to
+  // render — avoids a flash of marketing content for non-allowlisted visitors.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+  useEffect(() => {
+    if (user && !isAllowedEmail(user.email)) {
+      setEvictedEmail(user.email);
+      clearUser();
+    }
+  }, [user]);
+  const allowed = !!user && isAllowedEmail(user.email);
+
+  if (!hydrated || !allowed) {
+    return <PrivateBetaGate rejectedEmail={evictedEmail} />;
+  }
+
   return (
     <div style={{
       background: "#0A0E1A",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchWithRetry } from "@/lib/services/apiGuard";
 
 /* ═══════════════════════════════════════════════════════════════════
    LIVE PRICES API — REAL-TIME STOCK PRICE ACCURACY ENGINE
@@ -276,7 +277,8 @@ async function fetchTradingView(): Promise<TVScanResult> {
 
   try {
     const fetchTime = Date.now();
-    const res = await fetch("https://scanner.tradingview.com/india/scan", {
+    const res = await fetchWithRetry("https://scanner.tradingview.com/india/scan", {
+      breaker: "tv-india", retries: 1, timeoutMs: 8000,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -355,9 +357,9 @@ interface QuoteResult {
 
 async function yahooChart(sym: string, host = "query1"): Promise<QuoteResult | null> {
   try {
-    const res = await fetch(
+    const res = await fetchWithRetry(
       `https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=1d`,
-      { headers: YF_HEADERS, next: { revalidate: 30 } }
+      { breaker: "yahoo-finance", retries: 2, timeoutMs: 6000, headers: YF_HEADERS, next: { revalidate: 30 } }
     );
     if (!res.ok) {
       if (res.status === 429 && host === "query1") return yahooChart(sym, "query2");
@@ -410,7 +412,8 @@ async function getNSECookies(): Promise<string> {
     return nseCookieCache.cookies;
   }
   try {
-    const res = await fetch("https://www.nseindia.com/", {
+    const res = await fetchWithRetry("https://www.nseindia.com/", {
+      breaker: "nse-cookie", retries: 1, timeoutMs: 6000,
       headers: NSE_HEADERS,
       redirect: "follow",
       next: { revalidate: 120 },
@@ -449,7 +452,8 @@ async function fetchNSEStocks(cookies: string): Promise<{ stocks: NSEStockData[]
   const indices: NSEIndexData[] = [];
 
   try {
-    const res = await fetch("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050", {
+    const res = await fetchWithRetry("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050", {
+      breaker: "nse-stocks", retries: 1, timeoutMs: 6000,
       headers: { ...NSE_HEADERS, Cookie: cookies },
       cache: "no-store",
     });
@@ -460,7 +464,8 @@ async function fetchNSEStocks(cookies: string): Promise<{ stocks: NSEStockData[]
   } catch { /* NSE stocks failed */ }
 
   try {
-    const res = await fetch("https://www.nseindia.com/api/allIndices", {
+    const res = await fetchWithRetry("https://www.nseindia.com/api/allIndices", {
+      breaker: "nse-indices", retries: 1, timeoutMs: 6000,
       headers: { ...NSE_HEADERS, Cookie: cookies },
       cache: "no-store",
     });
@@ -477,7 +482,8 @@ async function fetchNSEStocks(cookies: string): Promise<{ stocks: NSEStockData[]
 
 async function scrapeGoogleFinance(ticker: string, exchange: string): Promise<QuoteResult | null> {
   try {
-    const res = await fetch(`https://www.google.com/finance/quote/${ticker}:${exchange}`, {
+    const res = await fetchWithRetry(`https://www.google.com/finance/quote/${ticker}:${exchange}`, {
+      breaker: "google-finance", retries: 1, timeoutMs: 6000,
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
@@ -751,6 +757,33 @@ export async function GET(req: NextRequest) {
         addSource(sym, data);
       }
 
+      // ── FAST PATH ─────────────────────────────────────────────
+      // If TradingView already gave us the headline indices + a healthy
+      // batch of stocks, short-circuit and return. The other tiers add
+      // validation depth but cost 20–30s on Vercel edge (NSE is blocked,
+      // Google Finance scrapes HTML per-ticker). Users see a stalled
+      // page while we wait — not worth it for the marginal accuracy gain.
+      const tvSyms = Object.keys(tv.prices);
+      const haveIndices = ["NIFTY50", "SENSEX", "BANKNIFTY"].every(k => tv.prices[k]?.price > 0);
+      if (haveIndices && tvSyms.length >= 10) {
+        const prices: Record<string, { price: number; change: number; changePercent: number; name: string }> = {};
+        for (const [sym, sp] of Object.entries(tv.prices)) {
+          prices[sym] = { price: sp.price, change: sp.change, changePercent: sp.changePercent, name: sp.name };
+        }
+        const latency = Date.now() - start;
+        trackRequest("stocks", true, latency);
+        return NextResponse.json({
+          prices,
+          type: "stocks",
+          timestamp: Date.now(),
+          source: "tradingview",
+          market,
+          market_session: session.session,
+          latency_ms: latency,
+          fast_path: true,
+        });
+      }
+
       // ── TIER 2: NSE India (exchange tier) ──
       try {
         const cookies = await getNSECookies();
@@ -981,7 +1014,7 @@ export async function GET(req: NextRequest) {
       // Primary: CoinDCX
       try {
         const cdxTime = Date.now();
-        const res = await fetch("https://api.coindcx.com/exchange/ticker", { cache: "no-store" });
+        const res = await fetchWithRetry("https://api.coindcx.com/exchange/ticker", { breaker: "coindcx", retries: 2, timeoutMs: 6000, cache: "no-store" });
         if (res.ok) {
           const tickers: { market: string; last_price: string; change_24_hour: string; volume?: string }[] = await res.json();
           const tickerMap = new Map(tickers.map(t => [t.market, t]));
@@ -1022,9 +1055,9 @@ export async function GET(req: NextRequest) {
         try {
           const cgTime = Date.now();
           const ids = Object.values(CRYPTO_IDS).join(",");
-          const res = await fetch(
+          const res = await fetchWithRetry(
             `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd,inr&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true`,
-            { cache: "no-store" }
+            { breaker: "coingecko", retries: 2, timeoutMs: 6000, cache: "no-store" }
           );
           if (res.ok) {
             const data = await res.json();
@@ -1130,7 +1163,8 @@ export async function GET(req: NextRequest) {
       try {
         const tvTime = Date.now();
         const tickers = Object.values(TV_COMMODITY_MAP).map(v => v.ticker);
-        const res = await fetch("https://scanner.tradingview.com/futures/scan", {
+        const res = await fetchWithRetry("https://scanner.tradingview.com/futures/scan", {
+          breaker: "tv-futures", retries: 1, timeoutMs: 8000,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1230,7 +1264,8 @@ export async function GET(req: NextRequest) {
       };
       try {
         const tickers = Object.values(TV_FX_MAP);
-        const res = await fetch("https://scanner.tradingview.com/forex/scan", {
+        const res = await fetchWithRetry("https://scanner.tradingview.com/forex/scan", {
+          breaker: "tv-forex", retries: 1, timeoutMs: 8000,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1276,9 +1311,9 @@ export async function GET(req: NextRequest) {
       // ── TIER 3: exchangerate.host fallback ──
       if (Object.keys(prices).length === 0) {
         try {
-          const res = await fetch(
+          const res = await fetchWithRetry(
             "https://api.exchangerate.host/latest?base=USD&symbols=INR,EUR,GBP,JPY,AUD,CAD,SGD,CHF,AED",
-            { next: { revalidate: 300 } }
+            { breaker: "exchangerate-host", retries: 2, timeoutMs: 6000, next: { revalidate: 300 } }
           );
           if (res.ok) {
             const data = await res.json();
@@ -1312,7 +1347,7 @@ export async function GET(req: NextRequest) {
       await Promise.all(
         Object.entries(MF_SCHEMES).map(async ([key, code]) => {
           try {
-            const res = await fetch(`https://api.mfapi.in/mf/${code}/latest`, { next: { revalidate: 3600 } });
+            const res = await fetchWithRetry(`https://api.mfapi.in/mf/${code}/latest`, { breaker: "mfapi", retries: 1, timeoutMs: 6000, next: { revalidate: 3600 } });
             if (res.ok) {
               const data = await res.json();
               if (data.data?.[0]) {
@@ -1403,7 +1438,8 @@ export async function GET(req: NextRequest) {
       };
       try {
         const tickers = Object.values(TV_BOND_MAP).map(v => v.ticker);
-        const res = await fetch("https://scanner.tradingview.com/bonds/scan", {
+        const res = await fetchWithRetry("https://scanner.tradingview.com/bonds/scan", {
+          breaker: "tv-bonds", retries: 1, timeoutMs: 8000,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

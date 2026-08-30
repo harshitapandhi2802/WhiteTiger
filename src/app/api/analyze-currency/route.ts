@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimitResponse } from "@/lib/services/apiGuard";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimitResponse(req, { scope: "analyze-currency", limit: 5, windowMs: 60000 });
+  if (limited) return limited;
   const { symbol, name, category, pair, base, quote } = await req.json();
 
   if (!symbol) {
