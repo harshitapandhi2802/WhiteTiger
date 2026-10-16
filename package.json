@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:stocks": "node scripts/sync-stock-universe.mjs",
+    "sync:stocks:fetch": "node scripts/sync-stock-universe.mjs --fetch",
+    "test": "node --no-warnings --test \"tests/**/*.test.mjs\"",
+    "sync:mf": "node --no-warnings scripts/sync-mf-universe.mjs",
+    "sync:mf:fetch": "node --no-warnings scripts/sync-mf-universe.mjs --fetch",
+    "verify:mf": "python3 scripts/verify-mf-calcs.py"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.0",

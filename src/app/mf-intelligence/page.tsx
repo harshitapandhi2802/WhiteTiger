@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { splitCategory, subCategoryAliases } from "@/lib/mf-classify";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    WHITE TIGER — MUTUAL FUND INTELLIGENCE ENGINE
@@ -24,7 +25,7 @@ interface AMCSummary {
 interface IndustryStats {
   totalAUM: string; totalAUMNote: string; monthlySIPFlows: string;
   sipFlowsMonth: string; totalFolios: string; uniqueInvestors: string;
-  liveSchemeCount: number; liveAMCCount: number; navDate: string;
+  liveSchemeCount: number; liveAMCCount: number; navDate: string; navSource?: string; asOf?: string;
   lastFetched: string; dataSource: string; disclaimer: string;
 }
 
@@ -54,13 +55,13 @@ interface CategoryDef {
 }
 
 const MAIN_CATEGORIES: CategoryDef[] = [
-  { id: "equity", label: "Equity Funds", icon: "📈", color: "#4A9EFF", gradient: "linear-gradient(135deg, rgba(74,158,255,0.12), rgba(74,158,255,0.04))", description: "Invest in stocks for long-term wealth creation", amfiPrefixes: ["Equity Scheme"], aiInsight: "Best for 5+ year horizon. Historically delivers 12-15% CAGR over long periods." },
-  { id: "debt", label: "Debt Funds", icon: "🏦", color: "#34D399", gradient: "linear-gradient(135deg, rgba(52,211,153,0.12), rgba(52,211,153,0.04))", description: "Stable income from bonds & fixed-income securities", amfiPrefixes: ["Debt Scheme"], aiInsight: "Lower risk than equity. Suitable for 1-3 year goals with 6-8% expected returns." },
+  { id: "equity", label: "Equity Funds", icon: "📈", color: "#4A9EFF", gradient: "linear-gradient(135deg, rgba(74,158,255,0.12), rgba(74,158,255,0.04))", description: "Invest in stocks for long-term wealth creation", amfiPrefixes: ["Equity Scheme"], aiInsight: "Generally suited to 5+ year horizons. Returns vary widely between funds and periods — check each fund's rolling returns." },
+  { id: "debt", label: "Debt Funds", icon: "🏦", color: "#34D399", gradient: "linear-gradient(135deg, rgba(52,211,153,0.12), rgba(52,211,153,0.04))", description: "Stable income from bonds & fixed-income securities", amfiPrefixes: ["Debt Scheme"], aiInsight: "Usually less volatile than equity, but carry interest-rate and credit risk. Match the fund's duration to your goal." },
   { id: "hybrid", label: "Hybrid Funds", icon: "⚖️", color: "#FBBF24", gradient: "linear-gradient(135deg, rgba(251,191,36,0.12), rgba(251,191,36,0.04))", description: "Mix of equity & debt for balanced growth", amfiPrefixes: ["Hybrid Scheme"], aiInsight: "Ideal for moderate risk-takers. Auto-balances between equity and debt." },
-  { id: "index", label: "Index & ETFs", icon: "📊", color: "#818CF8", gradient: "linear-gradient(135deg, rgba(129,140,248,0.12), rgba(129,140,248,0.04))", description: "Track market indices at lowest cost", amfiPrefixes: ["Other Scheme - Index", "Other Scheme - Other  ETF"], aiInsight: "Lowest expense ratios (0.05-0.2%). Warren Buffett's recommended approach for most investors." },
-  { id: "elss", label: "ELSS (Tax Saving)", icon: "🛡️", color: "#F472B6", gradient: "linear-gradient(135deg, rgba(244,114,182,0.12), rgba(244,114,182,0.04))", description: "Save tax under Section 80C with 3-year lock-in", amfiPrefixes: ["Equity Scheme - ELSS", "ELSS"], aiInsight: "Dual benefit: Tax saving + equity returns. ₹1.5L annual limit under 80C." },
+  { id: "index", label: "Index & ETFs", icon: "📊", color: "#818CF8", gradient: "linear-gradient(135deg, rgba(129,140,248,0.12), rgba(129,140,248,0.04))", description: "Track market indices at lowest cost", amfiPrefixes: ["Other Scheme - Index", "Other Scheme - Other  ETF"], aiInsight: "Aim to track an index rather than beat it, so costs are typically lower than active funds. Compare tracking error before choosing." },
+  { id: "elss", label: "ELSS (Tax Saving)", icon: "🛡️", color: "#F472B6", gradient: "linear-gradient(135deg, rgba(244,114,182,0.12), rgba(244,114,182,0.04))", description: "Save tax under Section 80C with 3-year lock-in", amfiPrefixes: ["Equity Scheme - ELSS", "ELSS"], aiInsight: "Equity funds with a 3-year lock-in. The Section 80C deduction applies only under the old tax regime — verify current rules." },
   { id: "solution", label: "Solution Oriented", icon: "🎯", color: "#FB923C", gradient: "linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))", description: "Retirement & children's future planning", amfiPrefixes: ["Solution Oriented Scheme"], aiInsight: "Goal-based investing with built-in lock-in periods. Align with specific life goals." },
-  { id: "gold", label: "Gold & Commodities", icon: "🥇", color: "#C5A572", gradient: "linear-gradient(135deg, rgba(197,165,114,0.12), rgba(197,165,114,0.04))", description: "Hedge against inflation with precious metals", amfiPrefixes: ["Other Scheme - Gold ETF"], aiInsight: "Portfolio diversifier. Gold performs well during equity market downturns." },
+  { id: "gold", label: "Gold & Commodities", icon: "🥇", color: "#C5A572", gradient: "linear-gradient(135deg, rgba(197,165,114,0.12), rgba(197,165,114,0.04))", description: "Hedge against inflation with precious metals", amfiPrefixes: ["Other Scheme - Gold ETF"], aiInsight: "Often used to diversify an equity-heavy portfolio. Gold prices can also fall for long stretches." },
   { id: "fof", label: "Fund of Funds", icon: "🌐", color: "#6EE7B7", gradient: "linear-gradient(135deg, rgba(110,231,183,0.12), rgba(110,231,183,0.04))", description: "Invest in other funds, including international", amfiPrefixes: ["Other Scheme - FoF"], aiInsight: "Access global markets or multi-fund strategies via single investment." },
 ];
 
@@ -101,7 +102,7 @@ const SUBCATEGORY_MAP: Record<string, SubcategoryDef[]> = {
     { label: "Corporate Bond", amfiKey: "Debt Scheme - Corporate Bond Fund", riskLevel: "Moderate", aiTip: "Min 80% in AA+ bonds. Good risk-return for 2-3 year horizon.", icon: "🏛️" },
     { label: "Credit Risk", amfiKey: "Debt Scheme - Credit Risk Fund", riskLevel: "Moderate to High", aiTip: "Invests in lower-rated bonds for higher yield. Credit default risk exists.", icon: "⚠️" },
     { label: "Banking & PSU", amfiKey: "Debt Scheme - Banking and PSU Fund", riskLevel: "Low to Moderate", aiTip: "Min 80% in bank/PSU debt. Among the safest debt categories.", icon: "🏦" },
-    { label: "Gilt Funds", amfiKey: "Debt Scheme - Gilt Fund", riskLevel: "Moderate to High", aiTip: "100% government securities. Zero credit risk but interest rate risk.", icon: "🇮🇳" },
+    { label: "Gilt Funds", amfiKey: "Debt Scheme - Gilt Fund", riskLevel: "Moderate to High", aiTip: "Min 80% in government securities across maturities. Negligible credit risk, but sensitive to interest-rate moves.", icon: "🇮🇳" },
     { label: "Gilt 10Y Constant", amfiKey: "Debt Scheme - Gilt Fund with 10 year constant duration", riskLevel: "High", aiTip: "Gilt with 10-year constant duration. Pure rate play.", icon: "🔟" },
     { label: "Money Market", amfiKey: "Debt Scheme - Money Market Fund", riskLevel: "Low", aiTip: "Up to 1-year maturity instruments. Good for short-term parking.", icon: "💵" },
     { label: "Floater Funds", amfiKey: "Debt Scheme - Floater Fund", riskLevel: "Low to Moderate", aiTip: "Min 65% in floating rate instruments. Natural hedge against rate hikes.", icon: "🔃" },
@@ -229,10 +230,12 @@ export default function MFIntelligencePage() {
     (async () => {
       setFundListLoading(true);
       try {
-        const cat = encodeURIComponent(selectedSubcat.amfiKey);
+        // Match on AMFI's normalised category (+ verified legacy labels), not one raw spelling.
+        const { assetClass, subCategory } = splitCategory(selectedSubcat.amfiKey);
+        const cat = `&assetClass=${encodeURIComponent(assetClass)}&subCategory=${encodeURIComponent(subCategoryAliases(subCategory).join("|"))}`;
         const q = search ? `&q=${encodeURIComponent(search)}` : "";
         const amc = amcFilter ? `&amc=${encodeURIComponent(amcFilter)}` : "";
-        const res = await fetch(`/api/mf-data?mode=schemes&category=${cat}&limit=200${q}${amc}`);
+        const res = await fetch(`/api/mf-data?mode=schemes${cat}&limit=200${q}${amc}`);
         const json = await res.json();
         if (!c) {
           setFundListData(json.schemes || []);
@@ -331,8 +334,6 @@ export default function MFIntelligencePage() {
   const activeCat = MAIN_CATEGORIES.find(c => c.id === selectedCatId);
   const subcats = selectedCatId ? SUBCATEGORY_MAP[selectedCatId] || [] : [];
 
-  const makeFundSlug = (name: string) =>
-    name.toLowerCase().replace(/\s+/g, "-").replace(/[()&,.'\/]/g, "").replace(/-+/g, "-").slice(0, 80);
 
   // ═══ RENDER ═══
   return (
@@ -391,12 +392,12 @@ export default function MFIntelligencePage() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
                 {[
-                  { l: "Industry AUM", v: apiData.industry.totalAUM, s: "Source: AMFI Reports", c: "var(--success)" },
-                  { l: "Total AMCs", v: String(apiData.industry.liveAMCCount), s: "SEBI Registered", c: "var(--accent)" },
-                  { l: "Total Schemes", v: apiData.industry.liveSchemeCount.toLocaleString(), s: "Open & Close Ended", c: "var(--accent)" },
-                  { l: "Monthly SIP", v: apiData.industry.monthlySIPFlows, s: apiData.industry.sipFlowsMonth, c: "var(--warning)" },
-                  { l: "Total Folios", v: apiData.industry.totalFolios, s: "Active investor accounts", c: "var(--accent)" },
-                  { l: "NAV Updated", v: apiData.industry.navDate || "—", s: `${formatTime(apiData.industry.lastFetched)}`, c: "var(--text-primary)" },
+                  { l: "Industry AUM", v: apiData.industry.totalAUM, s: `Unverified estimate (${apiData.industry.asOf})`, c: "var(--success)" },
+                  { l: "Total AMCs", v: String(apiData.industry.liveAMCCount), s: "With NAVs in AMFI file", c: "var(--accent)" },
+                  { l: "Active scheme codes", v: apiData.industry.liveSchemeCount.toLocaleString("en-IN"), s: "Each plan & option counted", c: "var(--accent)" },
+                  { l: "Monthly SIP", v: apiData.industry.monthlySIPFlows, s: `Unverified estimate (${apiData.industry.sipFlowsMonth})`, c: "var(--warning)" },
+                  { l: "Total Folios", v: apiData.industry.totalFolios, s: `Unverified estimate (${apiData.industry.asOf})`, c: "var(--accent)" },
+                  { l: "Latest NAV date", v: apiData.industry.navDate || "—", s: `AMFI${apiData.industry.navSource === "snapshot" ? " snapshot" : ""} · fetched ${formatTime(apiData.industry.lastFetched)}`, c: "var(--text-primary)" },
                 ].map(s => (
                   <div key={s.l} style={{ textAlign: "center" }}>
                     <div style={{ fontSize: "0.44rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>{s.l}</div>
@@ -417,9 +418,9 @@ export default function MFIntelligencePage() {
           }}>
             <span style={{ fontSize: "1.3rem" }}>🧠</span>
             <div>
-              <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>White Tiger AI Insight</div>
+              <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 2 }}>How to use this page</div>
               <div style={{ fontSize: "0.62rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                Start by choosing a category below. Each category has AI-powered analysis to help you understand risk, suitability, and expected returns before you pick a fund.
+                Choose a category, then a fund. Each fund page shows its official AMFI NAV, returns calculated from real NAV history, and risk metrics.
               </div>
             </div>
           </div>
@@ -427,7 +428,7 @@ export default function MFIntelligencePage() {
           {/* ── Category Grid ── */}
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: "0.88rem", fontWeight: 800, marginBottom: 4 }}>Explore by Category</div>
-            <div style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>All {apiData.totalSchemes.toLocaleString()} SEBI-registered mutual fund schemes organized by type</div>
+            <div style={{ fontSize: "0.58rem", color: "var(--text-muted)" }}>{apiData.totalSchemes.toLocaleString("en-IN")} active scheme codes (each plan and option counted separately), organised by type</div>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
@@ -454,7 +455,7 @@ export default function MFIntelligencePage() {
 
                 {/* AI tip */}
                 <div style={{ padding: "6px 10px", borderRadius: 6, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                  <div style={{ fontSize: "0.48rem", fontWeight: 700, color: cat.color, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>🧠 AI Insight</div>
+                  <div style={{ fontSize: "0.48rem", fontWeight: 700, color: cat.color, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Category guide</div>
                   <div style={{ fontSize: "0.52rem", color: "var(--text-muted)", lineHeight: 1.5 }}>{cat.aiInsight}</div>
                 </div>
 
@@ -468,7 +469,7 @@ export default function MFIntelligencePage() {
           <section style={{ marginTop: 32 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: "0.82rem", fontWeight: 800 }}>Top AMCs by AUM</div>
+                <div style={{ fontSize: "0.82rem", fontWeight: 800 }}>Largest AMCs <span style={{ fontWeight: 500, fontSize: "0.62rem", color: "var(--text-muted)" }}>(by curated AUM estimates)</span></div>
                 <div style={{ fontSize: "0.54rem", color: "var(--text-muted)" }}>Click any AMC for complete scheme listing</div>
               </div>
               <button onClick={goAMCs} style={{ padding: "5px 14px", borderRadius: 5, border: "1px solid var(--border)", background: "transparent", color: "var(--accent)", fontSize: "0.62rem", fontWeight: 700, cursor: "pointer" }}>View All AMCs →</button>
@@ -484,7 +485,7 @@ export default function MFIntelligencePage() {
                   onMouseOut={e => { e.currentTarget.style.borderColor = "rgba(232,237,245,0.08)"; }}>
                   <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>{amc.name.replace(" Mutual Fund", "")}</div>
                   <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "var(--success)" }}>{amc.aumEstimate}</span>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 800, color: "var(--success)" }} title="Curated estimate — not from AMFI; may be outdated">{amc.aumEstimate} (est.)</span>
                     <span style={{ fontSize: "0.5rem", color: "var(--text-muted)" }}>{amc.schemeCount} schemes</span>
                   </div>
                 </button>
@@ -520,7 +521,7 @@ export default function MFIntelligencePage() {
                 <div style={{ fontSize: "1.4rem", fontWeight: 900, letterSpacing: -0.5 }}>{activeCat.label}</div>
                 <div style={{ fontSize: "0.68rem", color: "var(--text-secondary)", marginTop: 4 }}>{activeCat.description}</div>
                 <div style={{ marginTop: 8, padding: "6px 12px", borderRadius: 6, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.05)", display: "inline-block" }}>
-                  <span style={{ fontSize: "0.5rem", fontWeight: 700, color: activeCat.color }}>🧠 AI INSIGHT: </span>
+                  <span style={{ fontSize: "0.5rem", fontWeight: 700, color: activeCat.color }}>CATEGORY GUIDE: </span>
                   <span style={{ fontSize: "0.54rem", color: "var(--text-secondary)" }}>{activeCat.aiInsight}</span>
                 </div>
               </div>
@@ -549,7 +550,7 @@ export default function MFIntelligencePage() {
                       fontSize: "0.48rem", fontWeight: 700, padding: "2px 7px", borderRadius: 3,
                       background: sub.riskLevel.includes("Low") ? "rgba(52,211,153,0.1)" : sub.riskLevel.includes("Very High") ? "rgba(248,113,113,0.1)" : sub.riskLevel.includes("High") ? "rgba(251,191,36,0.1)" : "rgba(140,153,176,0.08)",
                       color: sub.riskLevel.includes("Low") ? "var(--success)" : sub.riskLevel.includes("Very High") ? "var(--danger)" : sub.riskLevel.includes("High") ? "var(--warning)" : "var(--text-muted)",
-                    }}>{sub.riskLevel} Risk</span>
+                    }} title="Typical level for this SEBI category; each scheme publishes its own riskometer">Typically {sub.riskLevel}</span>
                   </div>
                   <div style={{ fontSize: "0.56rem", color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 6 }}>{sub.aiTip}</div>
                   <div style={{ fontSize: "0.52rem", color: activeCat.color, fontWeight: 600 }}>View all funds →</div>
@@ -586,7 +587,7 @@ export default function MFIntelligencePage() {
                   fontSize: "0.5rem", fontWeight: 700, padding: "2px 8px", borderRadius: 3,
                   background: selectedSubcat.riskLevel.includes("Low") ? "rgba(52,211,153,0.1)" : selectedSubcat.riskLevel.includes("Very High") ? "rgba(248,113,113,0.1)" : "rgba(251,191,36,0.1)",
                   color: selectedSubcat.riskLevel.includes("Low") ? "var(--success)" : selectedSubcat.riskLevel.includes("Very High") ? "var(--danger)" : "var(--warning)",
-                }}>{selectedSubcat.riskLevel} Risk</span>
+                }} title="Typical level for this SEBI category; each scheme publishes its own riskometer">Typically {selectedSubcat.riskLevel} risk</span>
                 <span style={{ fontSize: "0.56rem", color: "var(--text-muted)" }}>{fundListTotal} schemes found</span>
                 <SourceBadge source="AMFI Live" />
               </div>
@@ -595,7 +596,7 @@ export default function MFIntelligencePage() {
 
           {/* AI Insight for subcategory */}
           <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 8, background: "rgba(74,158,255,0.04)", border: "1px solid rgba(74,158,255,0.08)" }}>
-            <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "var(--accent)" }}>🧠 AI: </span>
+            <span style={{ fontSize: "0.52rem", fontWeight: 700, color: "var(--accent)" }}>Category guide: </span>
             <span style={{ fontSize: "0.58rem", color: "var(--text-secondary)" }}>{selectedSubcat.aiTip}</span>
           </div>
 
@@ -635,7 +636,7 @@ export default function MFIntelligencePage() {
                       onMouseOver={e => (e.currentTarget.style.background = "rgba(74,158,255,0.03)")}
                       onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
                       <td style={{ padding: "10px 14px", maxWidth: 400 }}>
-                        <Link href={`/mf-intelligence/${makeFundSlug(s.schemeName)}`} style={{ textDecoration: "none", color: "var(--text-primary)", fontSize: "0.68rem", fontWeight: 600, lineHeight: 1.4, display: "block" }}>
+                        <Link href={`/mf-intelligence/${s.schemeCode}`} style={{ textDecoration: "none", color: "var(--text-primary)", fontSize: "0.68rem", fontWeight: 600, lineHeight: 1.4, display: "block" }}>
                           {s.schemeName}
                         </Link>
                       </td>
@@ -702,7 +703,7 @@ export default function MFIntelligencePage() {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                      {amc.aumEstimate && <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "var(--success)" }}>{amc.aumEstimate}</span>}
+                      {amc.aumEstimate && <span style={{ fontSize: "0.56rem", fontWeight: 700, color: "var(--success)" }} title="Curated estimate — not from AMFI; may be outdated">{amc.aumEstimate} (est.)</span>}
                       {amc.category && <span style={{ fontSize: "0.44rem", fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: amc.category === "Large" ? "rgba(74,158,255,0.1)" : amc.category === "Boutique" ? "rgba(168,85,247,0.1)" : "rgba(140,153,176,0.08)", color: amc.category === "Large" ? "var(--accent)" : amc.category === "Boutique" ? "#c084fc" : "var(--text-muted)" }}>{amc.category}</span>}
                       {amc.ceo && <span style={{ fontSize: "0.46rem", color: "var(--text-muted)" }}>CEO: {amc.ceo}</span>}
                     </div>
@@ -736,7 +737,7 @@ export default function MFIntelligencePage() {
                           {[amcDetail.amc.parentCompany, amcDetail.amc.ownershipStructure, amcDetail.totalSchemes + " schemes"].filter(Boolean).join(" · ")}
                         </div>
                         <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
-                          {amcDetail.amc.aumEstimate && <span style={{ fontSize: "0.52rem", fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: "rgba(52,211,153,0.08)", color: "var(--success)" }}>AUM: {amcDetail.amc.aumEstimate}</span>}
+                          {amcDetail.amc.aumEstimate && <span style={{ fontSize: "0.52rem", fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: "rgba(52,211,153,0.08)", color: "var(--success)" }} title="Curated estimate — not from AMFI; may be outdated">AUM (est.): {amcDetail.amc.aumEstimate}</span>}
                           {amcDetail.amc.category && <span style={{ fontSize: "0.52rem", fontWeight: 700, padding: "2px 8px", borderRadius: 4, background: "rgba(74,158,255,0.08)", color: "var(--accent)" }}>{amcDetail.amc.category} AMC</span>}
                           <SourceBadge source="AMFI" date={amcDetail.amc.lastUpdated} />
                         </div>
@@ -795,7 +796,7 @@ export default function MFIntelligencePage() {
                                   onMouseOver={e => (e.currentTarget.style.background = "rgba(74,158,255,0.02)")}
                                   onMouseOut={e => (e.currentTarget.style.background = "transparent")}>
                                   <td style={{ padding: "7px 10px" }}>
-                                    <Link href={`/mf-intelligence/${makeFundSlug(s.schemeName)}`} style={{ textDecoration: "none", color: "var(--text-primary)", fontSize: "0.64rem", fontWeight: 600 }}>{s.schemeName}</Link>
+                                    <Link href={`/mf-intelligence/${s.schemeCode}`} style={{ textDecoration: "none", color: "var(--text-primary)", fontSize: "0.64rem", fontWeight: 600 }}>{s.schemeName}</Link>
                                   </td>
                                   <td style={{ padding: "7px 10px", textAlign: "right", fontSize: "0.68rem", fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-mono, monospace)", whiteSpace: "nowrap" }}>₹{s.nav.toFixed(4)}</td>
                                   <td style={{ padding: "7px 10px", textAlign: "right", fontSize: "0.5rem", color: "var(--text-muted)", fontFamily: "var(--font-mono, monospace)" }}>{s.schemeCode}</td>

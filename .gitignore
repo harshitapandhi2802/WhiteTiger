@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AMFI raw downloads (dates + SHA-256 recorded in data/amfi/mf-reconciliation-report.json)
+data/amfi/NAVAll.txt
+data/amfi/SchemeData.csv

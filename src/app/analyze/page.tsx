@@ -19,11 +19,12 @@ const AuthGate = dynamic(() => import("@/components/auth/AuthGate").then(m => ({
 const PrivateBetaGate = dynamic(() => import("@/components/auth/PrivateBetaGate").then(m => ({ default: m.PrivateBetaGate })), { ssr: false });
 const WelcomeIntro = dynamic(() => import("@/components/WelcomeIntro").then(m => ({ default: m.WelcomeIntro })), { ssr: false });
 const SectionTransition = dynamic(() => import("@/components/SectionTransition").then(m => ({ default: m.SectionTransition })), { ssr: false });
-import { searchStocks, NSE_STOCKS, type StockEntry } from "@/lib/stocks";
+import { searchStocks, findStock, quoteKey, stockSlug, type StockEntry } from "@/lib/stocks";
 import { searchCommodities, MCX_COMMODITIES, COMMODITY_CATEGORIES, type CommodityEntry } from "@/lib/commodities";
 import { searchCrypto, CRYPTO_LIST, CRYPTO_CATEGORIES, type CryptoEntry } from "@/lib/crypto";
 import { searchCurrencies, CURRENCY_LIST, CURRENCY_CATEGORIES, type CurrencyEntry } from "@/lib/currencies";
-import { searchMutualFunds, MUTUAL_FUNDS, MF_CATEGORIES, type MutualFundEntry } from "@/lib/mutualfunds";
+/** One AMFI scheme code from /api/mf-data search. */
+interface MfHit { schemeCode: number; schemeName: string; amcName: string; subCategory: string; plan: string; option: string; idcwFrequency: string | null; status: string }
 import { searchBonds, BONDS_LIST, BOND_CATEGORIES, type BondEntry } from "@/lib/bonds";
 import { INTL_INDICES, INTL_STOCKS, INTL_COUNTRIES, getIndicesByCountry, getStocksForIndex } from "@/lib/international";
 /* ── Lightweight, always-needed components (keep static) ── */
@@ -60,6 +61,29 @@ const StocksExplorer = dynamic(() => import("@/components/stocks/StocksExplorer"
 type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 type ResultView = "dashboard" | "report";
 
+/** Small teaser pill shown top-right on Stocks & MF tabs — trading is coming to the platform */
+function TradingSoonBadge() {
+  return (
+    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+      <div style={{
+        display: "inline-flex", alignItems: "center", gap: 8,
+        padding: "6px 14px", borderRadius: 999,
+        background: "linear-gradient(135deg, rgba(74,158,255,0.12), rgba(167,139,250,0.12))",
+        border: "1px solid rgba(74,158,255,0.25)",
+        fontSize: "0.74rem", fontWeight: 600, color: "var(--accent, #4A9EFF)",
+        whiteSpace: "nowrap",
+      }}>
+        <span style={{
+          width: 7, height: 7, borderRadius: "50%", background: "#34D399",
+          boxShadow: "0 0 0 3px rgba(52,211,153,0.2)",
+          animation: "wtPulse 2s ease-in-out infinite",
+        }} />
+        Trading on White Tiger — launching soon
+      </div>
+    </div>
+  );
+}
+
 declare global { interface Window { Razorpay: new (o: Record<string, unknown>) => { open: () => void }; } }
 
 /* StocksExplorer extracted to /src/components/stocks/StocksExplorer.tsx (dynamic import above) */
@@ -68,6 +92,19 @@ export default function AnalyzePage() {
   const router = useRouter();
   const [mainTab, setMainTab] = useState<MainTab>("stocks");
   const [resultView, setResultView] = useState<ResultView>("dashboard");
+
+  // Simple (default, clean B2C view) vs Pro (full dashboards) — persisted per device
+  const [proMode, setProMode] = useState(false);
+  useEffect(() => {
+    try { if (localStorage.getItem("wt-view-mode") === "pro") setProMode(true); } catch {}
+  }, []);
+  function toggleProMode() {
+    setProMode(p => {
+      const next = !p;
+      try { localStorage.setItem("wt-view-mode", next ? "pro" : "simple"); } catch {}
+      return next;
+    });
+  }
 
   // Landing dashboard + auth gate
   const user = useUser();
@@ -160,11 +197,11 @@ export default function AnalyzePage() {
   // Mutual Fund state
   const [mfQuery, setMfQuery] = useState("");
   const [mfSymbol, setMfSymbol] = useState("");
-  const [mfSelected, setMfSelected] = useState<MutualFundEntry | null>(null);
-  const [mfSuggestions, setMfSuggestions] = useState<MutualFundEntry[]>([]);
+  const [mfSelected, setMfSelected] = useState<MfHit | null>(null);
+  const [mfSuggestions, setMfSuggestions] = useState<MfHit[]>([]);
+  const mfSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showMfDrop, setShowMfDrop] = useState(false);
   const [mfIdx, setMfIdx] = useState(-1);
-  const [mfCategory, setMfCategory] = useState("All");
 
   // Debt/Bond state
   const [debtQuery, setDebtQuery] = useState("");
@@ -338,7 +375,7 @@ export default function AnalyzePage() {
   }, []);
 
   function selectStock(s: StockEntry) {
-    const slug = s.ticker.replace(".NS", "").replace(".BO", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
+    const slug = stockSlug(s);
     router.push(`/stocks/${slug}`);
   }
 
@@ -381,13 +418,19 @@ export default function AnalyzePage() {
   /* ── MF search ── */
   const handleMfSearch = useCallback((val: string) => {
     setMfQuery(val);
-    if (val.trim().length >= 1) {
-      const r = searchMutualFunds(val); setMfSuggestions(r); setShowMfDrop(r.length > 0); setMfIdx(-1);
-    } else { setMfSuggestions([]); setShowMfDrop(false); }
+    setMfSymbol(""); setMfSelected(null);
+    if (mfSearchTimer.current) clearTimeout(mfSearchTimer.current);
+    if (val.trim().length < 2) { setMfSuggestions([]); setShowMfDrop(false); return; }
+    mfSearchTimer.current = setTimeout(() => {
+      fetch(`/api/mf-data?mode=search&limit=12&q=${encodeURIComponent(val.trim())}`)
+        .then(r => r.json())
+        .then(j => { const r: MfHit[] = j.results ?? []; setMfSuggestions(r); setShowMfDrop(r.length > 0); setMfIdx(-1); })
+        .catch(() => { setMfSuggestions([]); setShowMfDrop(false); });
+    }, 250);
   }, []);
 
-  function selectMf(f: MutualFundEntry) {
-    setMfQuery(f.name); setMfSymbol(f.symbol); setMfSelected(f); setShowMfDrop(false);
+  function selectMf(f: MfHit) {
+    setMfQuery(f.schemeName); setMfSymbol(String(f.schemeCode)); setMfSelected(f); setShowMfDrop(false);
   }
 
   /* ── Debt search ── */
@@ -410,10 +453,17 @@ export default function AnalyzePage() {
     let url = ""; let body: Record<string, string> = {};
 
     if (mainTab === "stocks") {
-      const t = stockTicker || stockQuery.trim().toUpperCase();
+      const t = stockTicker || stockQuery.trim();
       if (!t) return;
-      const slug = t.replace(".NS", "").replace(".BO", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
-      router.push(`/stocks/${slug}`);
+      // Exact identifier first; otherwise accept a search hit only when it is unambiguous.
+      const hits = findStock(t) ? [] : searchStocks(t, 2);
+      const target = findStock(t) ?? (hits.length === 1 ? hits[0] : undefined);
+      if (!target) {
+        setStockSuggestions(searchStocks(t, 12));
+        setShowStockDrop(true);
+        return;
+      }
+      router.push(`/stocks/${stockSlug(target)}`);
       return;
     } else if (mainTab === "commodities") {
       const sym = commSymbol || commQuery.trim().toUpperCase();
@@ -431,10 +481,10 @@ export default function AnalyzePage() {
       url = "/api/analyze-currency";
       body = { symbol: sym, name: currSelected?.name || currQuery, category: currSelected?.category || "", pair: currSelected?.pair || sym, base: currSelected?.base || "", quote: currSelected?.quote || "" };
     } else if (mainTab === "mutualfunds") {
-      const sym = mfSymbol || mfQuery.trim().toUpperCase();
-      if (!sym) return;
+      // Analysis is grounded in a specific AMFI scheme code; free text must be resolved first.
+      if (!mfSelected) { if (mfSuggestions.length) setShowMfDrop(true); return; }
       url = "/api/analyze-mf";
-      body = { symbol: sym, name: mfSelected?.name || mfQuery, category: mfSelected?.category || "", amc: mfSelected?.amc || "", riskLevel: mfSelected?.riskLevel || "" };
+      body = { schemeCode: String(mfSelected.schemeCode), symbol: String(mfSelected.schemeCode), name: mfSelected.schemeName };
     } else {
       const sym = debtSymbol || debtQuery.trim().toUpperCase();
       if (!sym) return;
@@ -486,10 +536,9 @@ export default function AnalyzePage() {
   const filteredComm = commCategory === "All" ? MCX_COMMODITIES : MCX_COMMODITIES.filter(c => c.category === commCategory);
   const filteredCrypto = cryptoCategory === "All" ? CRYPTO_LIST : CRYPTO_LIST.filter(c => c.category === cryptoCategory);
   const filteredCurr = currCategory === "All" ? CURRENCY_LIST : CURRENCY_LIST.filter(c => c.category === currCategory);
-  const filteredMf = mfCategory === "All" ? MUTUAL_FUNDS : MUTUAL_FUNDS.filter(f => f.category === mfCategory);
   const filteredDebt = debtCategory === "All" ? BONDS_LIST : BONDS_LIST.filter(b => b.category === debtCategory);
 
-  const analysisName = analysisType === "stocks" ? (stockName || stockTicker) : analysisType === "commodities" ? (commSelected?.name || commSymbol) : analysisType === "crypto" ? (cryptoSelected?.name || cryptoSymbol) : analysisType === "currency" ? (currSelected?.name || currSymbol) : analysisType === "mutualfunds" ? (mfSelected?.name || mfSymbol) : (debtSelected?.name || debtSymbol);
+  const analysisName = analysisType === "stocks" ? (stockName || stockTicker) : analysisType === "commodities" ? (commSelected?.name || commSymbol) : analysisType === "crypto" ? (cryptoSelected?.name || cryptoSymbol) : analysisType === "currency" ? (currSelected?.name || currSymbol) : analysisType === "mutualfunds" ? (mfSelected?.schemeName || mfSymbol) : (debtSelected?.name || debtSymbol);
   const analysisSymbol = analysisType === "stocks" ? stockTicker : analysisType === "commodities" ? commSymbol : analysisType === "crypto" ? cryptoSymbol : analysisType === "currency" ? currSymbol : analysisType === "mutualfunds" ? mfSymbol : debtSymbol;
 
   const rating = scores ? getRatingBadge((scores as Record<string, unknown>).investmentRating as string || (scores as Record<string, unknown>).rating as string || "") : analysis ? getRatingBadge(analysis) : null;
@@ -744,6 +793,24 @@ export default function AnalyzePage() {
         </div>
 
         <div className="wt-desktop-right" style={{ alignItems: "center", gap: 14, flexShrink: 0 }}>
+          {/* Simple / Pro view toggle */}
+          <div style={{
+            display: "flex", alignItems: "center", borderRadius: 99, padding: 3,
+            background: "rgba(255,255,255,0.04)", border: "0.5px solid var(--border)",
+          }}>
+            {(["Simple", "Pro"] as const).map(m => {
+              const active = (m === "Pro") === proMode;
+              return (
+                <button key={m} onClick={() => { if (!active) toggleProMode(); }} style={{
+                  padding: "4px 12px", borderRadius: 99, border: "none", cursor: "pointer",
+                  fontSize: "0.7rem", fontWeight: 700,
+                  background: active ? "linear-gradient(135deg,#4A9EFF,#A78BFA)" : "transparent",
+                  color: active ? "#fff" : "var(--text-muted)",
+                  transition: "all 0.2s",
+                }}>{m}</button>
+              );
+            })}
+          </div>
           <MarketStatusIndicator />
           {currentPlan !== "free" && <span className="badge badge-blue" style={{ textTransform: "uppercase" }}>{currentPlan}</span>}
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
@@ -868,9 +935,9 @@ export default function AnalyzePage() {
       )}
 
       {/* ── Main Content ── */}
-      <div className="wt-main-content" style={{ maxWidth: 1920, margin: "0 auto", display: "flex", gap: 20 }}>
-        {/* Left: Intelligence Column (desktop only, hidden on crypto) */}
-        {mainTab !== "crypto" && (
+      <div className="wt-main-content" style={{ maxWidth: proMode ? 1920 : 1200, margin: "0 auto", display: "flex", gap: 20 }}>
+        {/* Left: Intelligence Column (desktop only, Pro mode only, hidden on crypto) */}
+        {proMode && mainTab !== "crypto" && (
         <div className="intel-sidebar" style={{ width: 300, minWidth: 280, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
             <IntelligenceColumn tab={mainTab} />
@@ -884,6 +951,7 @@ export default function AnalyzePage() {
         {/* ══════ STOCKS TAB ══════ */}
         {mainTab === "stocks" && (
           <div>
+            <TradingSoonBadge />
             <div className="card" style={{ padding: "16px 20px", marginBottom: 20 }}>
               <form onSubmit={handleAnalyze} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <div ref={searchRef} className="search-container" style={{ flex: 1 }}>
@@ -910,8 +978,8 @@ export default function AnalyzePage() {
                             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{s.sector}</div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--accent)" }}>{s.ticker.replace(".NS", "")}</div>
-                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>NSE</div>
+                            <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--accent)" }}>{quoteKey(s)}</div>
+                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>{(s.exchanges ?? ["NSE"]).join(" · ")}</div>
                           </div>
                         </div>
                       ))}
@@ -1344,12 +1412,13 @@ export default function AnalyzePage() {
         {/* ══════ MUTUAL FUNDS TAB ══════ */}
         {mainTab === "mutualfunds" && (
           <div>
+            <TradingSoonBadge />
             <div className="card" style={{ padding: "16px 20px", marginBottom: 20 }}>
               <form onSubmit={handleAnalyze} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <div ref={searchRef} className="search-container" style={{ flex: 1 }}>
                   <div style={{ position: "relative" }}>
                     <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
-                    <input className="input-field" style={{ paddingLeft: 38 }} placeholder="Search funds — SBI Bluechip, Parag Parikh, ELSS, Index..."
+                    <input className="input-field" style={{ paddingLeft: 38 }} placeholder="Search all AMFI schemes — name, AMC or scheme code"
                       value={mfQuery} onChange={e => handleMfSearch(e.target.value)}
                       onFocus={() => { if (mfSuggestions.length > 0) setShowMfDrop(true); }}
                       onKeyDown={e => {
@@ -1364,13 +1433,14 @@ export default function AnalyzePage() {
                   {showMfDrop && (
                     <div className="search-dropdown">
                       {mfSuggestions.map((f, i) => (
-                        <div key={f.symbol} className={`search-item ${i === mfIdx ? "active" : ""}`} onClick={() => { const slug = f.name.toLowerCase().replace(/\s+/g, "-").replace(/[()&]/g, ""); router.push(`/mf-intelligence/${slug}`); }}>
+                        <div key={f.schemeCode} className={`search-item ${i === mfIdx ? "active" : ""}`} onClick={() => router.push(`/mf-intelligence/${f.schemeCode}`)}>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{f.name}</div>
-                            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{f.amc} · {f.category}</div>
+                            <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{f.schemeName}</div>
+                            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{f.amcName} · {f.subCategory}</div>
                           </div>
-                          <div style={{ textAlign: "right" }}>
-                            <span className={`badge ${f.riskLevel === "Low" ? "badge-green" : f.riskLevel === "Moderate" ? "badge-yellow" : "badge-red"}`} style={{ fontSize: "0.62rem" }}>{f.riskLevel}</span>
+                          <div style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                            <span className="badge badge-blue" style={{ fontSize: "0.62rem" }}>{f.plan} · {f.option}</span>
+                            <div style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginTop: 2 }}>AMFI {f.schemeCode}</div>
                           </div>
                         </div>
                       ))}
@@ -1383,14 +1453,14 @@ export default function AnalyzePage() {
               </form>
               {mfSelected && (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-                  <span className="badge badge-blue">{mfSelected.name}</span>
-                  <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 600 }}>{mfSelected.amc}</span>
-                  <span className={`badge ${mfSelected.riskLevel === "Low" ? "badge-green" : mfSelected.riskLevel === "Moderate" ? "badge-yellow" : "badge-red"}`}>{mfSelected.riskLevel} Risk</span>
+                  <span className="badge badge-blue">{mfSelected.schemeName}</span>
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 600 }}>{mfSelected.amcName}</span>
+                  <span className="badge badge-blue">{mfSelected.plan} · {mfSelected.option}</span>
                   <button onClick={() => { setMfSymbol(""); setMfSelected(null); setMfQuery(""); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}><X size={14} /></button>
                 </div>
               )}
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                <PiggyBank size={12} /> Morningstar-grade analysis · SIP strategy · Tax-efficient investing
+                <PiggyBank size={12} /> Official AMFI NAVs · returns computed on real NAV history · pick a scheme for AI analysis
               </div>
             </div>
 
@@ -1653,14 +1723,14 @@ export default function AnalyzePage() {
               </div>
               <div>
                 <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
-                  Analyzing {analysisType === "stocks" ? (stockName || stockTicker) : analysisType === "commodities" ? (commSelected?.name || commSymbol) : analysisType === "crypto" ? (cryptoSelected?.name || cryptoSymbol) : analysisType === "currency" ? (currSelected?.name || currSymbol) : (mfSelected?.name || mfSymbol)}...
+                  Analyzing {analysisType === "stocks" ? (stockName || stockTicker) : analysisType === "commodities" ? (commSelected?.name || commSymbol) : analysisType === "crypto" ? (cryptoSelected?.name || cryptoSymbol) : analysisType === "currency" ? (currSelected?.name || currSymbol) : (mfSelected?.schemeName || mfSymbol)}...
                 </div>
                 <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: 2 }}>
                   {analysisType === "stocks" && "Running 9 modules — DCF, geopolitics, supply chain, ownership, management..."}
                   {analysisType === "commodities" && "Scanning supply-demand, OPEC dynamics, trade routes, Koyfin correlations..."}
                   {analysisType === "crypto" && "Analyzing tokenomics, on-chain data, CoinDCX metrics, regulatory landscape..."}
                   {analysisType === "currency" && "Analyzing central bank policies, carry trades, RBI stance, macro fundamentals..."}
-                  {analysisType === "mutualfunds" && "Analyzing NAV performance, portfolio quality, fund manager track record, SIP strategy..."}
+                  {analysisType === "mutualfunds" && "Computing returns, risk and SIP outcomes from official AMFI NAVs..."}
                   {analysisType === "debt" && "Analyzing yield curve, RBI policy impact, credit risk, duration sensitivity, tax efficiency..."}
                 </div>
               </div>
@@ -2202,35 +2272,40 @@ export default function AnalyzePage() {
     {/* AI Derivatives Agent */}
     <DerivativesAgentDashboard />
 
-    {/* Global Derivatives Terminal */}
-    <div style={{ marginTop: 24 }}>
-      <GlobalDerivativesTerminal />
-    </div>
-
-    {/* NSE India Option Chain */}
-    <div style={{ marginTop: 24 }}>
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10, marginBottom: 12,
-        padding: "14px 20px", background: "#fff", borderRadius: "12px 12px 0 0",
-        borderBottom: "3px solid #1a237e", border: "1px solid var(--border)",
-      }}>
-        <span style={{ fontSize: "1.4rem" }}>🇮🇳</span>
-        <div>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>NSE India — Live Option Chain</h2>
-          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Real-time NSE F&O data with institutional analytics</span>
+    {/* Pro mode: full terminal + live option chain */}
+    {proMode && (
+      <>
+        {/* Global Derivatives Terminal */}
+        <div style={{ marginTop: 24 }}>
+          <GlobalDerivativesTerminal />
         </div>
-      </div>
-      <IndianDerivativesPage />
-    </div>
+
+        {/* NSE India Option Chain */}
+        <div style={{ marginTop: 24 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10, marginBottom: 12,
+            padding: "14px 20px", background: "#fff", borderRadius: "12px 12px 0 0",
+            borderBottom: "3px solid #1a237e", border: "1px solid var(--border)",
+          }}>
+            <span style={{ fontSize: "1.4rem" }}>🇮🇳</span>
+            <div>
+              <h2 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>NSE India — Live Option Chain</h2>
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Real-time NSE F&O data with institutional analytics</span>
+            </div>
+          </div>
+          <IndianDerivativesPage />
+        </div>
+      </>
+    )}
   </div>
   </ErrorBoundary>
 )}
 
       </div>
 
-        {/* Right: Contextual Intelligence Panel (desktop only) */}
+        {/* Right: Contextual Intelligence Panel (desktop only, Pro mode only) */}
         {/* Real Estate sidebar integrated into RealEstateExplorer */}
-        {mainTab !== "derivatives" && mainTab !== "realestate" && mainTab !== "crypto" && (
+        {proMode && mainTab !== "derivatives" && mainTab !== "realestate" && mainTab !== "crypto" && (
         <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
             <DerivativesPanel tab={mainTab} />
@@ -2290,8 +2365,8 @@ export default function AnalyzePage() {
         </div>
       )}
       </div>
-      {/* Data Health Monitor */}
-      <DataHealthMonitor />
+      {/* Data Health Monitor (Pro mode only) */}
+      {proMode && <DataHealthMonitor />}
 
       {/* ── Trust Footer & Disclaimer ── */}
       <div style={{ marginTop: 32, padding: "0 20px 20px" }}>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useCallback, useRef } from "react";
 import { BEGINNER_STOCKS, PORTFOLIO_PRESETS, type BeginnerStock } from "@/app/beginner/data/stocks";
-import { NSE_STOCKS, STOCK_SECTORS, MCAP_FILTERS, searchStocks, getStocksBySector, getStocksByMcap, type StockEntry } from "@/lib/stocks";
+import { NSE_STOCKS, STOCK_SECTORS, MCAP_FILTERS, searchStocks, getStocksBySector, getStocksByMcap, quoteKey, type StockEntry } from "@/lib/stocks";
 import { calculatePortfolioReturn } from "@/app/beginner/utils/calculations";
 import { useStockPrices } from "@/hooks/useMarketData";
 import { COLORS, card, SectionHeader, AIExplanation, RiskMeter, StatCard, Disclaimer, UpsellBanner, PillTabs } from "./shared";
@@ -12,17 +12,18 @@ import { COLORS, card, SectionHeader, AIExplanation, RiskMeter, StatCard, Discla
    mini charts, fullscreen TradingView analysis, AI explanations.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Helper: extract clean symbol from ticker ──────────────────── */
-function cleanSymbol(ticker: string) {
-  return ticker.replace(".NS", "").replace(".BO", "");
+/** TradingView uses NSE:<symbol> for NSE listings and BSE:<security id> for BSE-only ones. */
+function tvSymbol(entry: StockEntry) {
+  return entry.nseSymbol ? `NSE:${entry.nseSymbol}` : `BSE:${entry.bseId ?? entry.bseCode}`;
 }
 
 /* ── Mini Sparkline Chart ──────────────────────────────────────── */
 function MiniChart({ symbol, positive }: { symbol: string; positive: boolean }) {
+  const tv = symbol.includes(":") ? symbol : `NSE:${symbol}`;
   return (
     <div style={{ width: 100, height: 40, borderRadius: 8, overflow: "hidden", opacity: 0.85, flexShrink: 0 }}>
       <iframe
-        src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=NSE:${symbol}&dateRange=1M&isTransparent=true&autosize=true&locale=en&trendLineColor=${encodeURIComponent(positive ? "#059669" : "#dc2626")}&underLineColor=${encodeURIComponent(positive ? "rgba(5,150,105,0.07)" : "rgba(220,38,38,0.07)")}&underLineBottomColor=${encodeURIComponent("rgba(0,0,0,0)")}`}
+        src={`https://s.tradingview.com/embed-widget/mini-symbol-overview/?symbol=${encodeURIComponent(tv)}&dateRange=1M&isTransparent=true&autosize=true&locale=en&trendLineColor=${encodeURIComponent(positive ? "#059669" : "#dc2626")}&underLineColor=${encodeURIComponent(positive ? "rgba(5,150,105,0.07)" : "rgba(220,38,38,0.07)")}&underLineBottomColor=${encodeURIComponent("rgba(0,0,0,0)")}`}
         style={{ width: 160, height: 80, border: "none", pointerEvents: "none", marginTop: -18, marginLeft: -28 }}
         loading="lazy"
         title={`${symbol} chart`}
@@ -84,7 +85,7 @@ function StockAnalysis({ stock, livePrice, liveChange, onClose }: {
               </div>
               <div style={{ marginLeft: 12 }}>
                 <div style={{ fontSize: "1.6rem", fontWeight: 900, color: COLORS.textPrimary }}>
-                  &#8377;{livePrice > 0 ? livePrice.toLocaleString("en-IN") : (isBeginner ? (stock as BeginnerStock).currentPrice.toLocaleString("en-IN") : "...")}
+                  {livePrice > 0 ? <>&#8377;{livePrice.toLocaleString("en-IN")}</> : "Live price unavailable"}
                 </div>
                 <span style={{ fontSize: "0.82rem", fontWeight: 700, color: liveChange >= 0 ? COLORS.accent : COLORS.red }}>
                   {liveChange >= 0 ? "▲" : "▼"} {Math.abs(liveChange).toFixed(2)}%
@@ -250,7 +251,7 @@ export default function BeginnerStocks() {
   const stocks = useMemo(() => {
     return BEGINNER_STOCKS.map(s => {
       const live = liveStocks[s.ticker];
-      return live && live.price > 0 ? { ...s, currentPrice: live.price, changePercent: Math.round(live.changePercent * 100) / 100 } : s;
+      return live && live.price > 0 ? { ...s, currentPrice: live.price, changePercent: Math.round(live.changePercent * 100) / 100 } : { ...s, currentPrice: 0, changePercent: 0 };
     });
   }, [liveStocks]);
 
@@ -285,7 +286,7 @@ export default function BeginnerStocks() {
 
   // Open any stock in analysis modal
   const openStock = useCallback((entry: StockEntry) => {
-    const sym = cleanSymbol(entry.ticker);
+    const sym = quoteKey(entry);
     const live = liveStocks[sym];
     setSelectedStock({
       stock: {
@@ -293,7 +294,7 @@ export default function BeginnerStocks() {
         ticker: sym,
         sector: entry.sector,
         sectorColor: sectorColors[entry.sector] || "#3b82f6",
-        tradingViewSymbol: `NSE:${sym}`,
+        tradingViewSymbol: tvSymbol(entry),
       },
       price: live?.price || 0,
       change: live?.changePercent || 0,
@@ -304,8 +305,8 @@ export default function BeginnerStocks() {
     const live = liveStocks[stock.ticker];
     setSelectedStock({
       stock,
-      price: live?.price || stock.currentPrice,
-      change: live?.changePercent ?? stock.changePercent,
+      price: live && live.price > 0 ? live.price : 0,
+      change: live && live.price > 0 ? live.changePercent : 0,
     });
   }, [liveStocks]);
 
@@ -334,8 +335,8 @@ export default function BeginnerStocks() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filteredBeginner.map(stock => {
             const live = liveStocks[stock.ticker];
-            const price = live?.price || stock.currentPrice;
-            const change = live?.changePercent ?? stock.changePercent;
+            const price = live && live.price > 0 ? live.price : 0;
+            const change = price > 0 ? live!.changePercent : 0;
             const vc = stock.aiVerdict === "good" ? { l: "Good for Long Term", c: COLORS.accent, b: COLORS.accentSoft }
               : stock.aiVerdict === "watch" ? { l: "Wait & Watch", c: COLORS.amber, b: COLORS.amberSoft }
               : { l: "Risky Now", c: COLORS.red, b: COLORS.redSoft };
@@ -366,10 +367,12 @@ export default function BeginnerStocks() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <MiniChart symbol={stock.ticker} positive={change >= 0} />
                   <div style={{ textAlign: "right", minWidth: 90 }}>
-                    <div style={{ fontSize: "1.1rem", fontWeight: 900 }}>&#8377;{price.toLocaleString("en-IN")}</div>
-                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: change >= 0 ? COLORS.accent : COLORS.red }}>
-                      {change >= 0 ? "▲" : "▼"}{Math.abs(change).toFixed(2)}%
-                    </div>
+                    <div style={{ fontSize: "1.1rem", fontWeight: 900 }}>{price > 0 ? <>&#8377;{price.toLocaleString("en-IN")}</> : "—"}</div>
+                    {price > 0 && (
+                      <div style={{ fontSize: "0.72rem", fontWeight: 700, color: change >= 0 ? COLORS.accent : COLORS.red }}>
+                        {change >= 0 ? "▲" : "▼"}{Math.abs(change).toFixed(2)}%
+                      </div>
+                    )}
                     <span style={{ fontSize: "0.48rem", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: vc.b, color: vc.c }}>{vc.l}</span>
                   </div>
                 </div>
@@ -437,12 +440,12 @@ export default function BeginnerStocks() {
         {/* Stock list */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {visibleStocks.map(entry => {
-            const sym = cleanSymbol(entry.ticker);
+            const sym = quoteKey(entry);
             const live = liveStocks[sym];
             const price = live?.price || 0;
             const change = live?.changePercent || 0;
             const color = sectorColors[entry.sector] || "#3b82f6";
-            const mcapLabel = entry.mcapType === "large" ? "Large Cap" : entry.mcapType === "mid" ? "Mid Cap" : entry.mcapType === "small" ? "Small Cap" : "SME";
+            const mcapLabel = entry.mcapType === "large" ? "Large Cap" : entry.mcapType === "mid" ? "Mid Cap" : entry.mcapType === "small" ? "Small Cap" : entry.mcapType === "sme" ? "SME / Micro" : "Cap unclassified";
 
             return (
               <div key={entry.ticker}
@@ -471,7 +474,7 @@ export default function BeginnerStocks() {
 
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   {/* Mini chart */}
-                  <MiniChart symbol={sym} positive={change >= 0} />
+                  <MiniChart symbol={tvSymbol(entry)} positive={change >= 0} />
 
                   <div style={{ textAlign: "right", minWidth: 85 }}>
                     {price > 0 ? (

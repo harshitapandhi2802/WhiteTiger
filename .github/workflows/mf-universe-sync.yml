@@ -1,0 +1,48 @@
+name: Mutual fund universe sync
+
+# Monthly: re-download AMFI's NAV file and scheme master, rebuild src/lib/mf-master.json
+# (scheme metadata + classification), re-run the independent calculation check and
+# all tests, and open a PR if the scheme universe changed.
+# Daily NAVs, new scheme codes and status changes are already read live at runtime
+# from AMFI's NAVAll.txt; this job refreshes metadata such as launch date and minimums.
+
+on:
+  schedule:
+    - cron: "0 4 2 * *"   # 2nd of each month, 09:30 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Rebuild MF universe from AMFI
+        run: npm run sync:mf:fetch
+
+      - name: Independent calculation check + all tests
+        run: |
+          npm run verify:mf
+          npm test
+
+      - name: Open PR when the universe changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/mf-universe-sync
+          commit-message: "chore: sync mutual fund universe from AMFI"
+          title: "Mutual fund universe sync (AMFI)"
+          body-path: docs/MF_UNIVERSE_AUDIT.md
+          add-paths: |
+            src/lib/mf-master.json
+            data/amfi/*.json
+            docs/MF_UNIVERSE_AUDIT.md

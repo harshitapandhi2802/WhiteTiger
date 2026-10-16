@@ -1,0 +1,43 @@
+name: Stock universe sync
+
+# Weekly: re-download the official NSE masters, rebuild src/lib/stock-universe.json,
+# run the reconciliation tests, and open a PR if listings changed.
+# BSE blocks automated downloads, so bse_Equity.csv is refreshed manually
+# (see docs/DATA_ACCURACY_AUDIT.md); the job warns when that file is stale.
+
+on:
+  schedule:
+    - cron: "30 3 * * 1"   # Mondays 09:00 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Rebuild universe from official NSE files
+        run: npm run sync:stocks:fetch
+
+      - name: Reconciliation tests
+        run: node --test "tests/**/*.test.mjs"
+
+      - name: Open PR when listings changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/stock-universe-sync
+          commit-message: "chore: sync stock universe from NSE masters"
+          title: "Stock universe sync (NSE masters)"
+          body-path: docs/STOCK_UNIVERSE_AUDIT.md
+          add-paths: |
+            src/lib/stock-universe.json
+            data/exchange-masters/*.csv
+            data/exchange-masters/*.json
+            docs/STOCK_UNIVERSE_AUDIT.md

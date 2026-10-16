@@ -1,0 +1,353 @@
+{
+ "generatedAt": "2026-10-15T08:33:02.059Z",
+ "sources": {
+  "NAVAll.txt": {
+   "url": "https://www.amfiindia.com/spages/NAVAll.txt",
+   "fileDate": "2026-10-14",
+   "sha256": "85194a93e40fa856"
+  },
+  "SchemeData.csv": {
+   "url": "https://portal.amfiindia.com/DownloadSchemeData_Po.aspx?mf=0",
+   "fileDate": "2026-10-14",
+   "sha256": "3f51a196d7a28e7a"
+  }
+ },
+ "counts": {
+  "navFileCodes": 14375,
+  "masterCodes": 16452,
+  "unionCodes": 16452,
+  "inBoth": 14375,
+  "navOnly": 0,
+  "masterOnly": 2077,
+  "byStatus": {
+   "active": 8639,
+   "no-nav": 1996,
+   "nav-stale": 5495,
+   "nav-invalid": 241,
+   "awaiting-first-nav": 81
+  },
+  "amcs": 58,
+  "activeAmcs": 54,
+  "portfolios": 3752,
+  "activePortfolios": 2162,
+  "activeByPlan": {
+   "Regular": 4087,
+   "Unspecified": 496,
+   "Direct": 4056
+  },
+  "activeByOption": {
+   "Growth": 3589,
+   "IDCW": 4475,
+   "Bonus": 66,
+   "Unspecified": 509
+  },
+  "activeByAssetClass": {
+   "Equity": 2452,
+   "Debt": 2712,
+   "Hybrid": 909,
+   "Index Fund": 1298,
+   "Solution Oriented": 152,
+   "Fund of Funds": 756,
+   "ETF": 360
+  },
+  "activeBySubCategory": {
+   "Equity — Large & Mid Cap Fund": 150,
+   "Debt — Medium to Long Term Fund": 91,
+   "Debt — Liquid Fund": 404,
+   "Debt — Gilt Fund": 139,
+   "Equity — Sectoral/Thematic": 1026,
+   "Debt — Medium Term Fund": 79,
+   "Equity — Flexi Cap Fund": 188,
+   "Hybrid — Aggressive Hybrid Fund": 161,
+   "Debt — Money Market Fund": 201,
+   "Hybrid — Balanced Advantage / Dynamic Asset Allocation": 155,
+   "Equity — ELSS": 237,
+   "Equity — Small Cap Fund": 142,
+   "Equity — Large Cap Fund": 158,
+   "Equity — Value Fund": 104,
+   "Debt — Long Term Fund": 64,
+   "Equity — Mid Cap Fund": 135,
+   "Index Fund — Index Funds": 998,
+   "Debt — Corporate Bond Fund": 167,
+   "Solution Oriented — Retirement Fund": 106,
+   "Hybrid — Conservative Hybrid Fund": 114,
+   "Equity — Multi Cap Fund": 128,
+   "Debt — Ultra Short Term Fund": 185,
+   "Solution Oriented — Children's Fund": 37,
+   "Debt — Banking and PSU Fund": 143,
+   "Debt — Overnight Fund": 285,
+   "Equity — Contra Fund": 20,
+   "Debt — 10-year Constant Maturity Gilt Fund": 36,
+   "Debt — Floating Interest Rates Fund": 100,
+   "Hybrid — Multi Asset Allocation": 148,
+   "Debt — Short Duration Fund": 18,
+   "Debt — Dynamic Term Fund": 156,
+   "Debt — Short Term Fund": 159,
+   "Hybrid — Equity Savings": 131,
+   "Debt — Ultra Short to Short Term Fund": 236,
+   "Fund of Funds — FoF Domestic": 336,
+   "ETF — Other ETFs": 213,
+   "Equity — Dividend Yield Fund": 50,
+   "Debt — Credit Risk Fund": 86,
+   "Equity — Focused Fund": 114,
+   "Hybrid — Arbitrage Fund": 182,
+   "ETF — Gold ETF": 25,
+   "Debt — Income (legacy category)": 102,
+   "Debt — Other Debt Scheme": 5,
+   "Fund of Funds — FoF Overseas": 104,
+   "Fund of Funds — Fund of Funds investing overseas": 70,
+   "ETF — Equity ETF": 78,
+   "Debt — Ultra Short Duration Fund": 40,
+   "Fund of Funds — Fund of Funds Scheme (Domestic)": 246,
+   "Debt — Medium Duration Fund": 4,
+   "Debt — Dynamic Bond": 4,
+   "Index Fund — Equity Funds": 226,
+   "ETF — ETFs investing overseas": 2,
+   "Index Fund — Debt Funds": 70,
+   "ETF — Silver ETF": 7,
+   "Debt — Fixed Term Plan": 4,
+   "ETF — Debt ETF": 10,
+   "Hybrid — Balanced Hybrid Fund": 18,
+   "ETF — Other ETF": 24,
+   "Solution Oriented — Life Cycle Fund with Maturity of 10 Years": 3,
+   "Solution Oriented — Life Cycle Fund with Maturity of 15 Years": 3,
+   "Index Fund — Hybrid Fund": 4,
+   "ETF — Hybrid ETF": 1,
+   "Solution Oriented — Life Cycle Fund with Maturity of 5 Years": 3,
+   "Debt — Sectoral/Thematic": 4
+  },
+  "activeByAmc": {
+   "Aditya Birla Sun Life AMC Limited": 393,
+   "DSP Asset Managers Private Limited": 351,
+   "HDFC Asset Management Company Limited": 348,
+   "quant Money Managers Limited": 129,
+   "JM Financial Asset Management Limited": 123,
+   "Kotak Mahindra Asset Management Company Limited.": 426,
+   "LIC Mutual Fund Asset Management Limited": 220,
+   "ICICI Prudential Asset Management Company Limited": 519,
+   "Nippon Life India Asset Management Limited": 510,
+   "Tata Asset Management Private Limited": 363,
+   "Franklin Templeton Asset Management (India) Private Limited": 187,
+   "Taurus Asset Management Company Limited": 34,
+   "Canara Robeco Asset Management Company Limited": 130,
+   "Sundaram Asset Management Company Ltd": 176,
+   "SBI Funds Management Limited": 465,
+   "UTI Asset Mgmt. Co. Ltd.": 395,
+   "Baroda BNP Paribas Asset Management India Private Limited": 223,
+   "HSBC Asset Management (India) Private Ltd.": 232,
+   "Quantum Asset Management Company Private Limited": 44,
+   "Invesco Asset Management (India) Private Limited": 247,
+   "Mirae Asset Investment Managers (India) Pvt. Ltd": 276,
+   "Bandhan AMC Limited": 406,
+   "Bank of India Investment Managers Private Limited": 138,
+   "Edelweiss Asset Management Limited": 298,
+   "Axis Asset Management Co. Ltd.": 385,
+   "Navi AMC Limited": 72,
+   "Motilal Oswal Asset Management Company Limited": 218,
+   "Union Asset Management Company Private Limited": 140,
+   "Groww Asset Management Limited": 216,
+   "PGIM India Asset Management Private Limite": 118,
+   "360 ONE Asset Management Limited": 45,
+   "PPFAS Asset Management Pvt. Ltd.": 28,
+   "Shriram Asset Management Co. Ltd.": 39,
+   "Mahindra Manulife Investment Management Pvt Ltd": 120,
+   "WhiteOak Capital Asset Management Limited": 70,
+   "ITI Asset Management Limited": 108,
+   "Trust Asset Management Private Limited": 45,
+   "NJ Asset Management Private Limited": 25,
+   "Samco Asset Management Private Limited": 29,
+   "Bajaj Finserv Asset Management Limited": 108,
+   "Helios Capital Asset Management (India) Pvt. Ltd.": 34,
+   "Zerodha Asset Management Private Limited": 23,
+   "Old Bridge Asset Management Private Limited": 12,
+   "Angel One Asset Management Company Limited": 16,
+   "Unifi Asset Management Private Limited": 6,
+   "Jio BlackRock Asset Management Private Limited": 33,
+   "Capitalmind Asset Management Private Limited": 12,
+   "Wealth Company Asset Management Holdings Private Limited": 49,
+   "Choice AMC Private Limited": 10,
+   "Abakkus Investment Managers Private Limited": 19,
+   "AlphaGrep Investment Management Private Limited": 12,
+   "ASK ASSET MANAGEMENT PRIVATE LIMITED": 8,
+   "Monarch Networth Asset Management Private Limited": 4,
+   "Lakshya Asset Management Private Limited": 2
+  },
+  "latestNavDate": "2026-10-14"
+ },
+ "baseline": {
+  "handTypedFunds": 49,
+  "withAmfiCodes": 0,
+  "liveAmfiParserSchemes": 0,
+  "exactNameMatchesToActivePortfolios": 23,
+  "unmatchedNames": [
+   "SBI Bluechip Fund",
+   "Axis Bluechip Fund",
+   "ICICI Pru Bluechip Fund",
+   "Canara Robeco Bluechip Fund",
+   "Kotak Emerging Equity Fund",
+   "HDFC Mid-Cap Opportunities",
+   "SBI Magnum Midcap Fund",
+   "Kotak Flexicap Fund",
+   "Mirae Asset Tax Saver Fund",
+   "Axis Long Term Equity Fund",
+   "Quant Tax Plan",
+   "SBI Long Term Equity Fund",
+   "DSP Tax Saver Fund",
+   "HDFC Index Nifty 50 Fund",
+   "Motilal Oswal Nifty Midcap 150",
+   "Motilal Oswal Nifty Smallcap 250",
+   "Motilal Oswal Nasdaq 100 FOF",
+   "ICICI Pru Balanced Advantage",
+   "SBI Equity Hybrid Fund",
+   "Kotak Equity Hybrid Fund",
+   "HDFC Short Term Debt Fund",
+   "SBI Magnum Medium Duration",
+   "ICICI Pru All Seasons Bond",
+   "ICICI Pru Technology Fund",
+   "ICICI Pru India Opportunities",
+   "ICICI Pru Banking & Fin"
+  ],
+  "note": "Before the audit the AMFI parser read NAV from the wrong column (file format added Plan/Option columns) and returned 0 schemes; the UI used 49 hand-typed funds with no AMFI codes."
+ },
+ "lifecycle": {
+  "added": 0,
+  "removed": 0,
+  "renamed": 0,
+  "statusChanged": 0
+ },
+ "issues": {
+  "nonNumericNav": 0,
+  "nonPositiveNav": 241,
+  "badDate": 0,
+  "duplicateCodes": 0,
+  "isinConflicts": 8,
+  "categoryMismatch": 0,
+  "masterDuplicateRows": 0
+ },
+ "issueSamples": {
+  "nonNumericNav": [],
+  "nonPositiveNav": [
+   {
+    "code": "148304",
+    "value": "0.0000"
+   },
+   {
+    "code": "148303",
+    "value": "0.0000"
+   },
+   {
+    "code": "147956",
+    "value": "0.0000"
+   },
+   {
+    "code": "147955",
+    "value": "0.0000"
+   },
+   {
+    "code": "147957",
+    "value": "0.0000"
+   },
+   {
+    "code": "147954",
+    "value": "0.0000"
+   },
+   {
+    "code": "147959",
+    "value": "0.0000"
+   },
+   {
+    "code": "147958",
+    "value": "0.0000"
+   },
+   {
+    "code": "147961",
+    "value": "0.0000"
+   },
+   {
+    "code": "148305",
+    "value": "0.0000"
+   },
+   {
+    "code": "147960",
+    "value": "0.0000"
+   },
+   {
+    "code": "148306",
+    "value": "0.0000"
+   },
+   {
+    "code": "148262",
+    "value": "0.0000"
+   },
+   {
+    "code": "148264",
+    "value": "0.0000"
+   },
+   {
+    "code": "148263",
+    "value": "0.0000"
+   }
+  ],
+  "badDate": [],
+  "duplicateCodes": [],
+  "isinConflicts": [
+   {
+    "isin": "INF204KA1UU2",
+    "codes": [
+     "131348",
+     "131537"
+    ]
+   },
+   {
+    "isin": "INF204KA1US6",
+    "codes": [
+     "131346",
+     "131539"
+    ]
+   },
+   {
+    "isin": "INF204KA14P9",
+    "codes": [
+     "135480",
+     "135483"
+    ]
+   },
+   {
+    "isin": "INF204KB1304",
+    "codes": [
+     "139251",
+     "139252"
+    ]
+   },
+   {
+    "isin": "INF204KB1XL4",
+    "codes": [
+     "142914",
+     "143450"
+    ]
+   },
+   {
+    "isin": "INF204KB1XN0",
+    "codes": [
+     "142916",
+     "143451"
+    ]
+   },
+   {
+    "isin": "INF204KB1XK6",
+    "codes": [
+     "142913",
+     "143452"
+    ]
+   },
+   {
+    "isin": "INF204KB1Z56",
+    "codes": [
+     "146841",
+     "146844"
+    ]
+   }
+  ],
+  "categoryMismatch": []
+ }
+}

@@ -1,0 +1,4100 @@
+{
+ "360ONE": {
+  "cap": "mid",
+  "name": "360 ONE WAM",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "3IINFOLTD": {
+  "cap": "sme",
+  "name": "3i Infotech",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "3MINDIA": {
+  "cap": "mid",
+  "name": "3M India",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "AARTIDRUGS": {
+  "cap": "small",
+  "name": "Aarti Drugs",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "AARTIIND": {
+  "cap": "mid",
+  "name": "Aarti Industries",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "AARTISURFA": {
+  "cap": "sme",
+  "name": "Aarti Surfactants",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "AAVAS": {
+  "cap": "small",
+  "name": "Aavas Financiers",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "ABB": {
+  "cap": "large",
+  "name": "ABB India",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "ABBOTINDIA": {
+  "cap": "mid",
+  "name": "Abbott India",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "ACC": {
+  "cap": "mid",
+  "name": "ACC",
+  "sector": "Cement",
+  "src": "curated"
+ },
+ "ADANIENSOL": {
+  "cap": "mid",
+  "name": "Adani Energy Solutions",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "ADANIENT": {
+  "cap": "large",
+  "name": "Adani Enterprises",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "ADANIGREEN": {
+  "cap": "large",
+  "name": "Adani Green Energy",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "ADANIPORTS": {
+  "cap": "large",
+  "name": "Adani Ports",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "ADANIPOWER": {
+  "cap": "large",
+  "name": "Adani Power",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "ADANITRANS": {
+  "cap": "mid",
+  "name": "Adani Transmission",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "AEGISCHEM": {
+  "cap": "small",
+  "name": "Aegis Logistics",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "AEGISLOG": {
+  "cap": "small",
+  "name": "Aegis Logistics",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "AETHER": {
+  "cap": "small",
+  "name": "Aether Industries",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "AFCONS": {
+  "cap": "mid",
+  "name": "Afcons Infrastructure",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "AFFLE": {
+  "cap": "small",
+  "name": "Affle India",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "AHLUCONT": {
+  "cap": "small",
+  "name": "Ahluwalia Contracts",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "AIAENG": {
+  "cap": "mid",
+  "name": "AIA Engineering",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "AJANTPHARM": {
+  "cap": "small",
+  "name": "Ajanta Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "AKZOINDIA": {
+  "cap": "small",
+  "name": "Akzo Nobel India",
+  "sector": "Paints",
+  "src": "extended"
+ },
+ "ALKEM": {
+  "cap": "mid",
+  "name": "Alkem Laboratories",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "ALKYLAMINE": {
+  "cap": "small",
+  "name": "Alkyl Amines",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "ALLCARGO": {
+  "cap": "small",
+  "name": "Allcargo Logistics",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "AMARAJABAT": {
+  "cap": "small",
+  "name": "Amara Raja Energy",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "AMBER": {
+  "cap": "mid",
+  "name": "Amber Enterprises",
+  "sector": "EMS",
+  "src": "curated"
+ },
+ "AMBUJACEM": {
+  "cap": "large",
+  "name": "Ambuja Cements",
+  "sector": "Cement",
+  "src": "curated"
+ },
+ "AMIORG": {
+  "cap": "small",
+  "name": "Ami Organics",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "ANANDRATHI": {
+  "cap": "small",
+  "name": "Anand Rathi Wealth",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "ANANTRAJ": {
+  "cap": "small",
+  "name": "Anant Raj",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "ANDHRAPAP": {
+  "cap": "sme",
+  "name": "Andhra Paper",
+  "sector": "Paper",
+  "src": "extended"
+ },
+ "ANGELONE": {
+  "cap": "mid",
+  "name": "Angel One",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "ANURAS": {
+  "cap": "small",
+  "name": "Anupam Rasayan",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "APLAPOLLO": {
+  "cap": "mid",
+  "name": "APL Apollo Tubes",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "APOLLOHOSP": {
+  "cap": "large",
+  "name": "Apollo Hospitals",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "APOLLOTYRE": {
+  "cap": "mid",
+  "name": "Apollo Tyres",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "APTECHT": {
+  "cap": "small",
+  "name": "Aptech",
+  "sector": "Education",
+  "src": "curated"
+ },
+ "APTUS": {
+  "cap": "small",
+  "name": "Aptus Value Housing",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "ARCHEAN": {
+  "cap": "small",
+  "name": "Archean Chemical",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "AROHAN": {
+  "cap": "sme",
+  "name": "Arohan Financial",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "ARVIND": {
+  "cap": "small",
+  "name": "Arvind",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "ASHOKA": {
+  "cap": "small",
+  "name": "Ashoka Buildcon",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "ASHOKLEY": {
+  "cap": "mid",
+  "name": "Ashok Leyland",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "ASIANPAINT": {
+  "cap": "large",
+  "name": "Asian Paints",
+  "sector": "Paints",
+  "src": "curated"
+ },
+ "ASIRVAD": {
+  "cap": "sme",
+  "name": "Asirvad Micro Finance",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "ASTERDM": {
+  "cap": "mid",
+  "name": "Aster DM Healthcare",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "ASTRAL": {
+  "cap": "mid",
+  "name": "Astral",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "ASTRAMICRO": {
+  "cap": "small",
+  "name": "Astra Microwave",
+  "sector": "Defense",
+  "src": "extended"
+ },
+ "ATFL": {
+  "cap": "sme",
+  "name": "Agro Tech Foods",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "ATGL": {
+  "cap": "mid",
+  "name": "Adani Total Gas",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "ATUL": {
+  "cap": "mid",
+  "name": "Atul",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "AUBANK": {
+  "cap": "mid",
+  "name": "AU Small Finance Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "AUROPHARMA": {
+  "cap": "mid",
+  "name": "Aurobindo Pharma",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "AVALON": {
+  "cap": "small",
+  "name": "Avalon Technologies",
+  "sector": "EMS",
+  "src": "curated"
+ },
+ "AVANTEL": {
+  "cap": "sme",
+  "name": "Avantel",
+  "sector": "Defense",
+  "src": "extended"
+ },
+ "AXISBANK": {
+  "cap": "large",
+  "name": "Axis Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "AXISCADES": {
+  "cap": "sme",
+  "name": "Axiscades Technologies",
+  "sector": "Defense",
+  "src": "extended"
+ },
+ "BAJAJ-AUTO": {
+  "cap": "large",
+  "name": "Bajaj Auto",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "BAJAJCON": {
+  "cap": "small",
+  "name": "Bajaj Consumer Care",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "BAJAJFINSV": {
+  "cap": "large",
+  "name": "Bajaj Finserv",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "BAJAJHIND": {
+  "cap": "small",
+  "name": "Bajaj Hindusthan",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "BAJAJHLDNG": {
+  "cap": "mid",
+  "name": "Bajaj Holdings",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "BAJFINANCE": {
+  "cap": "large",
+  "name": "Bajaj Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "BALKRISIND": {
+  "cap": "mid",
+  "name": "Balkrishna Industries",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "BALRAMCHIN": {
+  "cap": "small",
+  "name": "Balrampur Chini",
+  "sector": "Sugar",
+  "src": "curated"
+ },
+ "BANDHANBNK": {
+  "cap": "mid",
+  "name": "Bandhan Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "BANKBARODA": {
+  "cap": "large",
+  "name": "Bank of Baroda",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "BANKBEES": {
+  "cap": "large",
+  "name": "Bank Nifty ETF (Nippon)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "BANKINDIA": {
+  "cap": "mid",
+  "name": "Bank of India",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "BATAINDIA": {
+  "cap": "mid",
+  "name": "Bata India",
+  "sector": "Retail",
+  "src": "curated"
+ },
+ "BDL": {
+  "cap": "mid",
+  "name": "BDL (Bharat Dynamics)",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "BECTORFOOD": {
+  "cap": "small",
+  "name": "Mrs Bectors Food",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "BEL": {
+  "cap": "large",
+  "name": "Bharat Electronics",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "BEML": {
+  "cap": "mid",
+  "name": "BEML",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "BERGEPAINT": {
+  "cap": "mid",
+  "name": "Berger Paints",
+  "sector": "Paints",
+  "src": "curated"
+ },
+ "BFRX": {
+  "cap": "sme",
+  "name": "Bharat FIH",
+  "sector": "EMS",
+  "src": "extended"
+ },
+ "BHAGERIA": {
+  "cap": "sme",
+  "name": "Bhageria Industries",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "BHARATBIJ": {
+  "cap": "sme",
+  "name": "Bharat Bijlee",
+  "sector": "Electronics",
+  "src": "extended"
+ },
+ "BHARATFORG": {
+  "cap": "mid",
+  "name": "Bharat Forge",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "BHARATRAS": {
+  "cap": "sme",
+  "name": "Bharat Rasayan",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "BHARTIARTL": {
+  "cap": "large",
+  "name": "Bharti Airtel",
+  "sector": "Telecom",
+  "src": "curated"
+ },
+ "BHARTIHEXA": {
+  "cap": "mid",
+  "name": "Bharti Hexacom",
+  "sector": "Telecom",
+  "src": "curated"
+ },
+ "BHEL": {
+  "cap": "mid",
+  "name": "Bharat Heavy Electricals",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "BIKAJI": {
+  "cap": "small",
+  "name": "Bikaji Foods",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "BIOCON": {
+  "cap": "mid",
+  "name": "Biocon",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "BIRET": {
+  "cap": "small",
+  "name": "Brookfield India REIT",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "BIRLACORPN": {
+  "cap": "small",
+  "name": "Birla Corporation",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "BLKASHYAP": {
+  "cap": "sme",
+  "name": "BL Kashyap",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "BLUEDART": {
+  "cap": "mid",
+  "name": "Blue Dart Express",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "BLUESTARCO": {
+  "cap": "mid",
+  "name": "Blue Star",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "BODALCHEM": {
+  "cap": "sme",
+  "name": "Bodal Chemicals",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "BORORENEW": {
+  "cap": "small",
+  "name": "Borosil Renewables",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "BOSCHLTD": {
+  "cap": "mid",
+  "name": "Bosch",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "BPCL": {
+  "cap": "large",
+  "name": "BPCL",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "BRIGADE": {
+  "cap": "mid",
+  "name": "Brigade Enterprises",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "BRITANNIA": {
+  "cap": "large",
+  "name": "Britannia Industries",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "BSE": {
+  "cap": "mid",
+  "name": "BSE Ltd",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "BSOFT": {
+  "cap": "small",
+  "name": "Birlasoft",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "CAMPUS": {
+  "cap": "small",
+  "name": "Campus Activewear",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "CANBK": {
+  "cap": "large",
+  "name": "Canara Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "CANFINHOME": {
+  "cap": "small",
+  "name": "Can Fin Homes",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "CAPACITE": {
+  "cap": "sme",
+  "name": "Capacit'e Infraprojects",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "CARBORUNIV": {
+  "cap": "small",
+  "name": "Carborundum Universal",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "CARTRADE": {
+  "cap": "small",
+  "name": "CarTrade Tech",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "CASTROLIND": {
+  "cap": "small",
+  "name": "Castrol India",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "CCL": {
+  "cap": "small",
+  "name": "CCL Products",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "CEATLTD": {
+  "cap": "mid",
+  "name": "CEAT",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "CENTRALBK": {
+  "cap": "small",
+  "name": "Central Bank of India",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "CENTUM": {
+  "cap": "sme",
+  "name": "Centum Electronics",
+  "sector": "Defense",
+  "src": "extended"
+ },
+ "CENTURYTEX": {
+  "cap": "small",
+  "name": "Century Textiles (Paper)",
+  "sector": "Paper",
+  "src": "extended"
+ },
+ "CERA": {
+  "cap": "small",
+  "name": "Cera Sanitaryware",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "CESC": {
+  "cap": "mid",
+  "name": "CESC",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "CGPOWER": {
+  "cap": "mid",
+  "name": "CG Power",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "CHALET": {
+  "cap": "small",
+  "name": "Chalet Hotels",
+  "sector": "Hospitality",
+  "src": "curated"
+ },
+ "CHAMBLFERT": {
+  "cap": "small",
+  "name": "Chambal Fertilisers",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "CHEMCON": {
+  "cap": "sme",
+  "name": "Chemcon Speciality",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "CHEMPLASTS": {
+  "cap": "small",
+  "name": "Chemplast Sanmar",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "CHENNPETRO": {
+  "cap": "small",
+  "name": "Chennai Petroleum",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "CHOLAFIN": {
+  "cap": "large",
+  "name": "Cholamandalam Investment",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "CIGNITITEC": {
+  "cap": "small",
+  "name": "CIGNITI Technologies",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "CIPLA": {
+  "cap": "large",
+  "name": "Cipla",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "CLEAN": {
+  "cap": "small",
+  "name": "Clean Science & Technology",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "CLEDUCATE": {
+  "cap": "sme",
+  "name": "CL Educate",
+  "sector": "Education",
+  "src": "extended"
+ },
+ "COALINDIA": {
+  "cap": "large",
+  "name": "Coal India",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "COCHINSHIP": {
+  "cap": "mid",
+  "name": "Cochin Shipyard",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "COFORGE": {
+  "cap": "mid",
+  "name": "Coforge",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "COLPAL": {
+  "cap": "mid",
+  "name": "Colgate Palmolive",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "CONCOR": {
+  "cap": "mid",
+  "name": "Container Corp",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "COROMANDEL": {
+  "cap": "mid",
+  "name": "Coromandel International",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "CPSEETF": {
+  "cap": "large",
+  "name": "CPSE ETF",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "CRAFTSMAN": {
+  "cap": "small",
+  "name": "Craftsman Automation",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "CREDITACC": {
+  "cap": "small",
+  "name": "CreditAccess Grameen",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "CROMPTON": {
+  "cap": "mid",
+  "name": "Crompton Greaves",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "CSBBANK": {
+  "cap": "small",
+  "name": "CSB Bank",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "CUB": {
+  "cap": "small",
+  "name": "City Union Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "CUMMINSIND": {
+  "cap": "mid",
+  "name": "Cummins India",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "CYIENT": {
+  "cap": "mid",
+  "name": "Cyient",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "CYIENTDLM": {
+  "cap": "small",
+  "name": "Cyient DLM",
+  "sector": "EMS",
+  "src": "curated"
+ },
+ "DABUR": {
+  "cap": "mid",
+  "name": "Dabur India",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "DALBHARAT": {
+  "cap": "mid",
+  "name": "Dalmia Bharat",
+  "sector": "Cement",
+  "src": "curated"
+ },
+ "DATAMATICS": {
+  "cap": "small",
+  "name": "Datamatics Global",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "DATAPATTNS": {
+  "cap": "mid",
+  "name": "Data Patterns",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "DBCORP": {
+  "cap": "sme",
+  "name": "DB Corp",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "DBL": {
+  "cap": "small",
+  "name": "Dilip Buildcon",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "DCBBANK": {
+  "cap": "small",
+  "name": "DCB Bank",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "DCXINDIA": {
+  "cap": "sme",
+  "name": "DCX Systems",
+  "sector": "Defense",
+  "src": "extended"
+ },
+ "DEEPAKFERT": {
+  "cap": "small",
+  "name": "Deepak Fertilisers",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "DEEPAKNTR": {
+  "cap": "mid",
+  "name": "Deepak Nitrite",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "DELHIVERY": {
+  "cap": "mid",
+  "name": "Delhivery",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "DEN": {
+  "cap": "sme",
+  "name": "DEN Networks",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "DEVYANI": {
+  "cap": "mid",
+  "name": "Devyani International",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "DHAMPURSUG": {
+  "cap": "sme",
+  "name": "Dhampur Sugar",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "DHANUKA": {
+  "cap": "sme",
+  "name": "Dhanuka Agritech",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "DIAMONDYD": {
+  "cap": "small",
+  "name": "Prataap Snacks",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "DISHTV": {
+  "cap": "small",
+  "name": "Dish TV India",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "DIVISLAB": {
+  "cap": "large",
+  "name": "Divi's Labs",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "DIXON": {
+  "cap": "mid",
+  "name": "Dixon Technologies",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "DLF": {
+  "cap": "large",
+  "name": "DLF",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "DMART": {
+  "cap": "large",
+  "name": "Avenue Supermarts (DMart)",
+  "sector": "Retail",
+  "src": "curated"
+ },
+ "DODLA": {
+  "cap": "small",
+  "name": "Dodla Dairy",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "DOLLAR": {
+  "cap": "sme",
+  "name": "Dollar Industries",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "DRREDDY": {
+  "cap": "large",
+  "name": "Dr Reddy's Labs",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "DWARKESH": {
+  "cap": "small",
+  "name": "Dwarikesh Sugar",
+  "sector": "Sugar",
+  "src": "curated"
+ },
+ "DYNAMATECH": {
+  "cap": "sme",
+  "name": "Dynamatic Technologies",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "EASEMYTRIP": {
+  "cap": "small",
+  "name": "EaseMyTrip",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "ECLERX": {
+  "cap": "small",
+  "name": "eClerx Services",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "EDELWEISS": {
+  "cap": "small",
+  "name": "Edelweiss Financial",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "EICHERMOT": {
+  "cap": "large",
+  "name": "Eicher Motors",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "EIDPARRY": {
+  "cap": "small",
+  "name": "EID Parry",
+  "sector": "Sugar",
+  "src": "curated"
+ },
+ "EIHOTEL": {
+  "cap": "small",
+  "name": "EIH (Oberoi Hotels)",
+  "sector": "Hospitality",
+  "src": "curated"
+ },
+ "ELECON": {
+  "cap": "small",
+  "name": "Elecon Engineering",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "ELGIEQUIP": {
+  "cap": "small",
+  "name": "Elgi Equipments",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "ELINELEX": {
+  "cap": "sme",
+  "name": "Elin Electronics",
+  "sector": "EMS",
+  "src": "extended"
+ },
+ "EMAMILTD": {
+  "cap": "mid",
+  "name": "Emami",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "EMAMIPAP": {
+  "cap": "sme",
+  "name": "Emami Paper Mills",
+  "sector": "Paper",
+  "src": "extended"
+ },
+ "EMBASSY": {
+  "cap": "mid",
+  "name": "Embassy Office Parks REIT",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "ENDURANCE": {
+  "cap": "mid",
+  "name": "Endurance Technologies",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "ENERGYDEV": {
+  "cap": "sme",
+  "name": "Energy Development",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "EPCIND": {
+  "cap": "sme",
+  "name": "EPC Industrie",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "EQUITASBNK": {
+  "cap": "small",
+  "name": "Equitas Small Finance",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "ERIS": {
+  "cap": "small",
+  "name": "Eris Lifesciences",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "ESAFSFB": {
+  "cap": "sme",
+  "name": "ESAF Small Finance",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "ETERNAL": {
+  "cap": "large",
+  "name": "Zomato (Eternal)",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "EXIDEIND": {
+  "cap": "small",
+  "name": "Exide Industries",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "EXPLEOSOL": {
+  "cap": "sme",
+  "name": "Expleo Solutions",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "FAIRCHEMOR": {
+  "cap": "sme",
+  "name": "Fairchem Organics",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "FEDERALBNK": {
+  "cap": "mid",
+  "name": "Federal Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "FIEMIND": {
+  "cap": "small",
+  "name": "Fiem Industries",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "FINCABLES": {
+  "cap": "small",
+  "name": "Finolex Cables",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "FINEORG": {
+  "cap": "small",
+  "name": "Fine Organic Industries",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "FINOPB": {
+  "cap": "sme",
+  "name": "Fino Payments Bank",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "FINPIPE": {
+  "cap": "small",
+  "name": "Finolex Industries",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "FIRSTCRY": {
+  "cap": "mid",
+  "name": "Firstcry (Brainbees)",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "FIVESTAR": {
+  "cap": "small",
+  "name": "Five Star Business Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "FLUOROCHEM": {
+  "cap": "mid",
+  "name": "Gujarat Fluorochemicals",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "FORTIS": {
+  "cap": "mid",
+  "name": "Fortis Healthcare",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "FRETAIL": {
+  "cap": "sme",
+  "name": "Future Supply Chain",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "FSL": {
+  "cap": "small",
+  "name": "Firstsource Solutions",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "FUSION": {
+  "cap": "small",
+  "name": "Fusion Micro Finance",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "GABRIEL": {
+  "cap": "sme",
+  "name": "Gabriel India",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "GAIL": {
+  "cap": "large",
+  "name": "GAIL India",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "GALAXYSURF": {
+  "cap": "small",
+  "name": "Galaxy Surfactants",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "GALLANTT": {
+  "cap": "sme",
+  "name": "Gallantt Metal",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "GATI": {
+  "cap": "small",
+  "name": "Gati",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "GAYAPROJ": {
+  "cap": "sme",
+  "name": "Gayatri Projects",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "GDL": {
+  "cap": "small",
+  "name": "Gateway Distriparks",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "GEOJITFSL": {
+  "cap": "small",
+  "name": "Geojit Financial",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "GET&D": {
+  "cap": "sme",
+  "name": "GE T&D India",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "GICRE": {
+  "cap": "mid",
+  "name": "General Insurance Corp",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "GLAND": {
+  "cap": "mid",
+  "name": "Gland Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "GLAXO": {
+  "cap": "mid",
+  "name": "GlaxoSmithKline Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "GLENMARK": {
+  "cap": "mid",
+  "name": "Glenmark Pharma",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "GMMPFAUDLR": {
+  "cap": "small",
+  "name": "GMM Pfaudler",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "GMRINFRA": {
+  "cap": "mid",
+  "name": "GMR Airports",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "GMRP&UI": {
+  "cap": "sme",
+  "name": "GMR Power",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "GNFC": {
+  "cap": "small",
+  "name": "GNFC",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "GODFRYPHLP": {
+  "cap": "small",
+  "name": "Godfrey Phillips",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "GODIGIT": {
+  "cap": "mid",
+  "name": "Go Digit Insurance",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "GODREJCP": {
+  "cap": "large",
+  "name": "Godrej Consumer",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "GODREJPROP": {
+  "cap": "mid",
+  "name": "Godrej Properties",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "GOKEX": {
+  "cap": "small",
+  "name": "Gokaldas Exports",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "GOLDBEES": {
+  "cap": "large",
+  "name": "Gold ETF (Nippon)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "GPIL": {
+  "cap": "small",
+  "name": "Godawari Power",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "GPTINFRA": {
+  "cap": "sme",
+  "name": "GPT Infraprojects",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "GRANULES": {
+  "cap": "small",
+  "name": "Granules India",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "GRASIM": {
+  "cap": "large",
+  "name": "Grasim Industries",
+  "sector": "Cement",
+  "src": "curated"
+ },
+ "GREENPOWER": {
+  "cap": "sme",
+  "name": "Orient Green Power",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "GRINDWELL": {
+  "cap": "small",
+  "name": "Grindwell Norton",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "GRSE": {
+  "cap": "mid",
+  "name": "Garden Reach Shipbuilders",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "GSFC": {
+  "cap": "small",
+  "name": "Gujarat Narmada Valley",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "GSPL": {
+  "cap": "small",
+  "name": "Gujarat State Petronet",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "GTLINFRA": {
+  "cap": "sme",
+  "name": "GTL Infrastructure",
+  "sector": "Telecom",
+  "src": "extended"
+ },
+ "GUJGASLTD": {
+  "cap": "mid",
+  "name": "Gujarat Gas",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "GULFOILLUB": {
+  "cap": "small",
+  "name": "Gulf Oil Lubricants",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "HAL": {
+  "cap": "large",
+  "name": "HAL (Hindustan Aeronautics)",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "HAPPSTMNDS": {
+  "cap": "small",
+  "name": "Happiest Minds",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "HAPPYFORGE": {
+  "cap": "sme",
+  "name": "Happy Forgings",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "HATHWAY": {
+  "cap": "sme",
+  "name": "Hathway Cable",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "HATSUN": {
+  "cap": "small",
+  "name": "Hatsun Agro",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "HAVELLS": {
+  "cap": "large",
+  "name": "Havells India",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "HCC": {
+  "cap": "small",
+  "name": "Hindustan Construction",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "HCG": {
+  "cap": "small",
+  "name": "Healthcare Global",
+  "sector": "Healthcare",
+  "src": "extended"
+ },
+ "HCLTECH": {
+  "cap": "large",
+  "name": "HCL Technologies",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "HDFCAMC": {
+  "cap": "mid",
+  "name": "HDFC AMC",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "HDFCBANK": {
+  "cap": "large",
+  "name": "HDFC Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "HDFCLIFE": {
+  "cap": "large",
+  "name": "HDFC Life Insurance",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "HEIDELBERG": {
+  "cap": "small",
+  "name": "Heidelberg Cement India",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "HEMIPROP": {
+  "cap": "sme",
+  "name": "Hemisphere Properties",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "HERANBA": {
+  "cap": "sme",
+  "name": "Heranba Industries",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "HERITGFOOD": {
+  "cap": "small",
+  "name": "Heritage Foods",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "HEROMOTOCO": {
+  "cap": "large",
+  "name": "Hero MotoCorp",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "HFCL": {
+  "cap": "small",
+  "name": "HFCL",
+  "sector": "Telecom",
+  "src": "extended"
+ },
+ "HGINFRA": {
+  "cap": "small",
+  "name": "H.G. Infra Engineering",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "HGS": {
+  "cap": "small",
+  "name": "Hinduja Global Solutions",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "HIMATSEIDE": {
+  "cap": "sme",
+  "name": "Himatsingka Seide",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "HINDALCO": {
+  "cap": "large",
+  "name": "Hindalco Industries",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "HINDPETRO": {
+  "cap": "large",
+  "name": "Hindustan Petroleum",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "HINDUNILVR": {
+  "cap": "large",
+  "name": "Hindustan Unilever",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "HINDZINC": {
+  "cap": "mid",
+  "name": "Hindustan Zinc",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "HIRECT": {
+  "cap": "sme",
+  "name": "Hira Ferro Alloys",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "HITACHIIN": {
+  "cap": "sme",
+  "name": "Hitachi India",
+  "sector": "Electronics",
+  "src": "extended"
+ },
+ "HOMEFIRST": {
+  "cap": "small",
+  "name": "Home First Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "HONASA": {
+  "cap": "small",
+  "name": "Honasa Consumer (Mamaearth)",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "HONAUT": {
+  "cap": "mid",
+  "name": "Honeywell Automation",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "HTMEDIA": {
+  "cap": "sme",
+  "name": "HT Media",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "HUHTAMAKI": {
+  "cap": "small",
+  "name": "Huhtamaki India",
+  "sector": "Paper",
+  "src": "curated"
+ },
+ "HYUNDAI": {
+  "cap": "large",
+  "name": "Hyundai Motor India",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "IBREALEST": {
+  "cap": "small",
+  "name": "Indiabulls Real Estate",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "ICICIBANK": {
+  "cap": "large",
+  "name": "ICICI Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "ICICIGI": {
+  "cap": "mid",
+  "name": "ICICI Lombard",
+  "sector": "Insurance",
+  "src": "extended"
+ },
+ "ICICIPRULI": {
+  "cap": "mid",
+  "name": "ICICI Prudential Life",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "ICIL": {
+  "cap": "small",
+  "name": "Indo Count Industries",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "IDBI": {
+  "cap": "mid",
+  "name": "IDBI Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "IDEA": {
+  "cap": "mid",
+  "name": "Vodafone Idea",
+  "sector": "Telecom",
+  "src": "curated"
+ },
+ "IDEAFORGE": {
+  "cap": "sme",
+  "name": "Ideaforge Technology",
+  "sector": "Defense",
+  "src": "extended"
+ },
+ "IDFCFIRSTB": {
+  "cap": "mid",
+  "name": "IDFC First Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "IEX": {
+  "cap": "mid",
+  "name": "Indian Energy Exchange",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "IGL": {
+  "cap": "mid",
+  "name": "Indraprastha Gas",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "IIFL": {
+  "cap": "small",
+  "name": "IIFL Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "IIFLSEC": {
+  "cap": "small",
+  "name": "IIFL Securities",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "INDHOTEL": {
+  "cap": "mid",
+  "name": "Indian Hotels (Taj)",
+  "sector": "Hospitality",
+  "src": "curated"
+ },
+ "INDIACEM": {
+  "cap": "small",
+  "name": "India Cements",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "INDIAMART": {
+  "cap": "small",
+  "name": "IndiaMart InterMESH",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "INDIANB": {
+  "cap": "mid",
+  "name": "Indian Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "INDIAPEST": {
+  "cap": "sme",
+  "name": "India Pesticides",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "INDIASHLTR": {
+  "cap": "sme",
+  "name": "India Shelter Finance",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "INDIGO": {
+  "cap": "large",
+  "name": "InterGlobe Aviation (IndiGo)",
+  "sector": "Aviation",
+  "src": "curated"
+ },
+ "INDIGOPNTS": {
+  "cap": "small",
+  "name": "Indigo Paints",
+  "sector": "Paints",
+  "src": "extended"
+ },
+ "INDOCO": {
+  "cap": "small",
+  "name": "Indoco Remedies",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "INDUSINDBK": {
+  "cap": "large",
+  "name": "IndusInd Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "INDUSTOWER": {
+  "cap": "mid",
+  "name": "Indus Towers",
+  "sector": "Telecom",
+  "src": "curated"
+ },
+ "INFY": {
+  "cap": "large",
+  "name": "Infosys",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "INOXWIND": {
+  "cap": "small",
+  "name": "Inox Wind",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "INSECTICID": {
+  "cap": "sme",
+  "name": "Insecticides India",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "INTELLECT": {
+  "cap": "small",
+  "name": "Intellect Design Arena",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "IOB": {
+  "cap": "small",
+  "name": "Indian Overseas Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "IOC": {
+  "cap": "large",
+  "name": "Indian Oil Corp",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "IPCALAB": {
+  "cap": "mid",
+  "name": "IPCA Laboratories",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "IRB": {
+  "cap": "mid",
+  "name": "IRB Infrastructure",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "IRCTC": {
+  "cap": "mid",
+  "name": "Indian Railway Catering",
+  "sector": "Railways",
+  "src": "curated"
+ },
+ "IRFC": {
+  "cap": "mid",
+  "name": "IRFC",
+  "sector": "Railways",
+  "src": "curated"
+ },
+ "ISGEC": {
+  "cap": "small",
+  "name": "ISGEC Heavy Engineering",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "ITBEES": {
+  "cap": "large",
+  "name": "IT ETF (Nippon)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "ITC": {
+  "cap": "large",
+  "name": "ITC",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "ITCHOTELS": {
+  "cap": "mid",
+  "name": "ITC Hotels",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "ITDCEM": {
+  "cap": "small",
+  "name": "ITD Cementation",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "J&KBANK": {
+  "cap": "small",
+  "name": "Jammu & Kashmir Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "JAGRAN": {
+  "cap": "sme",
+  "name": "Jagran Prakashan",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "JAMNAAUTO": {
+  "cap": "small",
+  "name": "Jamna Auto Industries",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "JAYBARMARU": {
+  "cap": "sme",
+  "name": "Jay Bharat Maruti",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "JBCHEPHARM": {
+  "cap": "small",
+  "name": "JB Chemicals",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "JINDALSTEL": {
+  "cap": "mid",
+  "name": "Jindal Steel & Power",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "JIOFIN": {
+  "cap": "large",
+  "name": "Jio Financial Services",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "JKCEMENT": {
+  "cap": "mid",
+  "name": "JK Cement",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "JKIL": {
+  "cap": "sme",
+  "name": "J Kumar Infraprojects",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "JKPAPER": {
+  "cap": "small",
+  "name": "JK Paper",
+  "sector": "Paper",
+  "src": "curated"
+ },
+ "JMFINANCIL": {
+  "cap": "small",
+  "name": "JM Financial",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "JPPOWER": {
+  "cap": "sme",
+  "name": "Jaiprakash Power",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "JSL": {
+  "cap": "mid",
+  "name": "Jindal Stainless",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "JSWENERGY": {
+  "cap": "mid",
+  "name": "JSW Energy",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "JSWINFRA": {
+  "cap": "mid",
+  "name": "JSW Infrastructure",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "JSWSTEEL": {
+  "cap": "large",
+  "name": "JSW Steel",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "JUBLFOOD": {
+  "cap": "mid",
+  "name": "Jubilant FoodWorks",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "JUNIORBEES": {
+  "cap": "large",
+  "name": "Next 50 ETF (ICICI)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "JUNIPER": {
+  "cap": "sme",
+  "name": "Juniper Hotels",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "JWL": {
+  "cap": "mid",
+  "name": "Jupiter Wagons",
+  "sector": "Railways",
+  "src": "curated"
+ },
+ "JYOTHYLAB": {
+  "cap": "small",
+  "name": "Jyothy Labs",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "KAJARIACER": {
+  "cap": "small",
+  "name": "Kajaria Ceramics",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "KALPATPOWR": {
+  "cap": "small",
+  "name": "Kalpataru Power",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "KALYANISTR": {
+  "cap": "sme",
+  "name": "Kalyani Steels",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "KANSAINER": {
+  "cap": "mid",
+  "name": "Kansai Nerolac",
+  "sector": "Paints",
+  "src": "extended"
+ },
+ "KARURVYSYA": {
+  "cap": "small",
+  "name": "Karur Vysya Bank",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "KAYNES": {
+  "cap": "mid",
+  "name": "Kaynes Technology",
+  "sector": "EMS",
+  "src": "curated"
+ },
+ "KEC": {
+  "cap": "small",
+  "name": "KEC International",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "KEI": {
+  "cap": "mid",
+  "name": "KEI Industries",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "KIMS": {
+  "cap": "mid",
+  "name": "Krishna Institute of Medical Sciences",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "KIOCL": {
+  "cap": "small",
+  "name": "Kiocl",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "KIRLOSBROS": {
+  "cap": "sme",
+  "name": "Kirloskar Brothers",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "KIRLOSENG": {
+  "cap": "small",
+  "name": "Kirloskar Oil Engines",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "KIRLPNU": {
+  "cap": "sme",
+  "name": "Kirloskar Pneumatic",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "KITEX": {
+  "cap": "sme",
+  "name": "Kitex Garments",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "KMSUGAR": {
+  "cap": "sme",
+  "name": "KM Sugar Mills",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "KNRCON": {
+  "cap": "small",
+  "name": "KNR Constructions",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "KOLTEPATIL": {
+  "cap": "small",
+  "name": "Kolte Patil",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "KOTAKBANK": {
+  "cap": "large",
+  "name": "Kotak Mahindra Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "KPIGREEN": {
+  "cap": "small",
+  "name": "KPI Green Energy",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "KPIL": {
+  "cap": "mid",
+  "name": "Kalpataru Projects",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "KPITTECH": {
+  "cap": "mid",
+  "name": "KPIT Technologies",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "KPRMILL": {
+  "cap": "small",
+  "name": "KPR Mill",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "KRBL": {
+  "cap": "small",
+  "name": "Krbl",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "KRSNAA": {
+  "cap": "sme",
+  "name": "Krsnaa Diagnostics",
+  "sector": "Healthcare",
+  "src": "extended"
+ },
+ "KTKBANK": {
+  "cap": "small",
+  "name": "Karnataka Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "LALPATHLAB": {
+  "cap": "mid",
+  "name": "Dr Lal PathLabs",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "LATENTVIEW": {
+  "cap": "small",
+  "name": "Latent View Analytics",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "LAURUSLABS": {
+  "cap": "mid",
+  "name": "Laurus Labs",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "LAXMIMACH": {
+  "cap": "small",
+  "name": "Lakshmi Machine Works",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "LEMONTREE": {
+  "cap": "small",
+  "name": "Lemon Tree Hotels",
+  "sector": "Hospitality",
+  "src": "curated"
+ },
+ "LICI": {
+  "cap": "large",
+  "name": "LIC",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "LINDEINDIA": {
+  "cap": "mid",
+  "name": "Linde India",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "LIQUIDBEES": {
+  "cap": "large",
+  "name": "Liquid ETF (Nippon)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "LLOYDSME": {
+  "cap": "small",
+  "name": "Lloyds Metals",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "LODHA": {
+  "cap": "mid",
+  "name": "Macrotech Developers (Lodha)",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "LT": {
+  "cap": "large",
+  "name": "Larsen & Toubro",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "LTFH": {
+  "cap": "mid",
+  "name": "L&T Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "LTFOODS": {
+  "cap": "small",
+  "name": "LT Foods",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "LTIM": {
+  "cap": "mid",
+  "name": "LTIMindtree",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "LTTS": {
+  "cap": "mid",
+  "name": "L&T Technology Services",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "LUMAXIND": {
+  "cap": "sme",
+  "name": "Lumax Industries",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "LUPIN": {
+  "cap": "large",
+  "name": "Lupin",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "LUXIND": {
+  "cap": "small",
+  "name": "Lux Industries",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "LXCHEM": {
+  "cap": "small",
+  "name": "Laxmi Organic Industries",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "M&M": {
+  "cap": "large",
+  "name": "Mahindra & Mahindra",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "MADRASFERT": {
+  "cap": "sme",
+  "name": "Madras Fertilizers",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "MAGADSUGAR": {
+  "cap": "sme",
+  "name": "Magadh Sugar",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "MAHABANK": {
+  "cap": "small",
+  "name": "Bank of Maharashtra",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "MAHLIFE": {
+  "cap": "small",
+  "name": "Mahindra Lifespace",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "MAHLOG": {
+  "cap": "small",
+  "name": "Mahindra Logistics",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "MAJESCO": {
+  "cap": "sme",
+  "name": "Majesco",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "MANAPPURAM": {
+  "cap": "mid",
+  "name": "Manappuram Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "MANGLMCEM": {
+  "cap": "sme",
+  "name": "Mangalam Cement",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "MANINFRA": {
+  "cap": "sme",
+  "name": "Man Infraconstruction",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "MANKIND": {
+  "cap": "large",
+  "name": "Mankind Pharma",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "MAPMYINDIA": {
+  "cap": "small",
+  "name": "MapMyIndia (CE Info)",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "MARICO": {
+  "cap": "mid",
+  "name": "Marico",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "MARUTI": {
+  "cap": "large",
+  "name": "Maruti Suzuki",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "MASFIN": {
+  "cap": "small",
+  "name": "MAS Financial Services",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "MASTEK": {
+  "cap": "small",
+  "name": "Mastek",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "MAWANASUG": {
+  "cap": "sme",
+  "name": "Mawana Sugars",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "MAXHEALTH": {
+  "cap": "mid",
+  "name": "Max Healthcare",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "MAZDOCK": {
+  "cap": "mid",
+  "name": "Mazagon Dock",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "MCX": {
+  "cap": "mid",
+  "name": "MCX India",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "MEDANTA": {
+  "cap": "mid",
+  "name": "Global Health (Medanta)",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "MEDPLUS": {
+  "cap": "small",
+  "name": "Medplus Health",
+  "sector": "Healthcare",
+  "src": "extended"
+ },
+ "MEGH": {
+  "cap": "sme",
+  "name": "Meghmani Organics",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "MENONBE": {
+  "cap": "sme",
+  "name": "Menon Bearings",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "METROBRAND": {
+  "cap": "mid",
+  "name": "Metro Brands",
+  "sector": "Retail",
+  "src": "curated"
+ },
+ "METROPOLIS": {
+  "cap": "mid",
+  "name": "Metropolis Healthcare",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "MGL": {
+  "cap": "mid",
+  "name": "Mahanagar Gas",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "MHRIL": {
+  "cap": "small",
+  "name": "Mahindra Holidays",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "MIDCPNIFTY": {
+  "cap": "mid",
+  "name": "Nifty Midcap 150 ETF",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "MIDHANI": {
+  "cap": "small",
+  "name": "Mishra Dhatu Nigam",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "MINDAIND": {
+  "cap": "mid",
+  "name": "Minda Industries",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "MINDSPACE": {
+  "cap": "mid",
+  "name": "Mindspace REIT",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "MMYT": {
+  "cap": "mid",
+  "name": "MakeMyTrip",
+  "sector": "Hospitality",
+  "src": "curated"
+ },
+ "MOIL": {
+  "cap": "small",
+  "name": "MOIL",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "MOTHERSON": {
+  "cap": "mid",
+  "name": "Samvardhana Motherson",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "MOTILALOFS": {
+  "cap": "mid",
+  "name": "Motilal Oswal Financial",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "MPHASIS": {
+  "cap": "mid",
+  "name": "Mphasis",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "MRF": {
+  "cap": "mid",
+  "name": "MRF",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "MRPL": {
+  "cap": "small",
+  "name": "MRPL",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "MTARTECH": {
+  "cap": "small",
+  "name": "MTAR Technologies",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "MUKANDLTD": {
+  "cap": "sme",
+  "name": "Mukand",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "MUTHOOTFIN": {
+  "cap": "mid",
+  "name": "Muthoot Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "NAHARSPING": {
+  "cap": "sme",
+  "name": "Nahar Spinning",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "NAM-INDIA": {
+  "cap": "mid",
+  "name": "Nippon Life India AMC",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "NATCOPHARM": {
+  "cap": "mid",
+  "name": "Natco Pharma",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "NATIONALUM": {
+  "cap": "mid",
+  "name": "National Aluminium",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "NAUKRI": {
+  "cap": "mid",
+  "name": "Info Edge (Naukri)",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "NAVINFLUOR": {
+  "cap": "mid",
+  "name": "Navin Fluorine",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "NAVKAR": {
+  "cap": "sme",
+  "name": "Navkar Corporation",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "NAVNETEDUL": {
+  "cap": "small",
+  "name": "Navneet Education",
+  "sector": "Education",
+  "src": "extended"
+ },
+ "NAZARA": {
+  "cap": "small",
+  "name": "Nazara Technologies",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "NBCC": {
+  "cap": "mid",
+  "name": "NBCC India",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "NBVENTURES": {
+  "cap": "small",
+  "name": "Nava Bharat Ventures",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "NCC": {
+  "cap": "mid",
+  "name": "NCC Ltd",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "NDTV": {
+  "cap": "small",
+  "name": "NDTV",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "NEOGEN": {
+  "cap": "small",
+  "name": "Neogen Chemicals",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "NESTLEIND": {
+  "cap": "large",
+  "name": "Nestle India",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "NETWEB": {
+  "cap": "sme",
+  "name": "Netweb Technologies",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "NETWORK18": {
+  "cap": "small",
+  "name": "Network18",
+  "sector": "Media",
+  "src": "curated"
+ },
+ "NEULANDLAB": {
+  "cap": "small",
+  "name": "Neuland Laboratories",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "NEWGEN": {
+  "cap": "small",
+  "name": "Newgen Software",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "NFL": {
+  "cap": "small",
+  "name": "National Fertilizers",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "NH": {
+  "cap": "mid",
+  "name": "Narayana Hrudayalaya",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "NHPC": {
+  "cap": "mid",
+  "name": "NHPC",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "NIACL": {
+  "cap": "small",
+  "name": "New India Assurance",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "NIFTYBEES": {
+  "cap": "large",
+  "name": "Nifty 50 ETF (Nippon)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "NIITLTD": {
+  "cap": "small",
+  "name": "NIIT",
+  "sector": "Education",
+  "src": "curated"
+ },
+ "NIITTECH": {
+  "cap": "small",
+  "name": "NIIT Technologies",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "NITINSPIN": {
+  "cap": "sme",
+  "name": "Nitin Spinners",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "NIVABUPA": {
+  "cap": "small",
+  "name": "Niva Bupa Health",
+  "sector": "Insurance",
+  "src": "extended"
+ },
+ "NLCINDIA": {
+  "cap": "mid",
+  "name": "NLC India",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "NMDC": {
+  "cap": "mid",
+  "name": "NMDC",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "NOCIL": {
+  "cap": "small",
+  "name": "NOCIL",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "NOVAAGRI": {
+  "cap": "sme",
+  "name": "Nova Agritech",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "NRAIL": {
+  "cap": "sme",
+  "name": "N R Agarwal Industries",
+  "sector": "Paper",
+  "src": "extended"
+ },
+ "NTPC": {
+  "cap": "large",
+  "name": "NTPC",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "NUCLEUS": {
+  "cap": "sme",
+  "name": "Nucleus Software",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "NUVOCO": {
+  "cap": "small",
+  "name": "Nuvoco Vistas",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "NXST": {
+  "cap": "mid",
+  "name": "Nexus Select Trust",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "NYKAA": {
+  "cap": "mid",
+  "name": "Nykaa (FSN E-Commerce)",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "OAL": {
+  "cap": "sme",
+  "name": "Oriental Aromatics",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "OBEROIRLTY": {
+  "cap": "mid",
+  "name": "Oberoi Realty",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "OFSS": {
+  "cap": "mid",
+  "name": "Oracle Financial",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "OIL": {
+  "cap": "mid",
+  "name": "Oil India",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "OLAELEC": {
+  "cap": "mid",
+  "name": "Ola Electric",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "ONGC": {
+  "cap": "large",
+  "name": "Oil & Natural Gas Corp",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "ORIENTCEM": {
+  "cap": "sme",
+  "name": "Orient Cement",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "ORIENTELEC": {
+  "cap": "small",
+  "name": "Orient Electric",
+  "sector": "Electronics",
+  "src": "extended"
+ },
+ "PAGEIND": {
+  "cap": "mid",
+  "name": "Page Industries",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "PARADEEP": {
+  "cap": "small",
+  "name": "Paradeep Phosphates",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "PARAGMILK": {
+  "cap": "sme",
+  "name": "Parag Milk Foods",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "PARAS": {
+  "cap": "small",
+  "name": "Paras Defence",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "PAUSHAK": {
+  "cap": "sme",
+  "name": "Paushak",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "PAYTM": {
+  "cap": "mid",
+  "name": "Paytm (One97)",
+  "sector": "Fintech",
+  "src": "curated"
+ },
+ "PERSISTENT": {
+  "cap": "mid",
+  "name": "Persistent Systems",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "PETRONET": {
+  "cap": "mid",
+  "name": "Petronet LNG",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "PFC": {
+  "cap": "mid",
+  "name": "Power Finance Corp",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "PFIZER": {
+  "cap": "mid",
+  "name": "Pfizer",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "PGHL": {
+  "cap": "small",
+  "name": "Procter & Gamble Health",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "PHOENIXLTD": {
+  "cap": "mid",
+  "name": "Phoenix Mills",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "PIDILITIND": {
+  "cap": "large",
+  "name": "Pidilite Industries",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "PIIND": {
+  "cap": "mid",
+  "name": "PI Industries",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "PNB": {
+  "cap": "large",
+  "name": "Punjab National Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "PNBHOUSING": {
+  "cap": "small",
+  "name": "PNB Housing Finance",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "PNCINFRA": {
+  "cap": "small",
+  "name": "PNC Infratech",
+  "sector": "Infrastructure",
+  "src": "curated"
+ },
+ "POLICYBZR": {
+  "cap": "mid",
+  "name": "PB Fintech (Policybazaar)",
+  "sector": "Fintech",
+  "src": "curated"
+ },
+ "POLYCAB": {
+  "cap": "mid",
+  "name": "Polycab India",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "POLYMED": {
+  "cap": "small",
+  "name": "Poly Medicure",
+  "sector": "Healthcare",
+  "src": "extended"
+ },
+ "POONAWALLA": {
+  "cap": "mid",
+  "name": "Poonawalla Fincorp",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "POWERGRID": {
+  "cap": "large",
+  "name": "Power Grid Corp",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "POWERINDIA": {
+  "cap": "mid",
+  "name": "Hitachi Energy India",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "PPLPHARMA": {
+  "cap": "small",
+  "name": "Piramal Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "PRAJIND": {
+  "cap": "small",
+  "name": "Praj Industries",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "PREMEXPLN": {
+  "cap": "sme",
+  "name": "Premier Explosives",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "PREMIERENE": {
+  "cap": "small",
+  "name": "Premier Energies",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "PRESTIGE": {
+  "cap": "mid",
+  "name": "Prestige Estates",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "PRICOLLTD": {
+  "cap": "sme",
+  "name": "Pricol",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "PRIVISCL": {
+  "cap": "sme",
+  "name": "Privi Speciality",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "PRSMJOHNSN": {
+  "cap": "small",
+  "name": "Prism Johnson",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "PSPPROJECT": {
+  "cap": "sme",
+  "name": "PSP Projects",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "PURVA": {
+  "cap": "small",
+  "name": "Puravankara",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "PVRINOX": {
+  "cap": "mid",
+  "name": "PVR Inox",
+  "sector": "Media",
+  "src": "curated"
+ },
+ "QUICKHEAL": {
+  "cap": "sme",
+  "name": "Quick Heal Technologies",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "RADICO": {
+  "cap": "small",
+  "name": "Radico Khaitan",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "RAJRATAN": {
+  "cap": "sme",
+  "name": "Raj Rayon Industries",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "RALLIS": {
+  "cap": "small",
+  "name": "Rallis India",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "RAMCOCEM": {
+  "cap": "mid",
+  "name": "Ramco Cements",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "RAMCOSYS": {
+  "cap": "small",
+  "name": "Ramco Systems",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "RANEHOLDIN": {
+  "cap": "sme",
+  "name": "Rane Holdings",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "RATEGAIN": {
+  "cap": "small",
+  "name": "RateGain Travel",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "RATNAMANI": {
+  "cap": "mid",
+  "name": "Ratnamani Metals",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "RAYMOND": {
+  "cap": "mid",
+  "name": "Raymond",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "RBA": {
+  "cap": "small",
+  "name": "Restaurant Brands Asia",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "RBLBANK": {
+  "cap": "small",
+  "name": "RBL Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "RCF": {
+  "cap": "small",
+  "name": "RCF",
+  "sector": "Fertilizers",
+  "src": "curated"
+ },
+ "RECLTD": {
+  "cap": "mid",
+  "name": "REC Ltd",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "RELAXO": {
+  "cap": "small",
+  "name": "Relaxo Footwears",
+  "sector": "Retail",
+  "src": "curated"
+ },
+ "RELIANCE": {
+  "cap": "large",
+  "name": "Reliance Industries",
+  "sector": "Oil & Gas",
+  "src": "curated"
+ },
+ "RENUKA": {
+  "cap": "small",
+  "name": "Shree Renuka Sugars",
+  "sector": "Sugar",
+  "src": "curated"
+ },
+ "REPCOHOME": {
+  "cap": "small",
+  "name": "Repco Home Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "ROHLTD": {
+  "cap": "sme",
+  "name": "Royal Orchid Hotels",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "ROLEXRINGS": {
+  "cap": "sme",
+  "name": "Rolex Rings",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "ROSSARI": {
+  "cap": "small",
+  "name": "Rossari Biotech",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "ROUTE": {
+  "cap": "small",
+  "name": "Route Mobile",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "RPOWER": {
+  "cap": "small",
+  "name": "Reliance Power",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "RUPA": {
+  "cap": "sme",
+  "name": "Rupa & Company",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "RUSTOMJEE": {
+  "cap": "small",
+  "name": "Keystone Realtors",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "RVNL": {
+  "cap": "mid",
+  "name": "RVNL",
+  "sector": "Railways",
+  "src": "curated"
+ },
+ "SADBHAV": {
+  "cap": "sme",
+  "name": "Sadbhav Engineering",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "SAGCEM": {
+  "cap": "sme",
+  "name": "Sagar Cements",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "SAIL": {
+  "cap": "mid",
+  "name": "SAIL",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "SAMHI": {
+  "cap": "sme",
+  "name": "Samhi Hotels",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "SAMMAANCAP": {
+  "cap": "small",
+  "name": "Sammaan Capital",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "SANDUMA": {
+  "cap": "sme",
+  "name": "Sandur Manganese",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "SANOFI": {
+  "cap": "mid",
+  "name": "Sanofi India",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "SAPPHIRE": {
+  "cap": "small",
+  "name": "Sapphire Foods",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "SARDAEN": {
+  "cap": "sme",
+  "name": "Sarda Energy & Minerals",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "SAREGAMA": {
+  "cap": "small",
+  "name": "Saregama India",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "SASKEN": {
+  "cap": "sme",
+  "name": "Sasken Technologies",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "SAVITR": {
+  "cap": "sme",
+  "name": "Savita Oil Technologies",
+  "sector": "Oil & Gas",
+  "src": "extended"
+ },
+ "SBFC": {
+  "cap": "sme",
+  "name": "SBFC Finance",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "SBICARD": {
+  "cap": "mid",
+  "name": "SBI Cards",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "SBILIFE": {
+  "cap": "large",
+  "name": "SBI Life Insurance",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "SBIN": {
+  "cap": "large",
+  "name": "State Bank of India",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "SCHAEFFLER": {
+  "cap": "mid",
+  "name": "Schaeffler India",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "SCHAND": {
+  "cap": "small",
+  "name": "S Chand & Co",
+  "sector": "Education",
+  "src": "curated"
+ },
+ "SCHNEIDER": {
+  "cap": "mid",
+  "name": "Schneider Electric India",
+  "sector": "Electronics",
+  "src": "extended"
+ },
+ "SEQUENT": {
+  "cap": "small",
+  "name": "Sequent Scientific",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "SESHASAYEE": {
+  "cap": "sme",
+  "name": "Seshasayee Paper",
+  "sector": "Paper",
+  "src": "extended"
+ },
+ "SETCO": {
+  "cap": "sme",
+  "name": "Setco Auto",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "SHALPAINT": {
+  "cap": "sme",
+  "name": "Shalimar Paints",
+  "sector": "Paints",
+  "src": "extended"
+ },
+ "SHANTIEDU": {
+  "cap": "sme",
+  "name": "Shanti Edutech",
+  "sector": "Education",
+  "src": "extended"
+ },
+ "SHANTIGEAR": {
+  "cap": "sme",
+  "name": "Shanti Educational",
+  "sector": "Education",
+  "src": "curated"
+ },
+ "SHILPAMED": {
+  "cap": "small",
+  "name": "Shilpa Medicare",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "SHK": {
+  "cap": "sme",
+  "name": "S H Kelkar",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "SHREECEM": {
+  "cap": "mid",
+  "name": "Shree Cement",
+  "sector": "Cement",
+  "src": "curated"
+ },
+ "SHRIRAMFIN": {
+  "cap": "large",
+  "name": "Shriram Finance",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "SHRIRAMPPS": {
+  "cap": "sme",
+  "name": "Shriram Properties",
+  "sector": "Real Estate",
+  "src": "extended"
+ },
+ "SHYAMMETL": {
+  "cap": "small",
+  "name": "Shyam Metalics",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "SIEMENS": {
+  "cap": "large",
+  "name": "Siemens",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "SIGNATUREG": {
+  "cap": "small",
+  "name": "Signature Global",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "SILVERBEES": {
+  "cap": "large",
+  "name": "Silver ETF (Nippon)",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "SIMBHALS": {
+  "cap": "sme",
+  "name": "Simbhaoli Sugars",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "SIMPLEXINF": {
+  "cap": "sme",
+  "name": "Simplex Infrastructures",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "SINCLAIRS": {
+  "cap": "sme",
+  "name": "Sinclairs Hotels",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "SIYSIL": {
+  "cap": "sme",
+  "name": "Siyaram Silk Mills",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "SJVN": {
+  "cap": "mid",
+  "name": "SJVN",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "SKFINDIA": {
+  "cap": "mid",
+  "name": "SKF India",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "SMALLCAP": {
+  "cap": "small",
+  "name": "Nifty Smallcap 250 ETF",
+  "sector": "ETF",
+  "src": "curated"
+ },
+ "SNOWMAN": {
+  "cap": "sme",
+  "name": "Snowman Logistics",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "SOBHA": {
+  "cap": "small",
+  "name": "Sobha",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "SOLARA": {
+  "cap": "small",
+  "name": "Solara Active Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "SOLARINDS": {
+  "cap": "mid",
+  "name": "Solar Industries",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "SONACOMS": {
+  "cap": "mid",
+  "name": "Sona BLW Precision",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "SONATSOFTW": {
+  "cap": "small",
+  "name": "Sonata Software",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "SOUTHBANK": {
+  "cap": "small",
+  "name": "South Indian Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "SPAL": {
+  "cap": "sme",
+  "name": "SP Apparels",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "SPANDANA": {
+  "cap": "small",
+  "name": "Spandana Sphoorty",
+  "sector": "NBFC",
+  "src": "extended"
+ },
+ "SPIC": {
+  "cap": "sme",
+  "name": "Southern Petrochemicals",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "SPICEJET": {
+  "cap": "small",
+  "name": "SpiceJet",
+  "sector": "Aviation",
+  "src": "curated"
+ },
+ "SRF": {
+  "cap": "mid",
+  "name": "SRF",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "SSWL": {
+  "cap": "sme",
+  "name": "Steel Strips Wheels",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "STAR": {
+  "cap": "small",
+  "name": "Strides Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "STARCEMENT": {
+  "cap": "small",
+  "name": "Star Cement",
+  "sector": "Cement",
+  "src": "extended"
+ },
+ "STARHEALTH": {
+  "cap": "mid",
+  "name": "Star Health Insurance",
+  "sector": "Insurance",
+  "src": "curated"
+ },
+ "STARPAPER": {
+  "cap": "sme",
+  "name": "Star Paper Mills",
+  "sector": "Paper",
+  "src": "extended"
+ },
+ "STLTECH": {
+  "cap": "small",
+  "name": "Sterlite Technologies",
+  "sector": "Telecom",
+  "src": "extended"
+ },
+ "SUBEXLTD": {
+  "cap": "sme",
+  "name": "Subex",
+  "sector": "IT",
+  "src": "extended"
+ },
+ "SUDARSCHEM": {
+  "cap": "small",
+  "name": "Sudarshan Chemical",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "SULA": {
+  "cap": "small",
+  "name": "Sula Vineyards",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "SUNDRMCLAY": {
+  "cap": "small",
+  "name": "Sundaram Clayton",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "SUNDRMFAST": {
+  "cap": "small",
+  "name": "Sundram Fasteners",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "SUNPHARMA": {
+  "cap": "large",
+  "name": "Sun Pharma",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "SUNTECK": {
+  "cap": "small",
+  "name": "Sunteck Realty",
+  "sector": "Real Estate",
+  "src": "curated"
+ },
+ "SUNTV": {
+  "cap": "mid",
+  "name": "Sun TV Network",
+  "sector": "Media",
+  "src": "curated"
+ },
+ "SUPRAJIT": {
+  "cap": "small",
+  "name": "Suprajit Engineering",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "SUPREMEIND": {
+  "cap": "mid",
+  "name": "Supreme Industries",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "SURYODAY": {
+  "cap": "sme",
+  "name": "Suryoday Small Finance",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "SUVENPHAR": {
+  "cap": "small",
+  "name": "Suven Pharma",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "SUZLON": {
+  "cap": "mid",
+  "name": "Suzlon Energy",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "SWIGGY": {
+  "cap": "mid",
+  "name": "Swiggy",
+  "sector": "Tech",
+  "src": "curated"
+ },
+ "SWSOLAR": {
+  "cap": "small",
+  "name": "Sterling & Wilson",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "SYMPHONY": {
+  "cap": "small",
+  "name": "Symphony",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "SYNGENE": {
+  "cap": "mid",
+  "name": "Syngene International",
+  "sector": "Healthcare",
+  "src": "curated"
+ },
+ "SYRMA": {
+  "cap": "small",
+  "name": "Syrma SGS Technology",
+  "sector": "EMS",
+  "src": "curated"
+ },
+ "TANLA": {
+  "cap": "small",
+  "name": "Tanla Platforms",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "TASTYBITE": {
+  "cap": "sme",
+  "name": "Tasty Bite Eatables",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "TATACHEM": {
+  "cap": "mid",
+  "name": "Tata Chemicals",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "TATACOFFEE": {
+  "cap": "small",
+  "name": "Tata Coffee (now Tata Consumer)",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "TATACOMM": {
+  "cap": "mid",
+  "name": "Tata Communications",
+  "sector": "Telecom",
+  "src": "extended"
+ },
+ "TATACONSUM": {
+  "cap": "large",
+  "name": "Tata Consumer Products",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "TATAELXSI": {
+  "cap": "mid",
+  "name": "Tata Elxsi",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "TATAMOTORS": {
+  "cap": "large",
+  "name": "Tata Motors",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "TATAPOWER": {
+  "cap": "large",
+  "name": "Tata Power",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "TATASTEEL": {
+  "cap": "large",
+  "name": "Tata Steel",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "TATATECH": {
+  "cap": "mid",
+  "name": "Tata Technologies",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "TATVA": {
+  "cap": "small",
+  "name": "Tatva Chintan",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "TCI": {
+  "cap": "small",
+  "name": "Transport Corporation",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "TCIEXP": {
+  "cap": "small",
+  "name": "TCI Express",
+  "sector": "Logistics",
+  "src": "curated"
+ },
+ "TCNSBRANDS": {
+  "cap": "sme",
+  "name": "TCNS Clothing",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "TCS": {
+  "cap": "large",
+  "name": "Tata Consultancy Services",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "TDPOWERSYS": {
+  "cap": "sme",
+  "name": "TD Power Systems",
+  "sector": "Capital Goods",
+  "src": "extended"
+ },
+ "TECHM": {
+  "cap": "large",
+  "name": "Tech Mahindra",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "TEJASNET": {
+  "cap": "small",
+  "name": "Tejas Networks",
+  "sector": "Telecom",
+  "src": "extended"
+ },
+ "TEXRAIL": {
+  "cap": "small",
+  "name": "Texmaco Rail",
+  "sector": "Railways",
+  "src": "curated"
+ },
+ "THDC": {
+  "cap": "sme",
+  "name": "THDC India",
+  "sector": "Power",
+  "src": "extended"
+ },
+ "THERMAX": {
+  "cap": "mid",
+  "name": "Thermax",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "THOMASCOOK": {
+  "cap": "small",
+  "name": "Thomas Cook India",
+  "sector": "Hospitality",
+  "src": "curated"
+ },
+ "THYROCARE": {
+  "cap": "small",
+  "name": "Thyrocare Technologies",
+  "sector": "Healthcare",
+  "src": "extended"
+ },
+ "TIINDIA": {
+  "cap": "mid",
+  "name": "Tube Investments",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "TIMKEN": {
+  "cap": "mid",
+  "name": "Timken India",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "TIPSINDLTD": {
+  "cap": "small",
+  "name": "Tips Industries",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "TITAGARH": {
+  "cap": "small",
+  "name": "Titagarh Rail Systems",
+  "sector": "Railways",
+  "src": "curated"
+ },
+ "TITAN": {
+  "cap": "large",
+  "name": "Titan Company",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "TMB": {
+  "cap": "small",
+  "name": "Tamilnad Mercantile Bank",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "TNPL": {
+  "cap": "small",
+  "name": "Tamil Nadu Newsprint",
+  "sector": "Paper",
+  "src": "curated"
+ },
+ "TORNTPHARM": {
+  "cap": "mid",
+  "name": "Torrent Pharma",
+  "sector": "Pharma",
+  "src": "curated"
+ },
+ "TORNTPOWER": {
+  "cap": "mid",
+  "name": "Torrent Power",
+  "sector": "Power",
+  "src": "curated"
+ },
+ "TRENT": {
+  "cap": "large",
+  "name": "Trent",
+  "sector": "Retail",
+  "src": "curated"
+ },
+ "TRIDENT": {
+  "cap": "small",
+  "name": "Trident",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "TRITURBINE": {
+  "cap": "small",
+  "name": "Triveni Turbine",
+  "sector": "Capital Goods",
+  "src": "curated"
+ },
+ "TRIVENI": {
+  "cap": "small",
+  "name": "Triveni Engineering",
+  "sector": "Sugar",
+  "src": "curated"
+ },
+ "TV18BRDCST": {
+  "cap": "small",
+  "name": "TV18 Broadcast",
+  "sector": "Media",
+  "src": "curated"
+ },
+ "TVSMOTOR": {
+  "cap": "mid",
+  "name": "TVS Motor",
+  "sector": "Auto",
+  "src": "curated"
+ },
+ "TVTODAY": {
+  "cap": "sme",
+  "name": "TV Today Network",
+  "sector": "Media",
+  "src": "extended"
+ },
+ "UBL": {
+  "cap": "mid",
+  "name": "United Breweries",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "UCOBANK": {
+  "cap": "small",
+  "name": "UCO Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "UFLEX": {
+  "cap": "small",
+  "name": "Uflex",
+  "sector": "Paper",
+  "src": "curated"
+ },
+ "UJJIVAN": {
+  "cap": "small",
+  "name": "Ujjivan Financial",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "UJJIVANSFB": {
+  "cap": "small",
+  "name": "Ujjivan Small Finance",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "ULTRACEMCO": {
+  "cap": "large",
+  "name": "UltraTech Cement",
+  "sector": "Cement",
+  "src": "curated"
+ },
+ "UNIONBANK": {
+  "cap": "mid",
+  "name": "Union Bank of India",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "UNITDSPR": {
+  "cap": "mid",
+  "name": "United Spirits",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "UPL": {
+  "cap": "mid",
+  "name": "UPL",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "UTIAMC": {
+  "cap": "small",
+  "name": "UTI AMC",
+  "sector": "NBFC",
+  "src": "curated"
+ },
+ "UTKARSHBNK": {
+  "cap": "sme",
+  "name": "Utkarsh Small Finance",
+  "sector": "Banking",
+  "src": "extended"
+ },
+ "UTTAMSUGAR": {
+  "cap": "sme",
+  "name": "Uttam Sugar Mills",
+  "sector": "Sugar",
+  "src": "extended"
+ },
+ "VALIANTORG": {
+  "cap": "sme",
+  "name": "Valiant Organics",
+  "sector": "Chemicals",
+  "src": "extended"
+ },
+ "VBL": {
+  "cap": "large",
+  "name": "Varun Beverages",
+  "sector": "FMCG",
+  "src": "curated"
+ },
+ "VEDL": {
+  "cap": "large",
+  "name": "Vedanta",
+  "sector": "Metals",
+  "src": "curated"
+ },
+ "VENTIVE": {
+  "cap": "sme",
+  "name": "Ventive Hospitality",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "VGUARD": {
+  "cap": "small",
+  "name": "V-Guard Industries",
+  "sector": "Electronics",
+  "src": "curated"
+ },
+ "VIJAYA": {
+  "cap": "small",
+  "name": "Vijaya Diagnostic",
+  "sector": "Healthcare",
+  "src": "extended"
+ },
+ "VINATIORGA": {
+  "cap": "small",
+  "name": "Vinati Organics",
+  "sector": "Chemicals",
+  "src": "curated"
+ },
+ "VOLTAS": {
+  "cap": "mid",
+  "name": "Voltas",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "VRLLOG": {
+  "cap": "small",
+  "name": "VRL Logistics",
+  "sector": "Logistics",
+  "src": "extended"
+ },
+ "VSTIND": {
+  "cap": "small",
+  "name": "VST Industries",
+  "sector": "FMCG",
+  "src": "extended"
+ },
+ "VTL": {
+  "cap": "small",
+  "name": "Vardhman Textiles",
+  "sector": "Textiles",
+  "src": "extended"
+ },
+ "WAAREEENER": {
+  "cap": "mid",
+  "name": "Waaree Energies",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "WABCOINDIA": {
+  "cap": "small",
+  "name": "Wabco India",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "WEBSOLENER": {
+  "cap": "small",
+  "name": "Websol Energy",
+  "sector": "Renewable Energy",
+  "src": "curated"
+ },
+ "WELCORP": {
+  "cap": "small",
+  "name": "Welspun Corp",
+  "sector": "Metals",
+  "src": "extended"
+ },
+ "WELENT": {
+  "cap": "small",
+  "name": "Welspun Enterprises",
+  "sector": "Infrastructure",
+  "src": "extended"
+ },
+ "WELSPUNLIV": {
+  "cap": "small",
+  "name": "Welspun Living",
+  "sector": "Textiles",
+  "src": "curated"
+ },
+ "WESTLIFE": {
+  "cap": "small",
+  "name": "West Coast Paper",
+  "sector": "Paper",
+  "src": "curated"
+ },
+ "WHEELS": {
+  "cap": "sme",
+  "name": "Wheels India",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "WHIRLPOOL": {
+  "cap": "small",
+  "name": "Whirlpool India",
+  "sector": "Consumer",
+  "src": "curated"
+ },
+ "WIPRO": {
+  "cap": "large",
+  "name": "Wipro",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "WONDERLA": {
+  "cap": "small",
+  "name": "Wonderla Holidays",
+  "sector": "Hospitality",
+  "src": "extended"
+ },
+ "YESBANK": {
+  "cap": "mid",
+  "name": "Yes Bank",
+  "sector": "Banking",
+  "src": "curated"
+ },
+ "ZAGGLE": {
+  "cap": "small",
+  "name": "Zaggle Prepaid",
+  "sector": "Fintech",
+  "src": "curated"
+ },
+ "ZEEL": {
+  "cap": "mid",
+  "name": "Zee Entertainment",
+  "sector": "Media",
+  "src": "curated"
+ },
+ "ZENSARTECH": {
+  "cap": "small",
+  "name": "Zensar Technologies",
+  "sector": "IT",
+  "src": "curated"
+ },
+ "ZENTEC": {
+  "cap": "small",
+  "name": "Zen Technologies",
+  "sector": "Defense",
+  "src": "curated"
+ },
+ "ZFCVINDIA": {
+  "cap": "sme",
+  "name": "ZF Commercial Vehicle",
+  "sector": "Auto",
+  "src": "extended"
+ },
+ "ZUARI": {
+  "cap": "sme",
+  "name": "Zuari Agro Chemicals",
+  "sector": "Fertilizers",
+  "src": "extended"
+ },
+ "ZYDUSLIFE": {
+  "cap": "mid",
+  "name": "Zydus Lifesciences",
+  "sector": "Pharma",
+  "src": "extended"
+ },
+ "ZYDUSWELL": {
+  "cap": "small",
+  "name": "Zydus Wellness",
+  "sector": "FMCG",
+  "src": "extended"
+ }
+}

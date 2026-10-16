@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLiveCommodityPrices } from "@/lib/services/livePrice";
+import { findStock } from "@/lib/stocks";
+import { computeTechnicals, type Bar } from "@/lib/technicals";
 
 export const maxDuration = 60;
 
@@ -623,29 +625,66 @@ interface RealPriceData {
   pe: number;
   pb: number;
   eps: number;
+  /** NaN when the provider did not report it (0 is a real value: no dividend). */
   divYield: number;
   source: string;
+  /** Provider-computed indicators (TradingView), when available. */
+  technicals?: { sma20: number | null; sma50: number | null; sma200: number | null; rsi: number | null; atr: number | null; macd: number | null; support: number | null; resistance: number | null };
 }
 
 const PRICE_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
-async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
-  const nseSymbol = ticker.replace(".NS", "").replace(".BO", "");
-  const yahooSymbol = ticker.includes(".") ? ticker : `${nseSymbol}.NS`;
+/** Exchange-correct identifiers for every quote provider. BSE-only stocks never get an NSE: prefix. */
+function resolveSymbols(ticker: string) {
+  const entry = findStock(ticker);
+  const isBo = ticker.toUpperCase().endsWith(".BO");
+  const nseSymbol = entry?.nseSymbol ?? (isBo ? undefined : ticker.replace(/\.NS$/i, ""));
+  const bseCode = entry?.bseCode ?? (isBo ? ticker.replace(/\.BO$/i, "") : undefined);
+  return {
+    entry, nseSymbol, bseCode,
+    yahooSymbol: nseSymbol ? `${nseSymbol}.NS` : `${bseCode}.BO`,
+    tvSymbol: nseSymbol ? `NSE:${nseSymbol}` : entry?.bseId ? `BSE:${entry.bseId}` : null,
+    google: nseSymbol ? { sym: nseSymbol, ex: "NSE" } : bseCode ? { sym: bseCode, ex: "BOM" } : null,
+  };
+}
 
-  // Try TradingView FIRST — most reliable, works for all NSE stocks
-  try {
+/** One year of daily bars (oldest first) for computing technicals. Null when unavailable. */
+async function fetchHistory(yahooSymbol: string): Promise<Bar[] | null> {
+  for (const host of ["query1", "query2"]) {
+    try {
+      const res = await fetch(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=1d&range=1y`, {
+        headers: { "User-Agent": PRICE_UA, Accept: "application/json" }, next: { revalidate: 3600 },
+      });
+      if (!res.ok) continue;
+      const q = (await res.json()).chart?.result?.[0]?.indicators?.quote?.[0];
+      if (!q?.close) continue;
+      const bars: Bar[] = q.close
+        .map((c: number | null, i: number) => ({ close: c, high: q.high?.[i], low: q.low?.[i] }))
+        .filter((b: { close: number | null; high: number | null; low: number | null }) => b.close != null && b.high != null && b.low != null);
+      if (bars.length >= 30) return bars;
+    } catch { /* try next host */ }
+  }
+  return null;
+}
+
+async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
+  const { yahooSymbol, tvSymbol, google } = resolveSymbols(ticker);
+
+  // TradingView first (NSE:<symbol>, or BSE:<security id> for BSE-only listings)
+  if (tvSymbol) try {
     const res = await fetch("https://scanner.tradingview.com/india/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        symbols: { tickers: [`NSE:${nseSymbol}`] },
+        symbols: { tickers: [tvSymbol] },
         columns: [
           "close", "change", "change_abs", "name",
-          "market_cap_basic", "price_earnings_ttm", "price_book_fq",
-          "earnings_per_share_basic_ttm", "dividend_yield_recent",
-          "High.All", "Low.All", "volume",
-          "High.6M", "Low.6M",
+          "market_cap_basic", "price_earnings_ttm", "price_book_ratio",
+          "earnings_per_share_basic_ttm", "dividends_yield_current",
+          "price_52_week_high", "price_52_week_low", "volume",
+          "high", "low",
+          "SMA20", "SMA50", "SMA200", "RSI", "ATR", "MACD.macd",
+          "Pivot.M.Classic.S1", "Pivot.M.Classic.R1",
         ],
       }),
       next: { revalidate: 30 },
@@ -661,17 +700,22 @@ async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
           change: (vals[2] as number) || 0,
           changePercent: (vals[1] as number) || 0,
           previousClose: price - ((vals[2] as number) || 0),
-          dayHigh: price * 1.01,
-          dayLow: price * 0.99,
-          weekHigh52: (vals[9] as number) || (vals[12] as number) || price * 1.3,
-          weekLow52: (vals[10] as number) || (vals[13] as number) || price * 0.7,
+          dayHigh: (vals[12] as number) || 0,
+          dayLow: (vals[13] as number) || 0,
+          weekHigh52: (vals[9] as number) || 0,
+          weekLow52: (vals[10] as number) || 0,
           volume: (vals[11] as number) || 0,
           marketCap: (vals[4] as number) || 0,
           pe: (vals[5] as number) || 0,
           pb: (vals[6] as number) || 0,
           eps: (vals[7] as number) || 0,
-          divYield: (vals[8] as number) || 0,
+          divYield: typeof vals[8] === "number" ? vals[8] : NaN,
           source: "tradingview",
+          technicals: (() => {
+            const n = (v: number | null | undefined) => (typeof v === "number" && Number.isFinite(v) ? Math.round(v * 100) / 100 : null);
+            const t = { sma20: n(vals[14]), sma50: n(vals[15]), sma200: n(vals[16]), rsi: n(vals[17]), atr: n(vals[18]), macd: n(vals[19]), support: n(vals[20]), resistance: n(vals[21]) };
+            return Object.values(t).some(v => v !== null) ? t : undefined;
+          })(),
         };
       }
     }
@@ -698,16 +742,16 @@ async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
             change: prev ? price - prev : 0,
             changePercent: prev ? ((price - prev) / prev) * 100 : 0,
             previousClose: prev,
-            dayHigh: meta.regularMarketDayHigh || price * 1.01,
-            dayLow: meta.regularMarketDayLow || price * 0.99,
-            weekHigh52: meta.fiftyTwoWeekHigh || price * 1.3,
-            weekLow52: meta.fiftyTwoWeekLow || price * 0.7,
+            dayHigh: meta.regularMarketDayHigh || 0,
+            dayLow: meta.regularMarketDayLow || 0,
+            weekHigh52: meta.fiftyTwoWeekHigh || 0,
+            weekLow52: meta.fiftyTwoWeekLow || 0,
             volume: meta.regularMarketVolume || 0,
             marketCap: 0,  // filled from quote below
             pe: 0,
             pb: 0,
             eps: 0,
-            divYield: 0,
+            divYield: NaN,
             source: `yahoo-${host}`,
           };
         }
@@ -752,15 +796,15 @@ async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
   } catch { /* try next */ }
 
   // ── ATTEMPT 3: Google Finance scraping ──
-  try {
-    const res = await fetch(`https://www.google.com/finance/quote/${nseSymbol}:NSE`, {
+  if (google) try {
+    const res = await fetch(`https://www.google.com/finance/quote/${google.sym}:${google.ex}`, {
       headers: { "User-Agent": PRICE_UA, "Accept-Language": "en-US,en;q=0.9" },
       cache: "no-store",
     });
     if (res.ok) {
       const html = await res.text();
-      const escSym = nseSymbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const re = new RegExp(`\\["${escSym}","NSE"\\],"[^"]*",\\d+,null,\\[([0-9.]+),([-0-9.eE+]+),([-0-9.eE+]+)`);
+      const escSym = google.sym.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(`\\["${escSym}","${google.ex}"\\],"[^"]*",\\d+,null,\\[([0-9.]+),([-0-9.eE+]+),([-0-9.eE+]+)`);
       const m = html.match(re);
       if (m) {
         const price = parseFloat(m[1]);
@@ -770,16 +814,16 @@ async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
             change: parseFloat(m[2]) || 0,
             changePercent: parseFloat(m[3]) || 0,
             previousClose: price - (parseFloat(m[2]) || 0),
-            dayHigh: price * 1.01,
-            dayLow: price * 0.99,
-            weekHigh52: price * 1.3,
-            weekLow52: price * 0.7,
+            dayHigh: 0,
+            dayLow: 0,
+            weekHigh52: 0,
+            weekLow52: 0,
             volume: 0,
             marketCap: 0,
             pe: 0,
             pb: 0,
             eps: 0,
-            divYield: 0,
+            divYield: NaN,
             source: "google-finance",
           };
         }
@@ -794,13 +838,33 @@ export async function POST(req: NextRequest) {
   const { ticker, companyName } = await req.json();
   if (!ticker) return NextResponse.json({ error: "Ticker required" }, { status: 400 });
 
-  // Fetch REAL live price + live commodity benchmarks in parallel
-  const [realPrice, liveCommodities] = await Promise.all([
+  // Fetch REAL live price, 1y history and live commodity benchmarks in parallel
+  const symbols = resolveSymbols(ticker);
+  const [realPrice, liveCommodities, history] = await Promise.all([
     fetchRealPrice(ticker),
     fetchLiveCommodityPrices(),
+    fetchHistory(symbols.yahooSymbol),
   ]);
 
+  // No live quote => no report. Never fall back to a generated price.
+  if (!realPrice) {
+    return NextResponse.json({
+      success: false,
+      error: "live_quote_unavailable",
+      message: "Live market data for this security is temporarily unavailable from all our sources.",
+      symbol: symbols.nseSymbol ?? symbols.bseCode,
+      companyName: symbols.entry?.name ?? companyName ?? ticker,
+      exchanges: symbols.entry?.exchanges ?? [],
+    }, { status: 503 });
+  }
+
   const data = generateStockIntelligence(ticker, companyName || ticker);
+  const hadVerifiedProfile = data.source === "verified-profile";
+  const computed = history ? computeTechnicals(history) : null;
+  const tech = realPrice?.technicals
+    ? { ...realPrice.technicals, weekHigh52: null as number | null, weekLow52: null as number | null, sessions: 0, source: "TradingView indicators" }
+    : computed ? { ...computed, source: "Computed from 1 year of daily prices (Yahoo Finance)" } : null;
+  if (tech && computed) { tech.weekHigh52 = computed.weekHigh52; tech.weekLow52 = computed.weekLow52; }
 
   // D3 — Replace fabricated commodity prices with live benchmarks. Where no
   // live price is available, show "live price unavailable" instead of a fake number.
@@ -820,16 +884,18 @@ export async function POST(req: NextRequest) {
     const oldCmp = data.hero.cmp;
     data.hero.cmp = realPrice.price;
     data.hero.changePercent = realPrice.changePercent;
-    data.hero.volume = realPrice.volume || data.hero.volume;
-    data.hero.weekHigh52 = realPrice.weekHigh52 || data.hero.weekHigh52;
-    data.hero.weekLow52 = realPrice.weekLow52 || data.hero.weekLow52;
-
-    // Override fundamentals if we got them from Yahoo
-    if (realPrice.pe > 0) data.hero.pe = realPrice.pe;
-    if (realPrice.pb > 0) data.hero.pb = realPrice.pb;
-    if (realPrice.eps > 0) data.hero.eps = realPrice.eps;
-    if (realPrice.divYield > 0) data.hero.divYield = realPrice.divYield;
-    if (realPrice.marketCap > 0) data.hero.mcap = Math.round(realPrice.marketCap / 10000000); // convert to Cr
+    // Every hero figure is live, derived from live figures, or null — never generated.
+    const hero = data.hero as unknown as Record<string, number | null>;
+    hero.volume = realPrice.volume > 0 ? realPrice.volume : null;
+    hero.weekHigh52 = tech?.weekHigh52 ?? (realPrice.weekHigh52 > 0 ? realPrice.weekHigh52 : null);
+    hero.weekLow52 = tech?.weekLow52 ?? (realPrice.weekLow52 > 0 ? realPrice.weekLow52 : null);
+    hero.pe = realPrice.pe > 0 ? realPrice.pe : null;
+    hero.pb = realPrice.pb > 0 ? realPrice.pb : null;
+    hero.eps = realPrice.eps !== 0 ? realPrice.eps : null;
+    hero.divYield = Number.isFinite(realPrice.divYield) ? Math.round(realPrice.divYield * 100) / 100 : null;
+    hero.mcap = realPrice.marketCap > 0 ? Math.round(realPrice.marketCap / 10000000) : null; // INR -> crore
+    hero.bookValue = realPrice.pb > 0 ? Math.round((realPrice.price / realPrice.pb) * 100) / 100 : null;
+    if (!hadVerifiedProfile) hero.faceValue = null;
 
     // Recalculate price-derived values using the ratio of real/fake price
     const priceRatio = realPrice.price / (oldCmp || 1);
@@ -924,6 +990,13 @@ export async function POST(req: NextRequest) {
         /\([+-]?\d+\.?\d*%\)/,
         `(${changePctStr})`
       );
+    }
+
+    if (tech) {
+      (data as unknown as { technicals: Record<string, number | null> }).technicals = {
+        rsi: tech.rsi, macd: tech.macd, sma20: tech.sma20, sma50: tech.sma50, sma200: tech.sma200,
+        atr: tech.atr, support: tech.support, resistance: tech.resistance,
+      };
     }
 
     // Mark the source
@@ -1209,5 +1282,22 @@ export async function POST(req: NextRequest) {
     ],
   };
 
-  return NextResponse.json(enhancedData);
+  const illustrative = ["copilot", "trust", "movement", "smartmoney", "risk", "opportunity", "earnings", "fundamentals", "valuation", "geopolitical"];
+  if (!tech) illustrative.push("technicals");
+  return NextResponse.json({
+    ...enhancedData,
+    success: true,
+    // Identity and classification come from the verified exchange universe, not the template model.
+    companyName: symbols.entry?.name ?? enhancedData.companyName,
+    sector: symbols.entry?.sector ?? "Unclassified",
+    industry: hadVerifiedProfile ? enhancedData.industry : "",
+    exchanges: symbols.entry?.exchanges ?? [],
+    isin: symbols.entry?.isin ?? null,
+    provenance: {
+      quote: { source: realPrice.source, asOf: new Date().toISOString(), symbol: symbols.tvSymbol ?? symbols.yahooSymbol },
+      technicals: tech ? { source: tech.source } : null,
+      // Sections still produced by the template model rather than sourced data. The UI withholds these.
+      illustrative,
+    },
+  });
 }

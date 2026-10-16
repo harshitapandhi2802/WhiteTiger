@@ -9,7 +9,7 @@ import {
   CheckCircle, XCircle, Info, Clock, History, ThumbsUp, ThumbsDown,
   Award, Database, FileWarning,
 } from "lucide-react";
-import { NSE_STOCKS } from "@/lib/stocks";
+import { findStock } from "@/lib/stocks";
 import dynamicImport from "next/dynamic";
 
 // BI Suite loaded on demand (large component, only renders when stock page opens)
@@ -22,13 +22,15 @@ interface StockData {
   success: boolean; symbol: string; companyName: string; sector: string; industry: string;
   source: string; generatedAt: string;
   fundamentalsProvenance?: { priceSource: string; priceAsOf: string | null; fundamentalsSource: string; fundamentalsAsOf: string; note: string };
-  hero: { cmp: number; changePercent: number; volume: number; mcap: number; pe: number; pb: number; eps: number; bookValue: number; divYield: number; weekHigh52: number; weekLow52: number; faceValue: number };
+  hero: { cmp: number; changePercent: number; volume: number | null; mcap: number | null; pe: number | null; pb: number | null; eps: number | null; bookValue: number | null; divYield: number | null; weekHigh52: number | null; weekLow52: number | null; faceValue: number | null };
+  error?: string; message?: string;
+  provenance?: { quote: { source: string; asOf: string; symbol: string }; technicals: { source: string } | null; illustrative: string[] };
   sentiment: { label: string; confidence: number };
   aiScores: { overallScore: number; qualityScore: number; valuationScore: number; momentumScore: number; growthScore: number; riskScore: number };
   analystConsensus: { rating: string; targetPrice: number; analystCount: number; upside: number };
   fairValue: { dcfValue: number; upside: number; method: string };
   fundamentals: { revenue: number; pat: number; ebitdaMargin: number; grossMargin?: number; ebitMargin?: number; patMargin?: number; roe: number; roce: number; debtEquity: number; promoterHolding: number; fiiHolding: number; diiHolding: number; publicHolding: number };
-  technicals: { rsi: number; macd: number; sma20: number; sma50: number; sma200: number; atr: number; support: number; resistance: number };
+  technicals: { rsi: number | null; macd: number | null; sma20: number | null; sma50: number | null; sma200: number | null; atr: number | null; support: number | null; resistance: number | null };
   priceDrivers: { driver: string; detail: string; direction: string }[];
   peerComparison: { symbol: string; pe: number; pb: number; roe: number; mcap: number }[];
   returns: Record<string, number>;
@@ -72,16 +74,35 @@ interface ScenarioCase { probability: number; eps: number; pe: number; targetPri
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
    ═══════════════════════════════════════════════════════════════ */
-function resolveStock(slug: string) {
-  const lower = slug.toLowerCase().replace(/-/g, " ");
-  const stock = NSE_STOCKS.find(s =>
-    s.ticker.replace(".NS", "").toLowerCase() === slug.toLowerCase() ||
-    s.name.toLowerCase() === lower ||
-    s.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-") === slug.toLowerCase()
+/** Formats a live figure; null/undefined/NaN render as an em dash, never as a guess. */
+function fmtNum(v: number | null | undefined, f: (n: number) => string): string {
+  return typeof v === "number" && Number.isFinite(v) ? f(v) : "—";
+}
+
+const WITHHELD_COPY: Record<string, string> = {
+  copilot: "AI narrative for this stock",
+  trust: "White Tiger composite score",
+  movement: "Drivers behind today's move",
+  smartmoney: "Institutional & derivatives positioning",
+  risk: "Risk assessment",
+  opportunity: "Entry, target and stop-loss zones",
+  earnings: "Earnings-quality analysis",
+  geopolitical: "Macro and geopolitical exposure",
+  fundamentals: "Reported financials, shareholding and news",
+  valuation: "DCF, relative valuation and scenarios",
+  technicals: "Technical indicators",
+};
+
+/** Shown instead of a section whose data is not yet connected to a verified source. */
+function WithheldSection({ id }: { id: string }) {
+  return (
+    <div style={{ border: "1px dashed #d1d5db", borderRadius: 12, padding: "18px 20px", background: "#fafafa" }}>
+      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#374151" }}>{WITHHELD_COPY[id] ?? "This section"} — coming soon</div>
+      <div style={{ fontSize: "0.74rem", color: "#6b7280", marginTop: 4, lineHeight: 1.5 }}>
+        We&apos;ll show this once it&apos;s connected to verified company and exchange data. Until then we don&apos;t display estimated figures for real companies.
+      </div>
+    </div>
   );
-  if (stock) return stock;
-  const found = NSE_STOCKS.find(s => s.name.toLowerCase().includes(lower) || lower.includes(s.name.toLowerCase().split(" ")[0]));
-  return found || { name: slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()), ticker: slug.toUpperCase() + ".NS", sector: "Equity" };
 }
 
 function pointerText(value: number, type: string): string {
@@ -192,13 +213,15 @@ function useTypingAnimation(text: string, speed = 12) {
    ═══════════════════════════════════════════════════════════════ */
 export default function StockPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = use(params);
-  const stock = resolveStock(symbol);
+  // Exact identifier match only (NSE symbol, BSE scrip code, ISIN). No fuzzy or invented fallbacks.
+  const stock = findStock(symbol);
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeNav, setActiveNav] = useState("copilot");
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
+    if (!stock) { setLoading(false); return; }
     setLoading(true);
     fetch("/api/stock-intelligence", {
       method: "POST",
@@ -208,12 +231,24 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [stock.ticker, stock.name]);
+  }, [stock?.ticker, stock?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollTo = (id: string) => {
     setActiveNav(id);
     sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  if (!stock) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0a0a1a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, padding: 24, textAlign: "center" }}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>We couldn&apos;t find &ldquo;{decodeURIComponent(symbol)}&rdquo;</div>
+        <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.55)", maxWidth: 420 }}>
+          It isn&apos;t an NSE symbol, BSE scrip code or ISIN in our verified listing. Try searching by company name instead.
+        </div>
+        <a href="/analyze" style={{ marginTop: 8, color: "#818cf8", fontWeight: 600 }}>Back to search</a>
+      </div>
+    );
+  }
 
   /* ═══ LOADING STATE ═══ */
   if (loading) {
@@ -247,6 +282,22 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
 
   if (!data) return <div style={{ minHeight: "100vh", background: "#fff", color: "#111", padding: 40 }}>Error loading data.</div>;
 
+  if (data.success === false) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0a0a1a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, padding: 24, textAlign: "center" }}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{stock.name}</div>
+        <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.6)", maxWidth: 440 }}>
+          Live market data for this security is temporarily unavailable. We don&apos;t show estimated prices, so please try again shortly.
+        </div>
+        <div style={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.4)" }}>{[stock.nseSymbol && `NSE: ${stock.nseSymbol}`, stock.bseCode && `BSE: ${stock.bseCode}`, stock.isin].filter(Boolean).join(" · ")}</div>
+        <a href="/analyze" style={{ marginTop: 8, color: "#818cf8", fontWeight: 600 }}>Back to search</a>
+      </div>
+    );
+  }
+
+  const withheld = (id: string) => !data.provenance || data.provenance.illustrative.includes(id);
+  const quoteAsOf = data.provenance ? new Date(data.provenance.quote.asOf).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null;
+
   const isPositive = data.hero.changePercent >= 0;
   const viewColor = data.investmentConclusion?.view.includes("UNDERVALUED") ? "#059669" : data.investmentConclusion?.view.includes("OVERVALUED") ? "#dc2626" : "#d97706";
   const viewLabel = data.investmentConclusion?.view.includes("UNDERVALUED") ? "BUY" : data.investmentConclusion?.view.includes("OVERVALUED") ? "SELL" : "HOLD";
@@ -275,7 +326,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
         <div style={{ maxWidth: 1260, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <Link href="/stocks" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", transition: "color 0.2s" }}>
+              <Link href="/analyze" style={{ color: "rgba(255,255,255,0.4)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", transition: "color 0.2s" }}>
                 <ArrowLeft size={14} /> Stocks
               </Link>
               <div style={{ width: 1, height: 24, background: "rgba(255,255,255,0.1)" }} />
@@ -284,14 +335,14 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                   <span style={{ fontSize: "1.25rem", fontWeight: 800, letterSpacing: "-0.02em" }}>{data.companyName}</span>
                   <span style={{ fontSize: "0.66rem", padding: "3px 8px", borderRadius: 5, background: "rgba(99,102,241,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{data.symbol}</span>
                 </div>
-                <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{data.sector} · {data.industry} · NSE</div>
+                <div style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.4)", marginTop: 3 }}>{[data.sector, data.industry, ...(stock.exchanges ?? []), stock.isin].filter(Boolean).join(" · ")}</div>
               </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
               {/* Official NSE Link */}
               <a
-                href={`https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(data.symbol)}`}
+                href={stock.nseSymbol ? `https://www.nseindia.com/get-quotes/equity?symbol=${encodeURIComponent(stock.nseSymbol)}` : `https://www.bseindia.com/stock-share-price/${encodeURIComponent(stock.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"))}/${encodeURIComponent((stock.bseId || stock.bseCode || "").toLowerCase())}/${stock.bseCode}/`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
@@ -302,21 +353,23 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                   textDecoration: "none", transition: "all 0.2s",
                 }}
               >
-                NSE Official <ArrowUpRight size={12} />
+                {stock.nseSymbol ? "NSE" : "BSE"} Official <ArrowUpRight size={12} />
               </a>
               {/* AI Sentiment Badge */}
+              {!withheld("copilot") && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 8, background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)" }}>
                 <Sparkles size={13} style={{ color: "#a5b4fc" }} />
                 <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#a5b4fc" }}>AI: {data.sentiment.label}</span>
                 <span style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.4)" }}>{data.sentiment.confidence}%</span>
               </div>
+              )}
 
               {/* Price Block */}
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: "1.6rem", fontWeight: 900, letterSpacing: "-0.02em" }}>₹{data.hero.cmp.toLocaleString("en-IN")}</div>
                 <div style={{ fontSize: "0.78rem", fontWeight: 700, color: isPositive ? "#4ade80" : "#f87171", display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
                   {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                  {isPositive ? "+" : ""}{data.hero.changePercent}%
+                  {isPositive ? "+" : ""}{data.hero.changePercent.toFixed(2)}%
                 </div>
                 {/* D5 — price provenance */}
                 {(() => {
@@ -333,7 +386,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </div>
 
               {/* White Tiger Score Badge */}
-              {data.whiteTigerScore && (
+              {data.whiteTigerScore && !withheld("trust") && (
                 <div style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 70 }}>
                   <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>WT Score</div>
                   <div style={{ fontSize: "1rem", fontWeight: 900, color: data.whiteTigerScore.overall >= 70 ? "#4ade80" : data.whiteTigerScore.overall >= 50 ? "#fbbf24" : "#f87171", marginTop: 2 }}>
@@ -342,18 +395,26 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 </div>
               )}
 
-              {/* AI View Badge */}
-              <div style={{ background: `${viewColor}18`, border: `1px solid ${viewColor}40`, borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 70 }}>
-                <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>AI View</div>
-                <div style={{ fontSize: "1rem", fontWeight: 900, color: viewColor, marginTop: 2 }}>{viewLabel}</div>
-              </div>
+              {/* AI View Badge — only when valuation is sourced, never from template values */}
+              {!withheld("valuation") ? (
+                <div style={{ background: `${viewColor}18`, border: `1px solid ${viewColor}40`, borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 70 }}>
+                  <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>AI View</div>
+                  <div style={{ fontSize: "1rem", fontWeight: 900, color: viewColor, marginTop: 2 }}>{viewLabel}</div>
+                </div>
+              ) : data.provenance && (
+                <div style={{ borderRadius: 10, padding: "8px 14px", border: "1px solid rgba(255,255,255,0.12)", textAlign: "left" }}>
+                  <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>Live quote</div>
+                  <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#a5b4fc", marginTop: 2 }}>{data.provenance.quote.symbol} · {quoteAsOf}</div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Navigation Pills */}
           <div style={{ display: "flex", gap: 4, overflowX: "auto", paddingBottom: 2 }}>
             {navItems.map(n => (
-              <button key={n.id} onClick={() => scrollTo(n.id)} style={{
+              <button key={n.id} onClick={() => scrollTo(n.id)} title={withheld(n.id) ? "Coming soon" : undefined} style={{
+                opacity: withheld(n.id) ? 0.45 : 1,
                 display: "flex", alignItems: "center", gap: 5, padding: "7px 14px", borderRadius: 7,
                 border: "none", cursor: "pointer", fontSize: "0.7rem", fontWeight: 600, whiteSpace: "nowrap",
                 background: activeNav === n.id ? "rgba(99,102,241,0.2)" : "transparent",
@@ -376,6 +437,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             SECTION 1: AI COPILOT — THE MAIN INTELLIGENCE LAYER
             ════════════════════════════════════════════════════════ */}
         <section ref={el => { sectionRefs.current["copilot"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("copilot") ? <WithheldSection id="copilot" /> : (<>
           <div style={{ background: "linear-gradient(135deg, #0f0f23, #1a1035)", borderRadius: 18, padding: "32px 36px", color: "#fff", position: "relative", overflow: "hidden" }}>
             {/* Background decoration */}
             <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%)" }} />
@@ -414,7 +476,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               {/* Quick Intelligence Grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
                 {[
-                  { label: "Market Cap", value: `₹${(data.hero.mcap / 100).toFixed(0)}K Cr`, icon: <Layers size={14} /> },
+                  { label: "Market Cap", value: fmtNum(data.hero.mcap, n => `₹${(n / 100).toFixed(0)}K Cr`), icon: <Layers size={14} /> },
                   { label: "AI Confidence", value: `${data.sentiment.confidence}%`, icon: <Brain size={14} />, color: data.sentiment.confidence > 70 ? "#4ade80" : "#fbbf24" },
                   { label: "Risk Level", value: data.aiRiskEngine?.overallRiskLevel || "Moderate", icon: <Shield size={14} />, color: data.aiRiskEngine?.overallRiskLevel === "Low" ? "#4ade80" : data.aiRiskEngine?.overallRiskLevel === "High" ? "#f87171" : "#fbbf24" },
                   { label: "Opportunity", value: data.aiOpportunityEngine?.opportunityType || "Value", icon: <Target size={14} />, color: "#a5b4fc" },
@@ -430,12 +492,14 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </div>
             </div>
           </div>
+        </>)}
         </section>
 
         {/* ════════════════════════════════════════════════════════
             TRUST INTELLIGENCE — White Tiger Score + Source + Risks
             ════════════════════════════════════════════════════════ */}
         <section ref={el => { sectionRefs.current["trust"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("trust") ? <WithheldSection id="trust" /> : (<>
           {/* ── White Tiger Score Card ── */}
           {data.whiteTigerScore && (
             <div style={{ background: "linear-gradient(135deg, #0f1628, #162040)", borderRadius: 18, padding: "28px 32px", color: "#fff", marginBottom: 18, border: "1px solid rgba(99,102,241,0.15)" }}>
@@ -704,20 +768,21 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </div>
             </div>
           )}
+        </>)}
         </section>
 
         {/* Key Metrics Quick Strip */}
         <section style={{ marginBottom: 32 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 1, background: "#e5e7eb", borderRadius: 12, overflow: "hidden" }}>
             {[
-              { label: "P/E", value: data.hero.pe.toFixed(1) + "x" },
-              { label: "P/B", value: data.hero.pb.toFixed(1) + "x" },
-              { label: "EPS", value: `₹${data.hero.eps}` },
-              { label: "ROE", value: `${data.fundamentals.roe}%` },
-              { label: "ROCE", value: `${data.fundamentals.roce}%` },
-              { label: "D/E", value: data.fundamentals.debtEquity.toFixed(2) },
-              { label: "Div Yield", value: `${data.hero.divYield}%` },
-              { label: "52W Range", value: `₹${data.hero.weekLow52}–${data.hero.weekHigh52}` },
+              { label: "P/E", value: fmtNum(data.hero.pe, n => n.toFixed(1) + "x") },
+              { label: "P/B", value: fmtNum(data.hero.pb, n => n.toFixed(1) + "x") },
+              { label: "EPS", value: fmtNum(data.hero.eps, n => `₹${n.toFixed(2)}`) },
+              { label: "Mkt Cap", value: fmtNum(data.hero.mcap, n => `₹${n.toLocaleString("en-IN")} Cr`) },
+              { label: "Book Value", value: fmtNum(data.hero.bookValue, n => `₹${n.toLocaleString("en-IN")}`) },
+              { label: "Volume", value: fmtNum(data.hero.volume, n => n.toLocaleString("en-IN")) },
+              { label: "Div Yield", value: fmtNum(data.hero.divYield, n => `${n}%`) },
+              { label: "52W Range", value: data.hero.weekLow52 != null && data.hero.weekHigh52 != null ? `₹${data.hero.weekLow52}–${data.hero.weekHigh52}` : "—" },
             ].map((m, i) => (
               <div key={i} style={{ background: "#fff", padding: "12px 10px", textAlign: "center" }}>
                 <div style={{ fontSize: "0.58rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>{m.label}</div>
@@ -752,6 +817,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             SECTION 2: WHY IS THIS STOCK MOVING?
             ════════════════════════════════════════════════════════ */}
         <section ref={el => { sectionRefs.current["movement"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("movement") ? <WithheldSection id="movement" /> : (<>
           <SectionHeading title="Why Is This Stock Moving?" subtitle="AI-powered analysis connecting technical, macro, institutional, and sentiment factors" icon={<Zap size={18} />} />
 
           {data.aiCopilot?.movementReasons && (
@@ -797,6 +863,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               ))}
             </div>
           </div>
+        </>)}
         </section>
 
         {/* ════════════════════════════════════════════════════════
@@ -804,6 +871,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             ════════════════════════════════════════════════════════ */}
         {data.smartMoney && (
           <section ref={el => { sectionRefs.current["smartmoney"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("smartmoney") ? <WithheldSection id="smartmoney" /> : (<>
             <SectionHeading title="Smart Money Tracker" subtitle="Institutional flows, block deals, delivery data, and derivatives positioning" icon={<Eye size={18} />} />
 
             {/* Accumulation/Distribution Signal */}
@@ -888,7 +956,8 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 ))}
               </div>
             </div>
-          </section>
+          </>)}
+        </section>
         )}
 
         {/* ════════════════════════════════════════════════════════
@@ -896,6 +965,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             ════════════════════════════════════════════════════════ */}
         {data.aiRiskEngine && (
           <section ref={el => { sectionRefs.current["risk"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("risk") ? <WithheldSection id="risk" /> : (<>
             <SectionHeading title="AI Risk Engine" subtitle="Multi-dimensional risk assessment with AI-powered hedging suggestions" icon={<Shield size={18} />} />
 
             {/* Risk Overview */}
@@ -939,7 +1009,8 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 <div style={{ fontSize: "0.78rem", color: "#4b5563", lineHeight: 1.5 }}>{data.aiRiskEngine.hedgingSuggestion}</div>
               </div>
             </div>
-          </section>
+          </>)}
+        </section>
         )}
 
         {/* ════════════════════════════════════════════════════════
@@ -947,6 +1018,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             ════════════════════════════════════════════════════════ */}
         {data.aiOpportunityEngine && (
           <section ref={el => { sectionRefs.current["opportunity"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("opportunity") ? <WithheldSection id="opportunity" /> : (<>
             <SectionHeading title="AI Opportunity Engine" subtitle="Actionable trade setup with conviction levels and position sizing" icon={<Target size={18} />} />
 
             <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", overflow: "hidden" }}>
@@ -982,7 +1054,8 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 ))}
               </div>
             </div>
-          </section>
+          </>)}
+        </section>
         )}
 
         {/* ════════════════════════════════════════════════════════
@@ -990,6 +1063,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             ════════════════════════════════════════════════════════ */}
         {data.earningsIntelligence && (
           <section ref={el => { sectionRefs.current["earnings"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("earnings") ? <WithheldSection id="earnings" /> : (<>
             <SectionHeading title="Earnings Intelligence" subtitle="AI-summarized quarterly results, management commentary, and consensus tracking" icon={<BookOpen size={18} />} />
 
             <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 14 }}>
@@ -1039,7 +1113,8 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 </div>
               </div>
             </div>
-          </section>
+          </>)}
+        </section>
         )}
 
         {/* ════════════════════════════════════════════════════════
@@ -1047,6 +1122,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             ════════════════════════════════════════════════════════ */}
         {data.geopoliticalImpact && (
           <section ref={el => { sectionRefs.current["geopolitical"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("geopolitical") ? <WithheldSection id="geopolitical" /> : (<>
             <SectionHeading title="Geopolitical & Macro Impact" subtitle="How global events, commodities, currencies, and interest rates affect this stock" icon={<Globe size={18} />} />
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
@@ -1114,7 +1190,8 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 <div style={{ fontSize: "0.74rem", color: "#4b5563", lineHeight: 1.5, padding: "8px 12px", background: "#f8fafc", borderRadius: 8 }}>{data.geopoliticalImpact.interestRateImpact.impact}</div>
               </div>
             </div>
-          </section>
+          </>)}
+        </section>
         )}
 
         {/* ════════════════════════════════════════════════════════
@@ -1122,6 +1199,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
             Supporting data behind AI insights
             ════════════════════════════════════════════════════════ */}
         <section ref={el => { sectionRefs.current["fundamentals"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("fundamentals") ? <WithheldSection id="fundamentals" /> : (<>
           <SectionHeading title="Deep Analysis" subtitle="Detailed fundamentals, financials, and institutional data supporting AI insights" icon={<BarChart3 size={18} />} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1131,9 +1209,9 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                 <div>
                   <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", marginBottom: 14 }}>Valuation</div>
                   {[
-                    { label: "P/E Ratio", value: `${data.hero.pe.toFixed(1)}x`, note: pointerText(data.hero.pe, "pe") },
-                    { label: "P/B Ratio", value: `${data.hero.pb.toFixed(1)}x`, note: pointerText(data.hero.pb, "pb") },
-                    { label: "Dividend Yield", value: `${data.hero.divYield}%`, note: pointerText(data.hero.divYield, "divyield") },
+                    { label: "P/E Ratio", value: fmtNum(data.hero.pe, n => `${n.toFixed(1)}x`), note: data.hero.pe != null ? pointerText(data.hero.pe, "pe") : "Not available" },
+                    { label: "P/B Ratio", value: fmtNum(data.hero.pb, n => `${n.toFixed(1)}x`), note: data.hero.pb != null ? pointerText(data.hero.pb, "pb") : "Not available" },
+                    { label: "Dividend Yield", value: fmtNum(data.hero.divYield, n => `${n}%`), note: data.hero.divYield != null ? pointerText(data.hero.divYield, "divyield") : "Not available" },
                   ].map((item, i) => (
                     <div key={i} style={{ marginBottom: 14, paddingBottom: 12, borderBottom: i < 2 ? "1px solid #e5e7eb" : "none" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
@@ -1329,12 +1407,14 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </AIInsightCard>
             )}
           </div>
+        </>)}
         </section>
 
         {/* ════════════════════════════════════════════════════════
             SECTION 9: VALUATION
             ════════════════════════════════════════════════════════ */}
         <section ref={el => { sectionRefs.current["valuation"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("valuation") ? <WithheldSection id="valuation" /> : (<>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* DCF */}
             {data.dcfValuation && (
@@ -1408,23 +1488,25 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </AIInsightCard>
             )}
           </div>
+        </>)}
         </section>
 
         {/* ════════════════════════════════════════════════════════
             SECTION 10: TECHNICALS & OWNERSHIP
             ════════════════════════════════════════════════════════ */}
         <section ref={el => { sectionRefs.current["technicals"] = el; }} style={{ marginBottom: 36 }}>
+          {withheld("technicals") ? <WithheldSection id="technicals" /> : (<>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* Technicals */}
             <AIInsightCard icon={<Activity size={17} />} title="Technical Analysis" accentColor="#f59e0b" defaultOpen>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, paddingTop: 16 }}>
                 {[
-                  { label: "RSI (14)", value: data.technicals.rsi.toString(), note: pointerText(data.technicals.rsi, "rsi") },
-                  { label: "MACD", value: data.technicals.macd.toString(), note: data.technicals.macd > 0 ? "Bullish crossover — upside momentum" : "Bearish crossover — downside pressure" },
-                  { label: "SMA 200", value: `₹${data.technicals.sma200.toLocaleString()}`, note: data.hero.cmp > data.technicals.sma200 ? `${((data.hero.cmp/data.technicals.sma200 - 1)*100).toFixed(0)}% above — bullish` : "Below — bearish" },
-                  { label: "Support", value: `₹${data.technicals.support.toLocaleString()}`, note: "Key demand zone" },
-                  { label: "Resistance", value: `₹${data.technicals.resistance.toLocaleString()}`, note: "Supply zone" },
-                  { label: "ATR", value: data.technicals.atr.toString(), note: "Daily volatility range" },
+                  { label: "RSI (14)", value: fmtNum(data.technicals.rsi, n => n.toString()), note: data.technicals.rsi != null ? pointerText(data.technicals.rsi, "rsi") : "Not available" },
+                  { label: "MACD", value: fmtNum(data.technicals.macd, n => n.toString()), note: data.technicals.macd == null ? "Not available" : data.technicals.macd > 0 ? "MACD line above zero — upward momentum" : "MACD line below zero — downward momentum" },
+                  { label: "SMA 200", value: fmtNum(data.technicals.sma200, n => `₹${n.toLocaleString()}`), note: data.technicals.sma200 == null ? "Not available" : data.hero.cmp > data.technicals.sma200 ? `${((data.hero.cmp/data.technicals.sma200 - 1)*100).toFixed(0)}% above` : `${((1 - data.hero.cmp/data.technicals.sma200)*100).toFixed(0)}% below` },
+                  { label: "Support (pivot S1)", value: fmtNum(data.technicals.support, n => `₹${n.toLocaleString()}`), note: "Monthly classic pivot" },
+                  { label: "Resistance (pivot R1)", value: fmtNum(data.technicals.resistance, n => `₹${n.toLocaleString()}`), note: "Monthly classic pivot" },
+                  { label: "ATR (14)", value: fmtNum(data.technicals.atr, n => n.toString()), note: "Average daily range" },
                 ].map((item, i) => (
                   <div key={i} style={{ padding: "14px 16px", background: "#f8fafc", borderRadius: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
@@ -1587,6 +1669,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               </div>
             </AIInsightCard>
           </div>
+        </>)}
         </section>
 
         {/* ═══ FOOTER ═══ */}

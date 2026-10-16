@@ -1,48 +1,94 @@
 // ═══════════════════════════════════════════════════════════════════════
-// AMFI DATA SERVICE — Real-time NAV data from AMFI India
-// Source: https://www.amfiindia.com/spages/NAVAll.txt
-// This is the OFFICIAL data source used by all Indian MF platforms
+// AMFI DATA SERVICE — official NAVs from AMFI India
+// Live:     https://www.amfiindia.com/spages/NAVAll.txt (parsed by header name)
+// Metadata: src/lib/mf-master.json, built from AMFI's scheme master by
+//           scripts/sync-mf-universe.mjs (category, plan, option, launch, min amount)
+// Unit of record: the AMFI scheme code (one plan + option variant).
 // ═══════════════════════════════════════════════════════════════════════
+import { parseNavAll, parseAmfiDate } from "./amfi-parse";
+import { classify, splitCategory, type Plan, type Option, type AssetClass } from "./mf-classify";
+import masterFile from "./mf-master.json";
+
+export type SchemeStatus = "active" | "nav-stale" | "nav-invalid" | "awaiting-first-nav" | "no-nav";
 
 export interface AMFIScheme {
   schemeCode: number;
   isinGrowth: string;
   isinReinvestment: string;
+  /** AMFI NAV name (the variant's full name). */
   schemeName: string;
-  nav: number;
-  navDate: string;
+  /** Base scheme name shared by all plans/options of the portfolio (from the scheme master). */
+  baseName: string | null;
+  /** Latest NAV; null when AMFI publishes none or an invalid value. */
+  nav: number | null;
+  /** ISO date of that NAV (this is the NAV date, not the current date). */
+  navDate: string | null;
   amcName: string;
-  schemeType: string;   // "Open Ended Schemes", "Close Ended Schemes", etc.
-  schemeCategory: string; // "Equity Scheme - Large Cap Fund", etc.
+  schemeType: string;
+  /** Category label exactly as AMFI publishes it. */
+  schemeCategory: string;
+  assetClass: AssetClass;
+  subCategory: string;
+  plan: Plan;
+  option: Option;
+  idcwType: string | null;
+  idcwFrequency: string | null;
+  optionDiscontinued: boolean;
+  status: SchemeStatus;
+  launchDate: string | null;
+  closureDate: string | null;
+  minInvestment: number | null;
+  isins: string[];
 }
 
 export interface AMFIAmcSummary {
   name: string;
   slug: string;
   schemeCount: number;
-  totalNavSum: number;
   categories: string[];
   schemes: AMFIScheme[];
   lastUpdated: string;
 }
 
 export interface AMFIData {
+  /** Schemes with a valid NAV (active + nav-stale). */
   schemes: AMFIScheme[];
+  /** Every known scheme code, including those without a NAV (for search / status lookups). */
+  allSchemes: AMFIScheme[];
+  byCode: Map<number, AMFIScheme>;
   amcMap: Record<string, AMFIAmcSummary>;
   amcList: AMFIAmcSummary[];
   totalSchemes: number;
+  activeSchemes: number;
   totalAMCs: number;
   lastFetched: string;
+  /** Latest NAV date found in the file (ISO). */
   navDate: string;
   categories: string[];
+  /** "live" = AMFI NAVAll fetched now; "snapshot" = AMFI unreachable, using the dated sync snapshot. */
+  navSource: "live" | "snapshot";
+  snapshotDate: string;
 }
+
+interface MasterRow {
+  c: number; n: string; b: string | null; a: number; k: number; ac: number; sc: number; t: string;
+  p: string; o: string; it: string | null; if: string | null; od: number; i: string[];
+  mn: number | null; l: string | null; cl: string | null; s: SchemeStatus; nv: number | null; nd: string | null;
+}
+interface MasterFile { meta: { latestNavDate: string; generatedAt: string }; amcs: string[]; cats: string[]; subs: string[]; assetClasses: AssetClass[]; rows: MasterRow[] }
+const MASTER = masterFile as unknown as MasterFile;
+const MASTER_BY_CODE = new Map(MASTER.rows.map(r => [r.c, r]));
+const PLAN: Record<string, Plan> = { D: "Direct", R: "Regular", U: "Unspecified" };
+const OPTION: Record<string, Option> = { G: "Growth", I: "IDCW", B: "Bonus", U: "Unspecified" };
+const TYPE: Record<string, string> = { O: "Open Ended", C: "Close Ended", I: "Interval Fund" };
+const ACTIVE_WINDOW_DAYS = 7;
 
 // ── In-memory cache ──
 let cachedData: AMFIData | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours (AMFI updates NAV ~11pm IST)
+const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours (AMFI publishes NAVs in the evening IST)
 
-function slugify(name: string): string {
+export function slugify(name: string): string {
   return name
     .toLowerCase()
     .replace(/mutual fund/gi, "mf")
@@ -50,149 +96,109 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function normalizeAMCName(raw: string): string {
-  return raw
-    .replace(/\s+/g, " ")
-    .trim();
+const days = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+
+function fromMaster(m: MasterRow, nav: number | null, navDate: string | null, status: SchemeStatus): AMFIScheme {
+  const category = MASTER.cats[m.k];
+  return {
+    schemeCode: m.c, isinGrowth: m.i[0] ?? "", isinReinvestment: m.i[1] ?? "", schemeName: m.n, baseName: m.b,
+    nav, navDate, amcName: MASTER.amcs[m.a], schemeType: TYPE[m.t] ?? "Open Ended", schemeCategory: category,
+    assetClass: MASTER.assetClasses[m.ac] ?? splitCategory(category).assetClass, subCategory: MASTER.subs[m.sc],
+    plan: PLAN[m.p], option: OPTION[m.o], idcwType: m.it, idcwFrequency: m.if, optionDiscontinued: !!m.od,
+    status, launchDate: m.l, closureDate: m.cl, minInvestment: m.mn, isins: m.i,
+  };
 }
 
-/**
- * Parse the AMFI NAVAll.txt format:
- * Lines are either:
- * - Blank lines (separators)
- * - Scheme type headers: "Open Ended Schemes(Equity Scheme - Large Cap Fund)"
- * - AMC name headers (plain text, no semicolons)
- * - Data rows: "SchemeCode;ISIN1;ISIN2;SchemeName;NAV;Date"
- */
-function parseAMFIText(text: string): AMFIData {
-  const lines = text.split("\n");
-  const schemes: AMFIScheme[] = [];
-  let currentType = "";
-  let currentCategory = "";
-  let currentAMC = "";
-  let latestNavDate = "";
+/** Build the dataset from a NAVAll text (live) or, when null, from the dated sync snapshot. */
+export function buildAMFIData(text: string | null): AMFIData {
+  const all: AMFIScheme[] = [];
+  const seen = new Set<number>();
+  let latest = "";
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Scheme type + category header
-    // e.g. "Open Ended Schemes(Equity Scheme - Large Cap Fund)"
-    const typeMatch = line.match(/^(Open Ended Schemes|Close Ended Schemes|Interval Fund Schemes)\s*\((.+)\)\s*$/i);
-    if (typeMatch) {
-      currentType = typeMatch[1];
-      currentCategory = typeMatch[2];
-      continue;
-    }
-
-    // Check if data row (has semicolons — at least 4)
-    if (line.includes(";")) {
-      const parts = line.split(";");
-      if (parts.length >= 5) {
-        const schemeCode = parseInt(parts[0].trim(), 10);
-        if (isNaN(schemeCode)) continue;
-
-        const navStr = parts[4]?.trim();
-        const nav = parseFloat(navStr);
-        if (isNaN(nav)) continue; // skip N/A NAVs
-
-        const navDate = parts[5]?.trim() || "";
-        if (navDate && navDate > latestNavDate) latestNavDate = navDate;
-
-        schemes.push({
-          schemeCode,
-          isinGrowth: parts[1]?.trim() || "",
-          isinReinvestment: parts[2]?.trim() || "",
-          schemeName: parts[3]?.trim() || "",
-          nav,
-          navDate,
-          amcName: currentAMC,
-          schemeType: currentType,
-          schemeCategory: currentCategory,
+  if (text) {
+    const rows = parseNavAll(text).rows.filter(r => /^\d+$/.test(r.code));
+    for (const r of rows) { const d = parseAmfiDate(r.date); if (d && d > latest) latest = d; }
+    for (const r of rows) {
+      const code = +r.code;
+      if (seen.has(code)) continue;
+      seen.add(code);
+      const v = Number(r.navRaw.replace(/,/g, ""));
+      const nav = Number.isFinite(v) && v > 0 ? v : null;
+      const navDate = parseAmfiDate(r.date);
+      const status: SchemeStatus = nav === null ? "nav-invalid" : navDate && days(navDate, latest) <= ACTIVE_WINDOW_DAYS ? "active" : "nav-stale";
+      const m = MASTER_BY_CODE.get(code);
+      if (m) {
+        // Live NAV file wins for name, plan and option (they can change between syncs).
+        const live = classify(r.planCol, r.optionCol, r.name, m.b ?? undefined);
+        const s = fromMaster({ ...m, n: r.name || m.n }, nav, navDate, status);
+        all.push({ ...s, plan: live.plan, option: live.option, idcwType: live.idcwType, idcwFrequency: live.idcwFrequency, optionDiscontinued: live.optionDiscontinued });
+      } else {
+        // New code since the last sync: classify from the live row alone.
+        const cls = classify(r.planCol, r.optionCol, r.name);
+        const { assetClass, subCategory } = splitCategory(r.section);
+        all.push({
+          schemeCode: code, isinGrowth: r.isin1, isinReinvestment: r.isin2, schemeName: r.name, baseName: null, nav, navDate,
+          amcName: r.amc.replace(/\s+/g, " ").trim(), schemeType: r.sectionType.replace(/ Schemes$/, "").replace("Interval Fund", "Interval Fund"),
+          schemeCategory: r.section, assetClass, subCategory, ...cls, status, launchDate: null, closureDate: null, minInvestment: null,
+          isins: [r.isin1, r.isin2].filter(i => /^IN[A-Z0-9]{10}$/.test(i)),
         });
       }
-      continue;
     }
-
-    // If not a header and not data, it's an AMC name
-    // AMC name lines don't contain semicolons and aren't scheme type headers
-    if (!line.match(/^(Scheme Code|Open Ended|Close Ended|Interval Fund)/i)) {
-      currentAMC = normalizeAMCName(line);
-    }
+  } else {
+    latest = MASTER.meta.latestNavDate;
+    for (const m of MASTER.rows) if (m.nv !== null) { seen.add(m.c); all.push(fromMaster(m, m.nv, m.nd, m.s)); }
+  }
+  // Codes in the master without a NAV (wound up, merged, matured, or awaiting first NAV).
+  for (const m of MASTER.rows) {
+    if (seen.has(m.c)) continue;
+    const status: SchemeStatus = m.s === "awaiting-first-nav" ? "awaiting-first-nav" : "no-nav";
+    all.push(fromMaster(m, null, null, status));
   }
 
-  // Build AMC map
+  const withNav = all.filter(s => s.nav !== null);
   const amcMap: Record<string, AMFIAmcSummary> = {};
-  for (const scheme of schemes) {
-    const key = scheme.amcName;
-    if (!key) continue;
-    if (!amcMap[key]) {
-      amcMap[key] = {
-        name: key,
-        slug: slugify(key),
-        schemeCount: 0,
-        totalNavSum: 0,
-        categories: [],
-        schemes: [],
-        lastUpdated: latestNavDate,
-      };
-    }
+  for (const s of withNav) {
+    const key = s.amcName;
+    if (!amcMap[key]) amcMap[key] = { name: key, slug: slugify(key), schemeCount: 0, categories: [], schemes: [], lastUpdated: latest };
     amcMap[key].schemeCount++;
-    amcMap[key].totalNavSum += scheme.nav;
-    amcMap[key].schemes.push(scheme);
-    if (!amcMap[key].categories.includes(scheme.schemeCategory)) {
-      amcMap[key].categories.push(scheme.schemeCategory);
-    }
+    amcMap[key].schemes.push(s);
+    if (!amcMap[key].categories.includes(s.schemeCategory)) amcMap[key].categories.push(s.schemeCategory);
   }
-
   const amcList = Object.values(amcMap).sort((a, b) => b.schemeCount - a.schemeCount);
-
-  // Unique categories
-  const categories = [...new Set(schemes.map(s => s.schemeCategory))].filter(Boolean).sort();
-
   return {
-    schemes,
-    amcMap,
-    amcList,
-    totalSchemes: schemes.length,
-    totalAMCs: amcList.length,
-    lastFetched: new Date().toISOString(),
-    navDate: latestNavDate,
-    categories,
+    schemes: withNav, allSchemes: all, byCode: new Map(all.map(s => [s.schemeCode, s])),
+    amcMap, amcList, totalSchemes: withNav.length, activeSchemes: withNav.filter(s => s.status === "active").length,
+    totalAMCs: amcList.length, lastFetched: new Date().toISOString(), navDate: latest,
+    categories: [...new Set(withNav.map(s => s.schemeCategory))].filter(Boolean).sort(),
+    navSource: text ? "live" : "snapshot", snapshotDate: MASTER.meta.latestNavDate,
   };
 }
 
 /**
- * Fetch and parse AMFI NAV data with caching
+ * Fetch and parse AMFI NAV data (6-hour cache). If AMFI is unreachable, serves the
+ * dated sync snapshot with navSource="snapshot" — never an empty or invented dataset.
  */
 export async function getAMFIData(): Promise<AMFIData> {
   const now = Date.now();
-
-  // Return cached if fresh
-  if (cachedData && (now - cacheTimestamp) < CACHE_TTL) {
-    return cachedData;
-  }
-
+  if (cachedData && now - cacheTimestamp < CACHE_TTL) return cachedData;
   try {
     const res = await fetch("https://www.amfiindia.com/spages/NAVAll.txt", {
-      next: { revalidate: 21600 }, // 6 hour ISR cache
-      headers: {
-        "User-Agent": "WhiteTiger-Research/1.0",
-      },
+      next: { revalidate: 21600 },
+      headers: { "User-Agent": "WhiteTiger-Research/1.0" },
     });
-
-    if (!res.ok) {
-      throw new Error(`AMFI fetch failed: ${res.status}`);
-    }
-
+    if (!res.ok) throw new Error(`AMFI fetch failed: ${res.status}`);
     const text = await res.text();
-    cachedData = parseAMFIText(text);
+    const data = buildAMFIData(text);
+    if (data.totalSchemes < 1000) throw new Error(`AMFI file parsed to only ${data.totalSchemes} schemes`);
+    cachedData = data;
     cacheTimestamp = now;
     return cachedData;
   } catch (err) {
-    // Return stale cache if available
+    console.error("AMFI live fetch failed; using snapshot:", err);
     if (cachedData) return cachedData;
-    throw err;
+    cachedData = buildAMFIData(null);
+    cacheTimestamp = now - CACHE_TTL + 15 * 60 * 1000; // retry live in 15 minutes
+    return cachedData;
   }
 }
 
@@ -215,113 +221,60 @@ export async function getSchemeHistory(schemeCode: number): Promise<{
   }
 }
 
+const STATUS_RANK: Record<SchemeStatus, number> = { active: 0, "awaiting-first-nav": 1, "nav-stale": 2, "nav-invalid": 3, "no-nav": 4 };
+
 /**
- * Search schemes across all AMCs
+ * Search every known scheme code by name, AMC, scheme code or ISIN.
+ * Exact code/ISIN matches rank first; active schemes rank above inactive ones.
  */
-export function searchSchemes(data: AMFIData, query: string, limit = 50): AMFIScheme[] {
-  if (!query.trim()) return data.schemes.slice(0, limit);
-  const q = query.toLowerCase();
+export function searchSchemes(data: AMFIData, query: string, limit = 50, opts: { includeInactive?: boolean } = {}): AMFIScheme[] {
+  const q = query.trim().toLowerCase();
+  const pool = opts.includeInactive ? data.allSchemes : data.allSchemes.filter(s => s.status === "active");
+  if (!q) return pool.slice(0, limit);
+  const words = q.split(/\s+/).filter(Boolean);
   const results: { scheme: AMFIScheme; score: number }[] = [];
-
-  for (const s of data.schemes) {
-    const name = s.schemeName.toLowerCase();
-    const amc = s.amcName.toLowerCase();
+  for (const s of pool) {
+    const name = s.schemeName.toLowerCase(), base = (s.baseName ?? "").toLowerCase(), amc = s.amcName.toLowerCase();
     let score = 0;
-
-    if (name === q) score = 100;
-    else if (name.startsWith(q)) score = 80;
-    else if (amc.startsWith(q)) score = 70;
-    else if (name.includes(q)) score = 50;
-    else if (amc.includes(q)) score = 40;
+    if (String(s.schemeCode) === q || s.isins.some(i => i.toLowerCase() === q)) score = 200;
+    else if (name === q || base === q) score = 100;
+    else if (name.startsWith(q) || base.startsWith(q)) score = 80;
+    else if (amc.startsWith(q)) score = 60;
+    else if (name.includes(q) || base.includes(q)) score = 50;
     else {
-      const words = q.split(/\s+/);
-      const matched = words.filter(w => name.includes(w) || amc.includes(w));
-      if (matched.length > 0) score = 10 + matched.length * 12;
+      const hay = `${name} ${base} ${amc} ${s.subCategory.toLowerCase()}`;
+      if (words.length > 1 && words.every(w => hay.includes(w))) score = 30 + words.length;
     }
-
-    if (score > 0) results.push({ scheme: s, score });
+    if (score > 0) results.push({ scheme: s, score: score - STATUS_RANK[s.status] * 5 });
   }
-
-  return results
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map(r => r.scheme);
+  return results.sort((x, y) => y.score - x.score || x.scheme.schemeName.localeCompare(y.scheme.schemeName)).slice(0, limit).map(r => r.scheme);
 }
 
-/**
- * Resolve the best live NAV for a curated fund name. Prefers the
- * Direct + Growth plan (the canonical NAV investors compare against).
- * Returns null when there is no confident match so callers can fall back.
- */
-export function resolveNav(
-  data: AMFIData,
-  fundName: string
-): { nav: number; navDate: string; schemeName: string; schemeCode: number } | null {
-  const matches = searchSchemes(data, fundName, 25);
-  if (!matches.length) return null;
-
-  const prefer = (s: AMFIScheme) => {
-    const n = s.schemeName.toLowerCase();
-    let p = 0;
-    if (n.includes("direct")) p += 2;
-    if (n.includes("growth")) p += 2;
-    if (n.includes("idcw") || n.includes("dividend") || n.includes("payout") || n.includes("reinvest")) p -= 2;
-    return p;
-  };
-
-  // Highest search relevance is preserved by searchSchemes order; within the
-  // top band, prefer Direct-Growth.
-  const top = matches.slice(0, 8).sort((a, b) => prefer(b) - prefer(a))[0];
-  if (!top || !(top.nav > 0)) return null;
-  return { nav: top.nav, navDate: top.navDate, schemeName: top.schemeName, schemeCode: top.schemeCode };
+export interface SchemeFilter {
+  assetClass?: string; subCategory?: string; category?: string; amcName?: string;
+  plan?: string; option?: string; schemeType?: string; status?: string; search?: string;
 }
 
-/**
- * Filter schemes by category
- */
-export function filterSchemes(
-  data: AMFIData,
-  opts: {
-    category?: string;
-    amcName?: string;
-    schemeType?: string;
-    minNav?: number;
-    maxNav?: number;
-    search?: string;
-  },
-  limit = 100,
-  offset = 0
-): { schemes: AMFIScheme[]; total: number } {
-  let filtered = data.schemes;
+/** Exact-match filters (case-insensitive; subCategory accepts "a|b" for any of several). status defaults to "active"; pass "all" for every code. */
+export function filterSchemes(data: AMFIData, opts: SchemeFilter, limit = 100, offset = 0): { schemes: AMFIScheme[]; total: number } {
+  const eq = (a: string | null | undefined, b?: string) => !b || (a ?? "").toLowerCase() === b.toLowerCase();
+  const status = opts.status ?? "active";
+  const q = opts.search?.trim().toLowerCase();
+  const filtered = data.allSchemes.filter(s =>
+    (status === "all" || s.status === status) &&
+    eq(s.assetClass, opts.assetClass) && (!opts.subCategory || opts.subCategory.split("|").some(v => eq(s.subCategory, v))) && eq(s.amcName, opts.amcName) &&
+    eq(s.plan, opts.plan) && eq(s.option, opts.option) &&
+    (!opts.category || s.schemeCategory.toLowerCase().includes(opts.category.toLowerCase())) &&
+    (!opts.schemeType || s.schemeType.toLowerCase().includes(opts.schemeType.toLowerCase())) &&
+    (!q || s.schemeName.toLowerCase().includes(q) || (s.baseName ?? "").toLowerCase().includes(q) || String(s.schemeCode) === q)
+  ).sort((x, y) => x.amcName.localeCompare(y.amcName) || (x.baseName ?? x.schemeName).localeCompare(y.baseName ?? y.schemeName) || x.schemeCode - y.schemeCode);
+  return { schemes: filtered.slice(offset, offset + limit), total: filtered.length };
+}
 
-  if (opts.category) {
-    filtered = filtered.filter(s => s.schemeCategory.toLowerCase().includes(opts.category!.toLowerCase()));
-  }
-  if (opts.amcName) {
-    filtered = filtered.filter(s => s.amcName.toLowerCase().includes(opts.amcName!.toLowerCase()));
-  }
-  if (opts.schemeType) {
-    filtered = filtered.filter(s => s.schemeType.toLowerCase().includes(opts.schemeType!.toLowerCase()));
-  }
-  if (opts.minNav !== undefined) {
-    filtered = filtered.filter(s => s.nav >= opts.minNav!);
-  }
-  if (opts.maxNav !== undefined) {
-    filtered = filtered.filter(s => s.nav <= opts.maxNav!);
-  }
-  if (opts.search) {
-    const q = opts.search.toLowerCase();
-    filtered = filtered.filter(s =>
-      s.schemeName.toLowerCase().includes(q) ||
-      s.amcName.toLowerCase().includes(q) ||
-      String(s.schemeCode).includes(q)
-    );
-  }
-
-  return {
-    schemes: filtered.slice(offset, offset + limit),
-    total: filtered.length,
-  };
+/** Other plans/options of the same portfolio (same AMC + base scheme name). */
+export function siblingSchemes(data: AMFIData, scheme: AMFIScheme): AMFIScheme[] {
+  if (!scheme.baseName) return [];
+  return data.allSchemes.filter(s => s.schemeCode !== scheme.schemeCode && s.amcName === scheme.amcName && s.baseName === scheme.baseName);
 }
 
 // ── AMC enrichment data (for AMCs we have curated info about) ──

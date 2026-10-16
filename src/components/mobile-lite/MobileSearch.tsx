@@ -1,11 +1,10 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, X, ChevronLeft, TrendingUp, ArrowUpRight } from "lucide-react";
-import { searchStocks, type StockEntry } from "@/lib/stocks";
+import { searchStocks, quoteKey, stockSlug, type StockEntry } from "@/lib/stocks";
 import { searchCrypto, type CryptoEntry } from "@/lib/crypto";
 import { searchCommodities, type CommodityEntry } from "@/lib/commodities";
 import { searchCurrencies, type CurrencyEntry } from "@/lib/currencies";
-import { searchMutualFunds, type MutualFundEntry } from "@/lib/mutualfunds";
 
 /* ══════════════════════════════════════════════════════════════════
    WHITE TIGER — Mobile Search
@@ -24,6 +23,7 @@ export default function MobileSearch({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const latestQuery = useRef("");
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -31,14 +31,15 @@ export default function MobileSearch({ onBack }: { onBack: () => void }) {
 
   const handleSearch = useCallback((val: string) => {
     setQuery(val);
+    latestQuery.current = val;
     if (val.trim().length < 2) { setResults([]); return; }
 
     const all: SearchResult[] = [];
 
     // Stocks
     searchStocks(val).slice(0, 5).forEach((s: StockEntry) => {
-      const slug = s.ticker.replace(".NS", "").toLowerCase().replace(/[^a-z0-9]/g, "-");
-      all.push({ name: s.name, symbol: s.ticker.replace(".NS", ""), type: "Stock", typeColor: "#4A9EFF", href: `/stocks/${slug}` });
+      const slug = stockSlug(s);
+      all.push({ name: s.name, symbol: quoteKey(s), type: "Stock", typeColor: "#4A9EFF", href: `/stocks/${slug}` });
     });
 
     // Crypto
@@ -58,13 +59,19 @@ export default function MobileSearch({ onBack }: { onBack: () => void }) {
       all.push({ name: c.name, symbol: c.pair, type: "Forex", typeColor: "#34D399", href: `/currency/${slug}` });
     });
 
-    // Mutual Funds
-    searchMutualFunds(val).slice(0, 3).forEach((f: MutualFundEntry) => {
-      const slug = f.symbol.toLowerCase().replace(/[^a-z0-9]/g, "-");
-      all.push({ name: f.name, symbol: f.symbol, type: "MF", typeColor: "#a78bfa", href: `/mutualfunds/${slug}` });
-    });
-
     setResults(all);
+
+    // Mutual funds: every AMFI scheme code, searched server-side; appended if the query is still current.
+    fetch(`/api/mf-data?mode=search&limit=3&q=${encodeURIComponent(val.trim())}`)
+      .then(r => r.json())
+      .then(j => {
+        if (latestQuery.current !== val) return;
+        const mf: SearchResult[] = (j.results ?? []).map((f: { schemeCode: number; schemeName: string; plan: string; option: string }) => ({
+          name: f.schemeName, symbol: `${f.plan} · ${f.option}`, type: "MF", typeColor: "#a78bfa", href: `/mf-intelligence/${f.schemeCode}`,
+        }));
+        if (mf.length) setResults(prev => [...prev, ...mf]);
+      })
+      .catch(() => { /* MF results are optional in quick search */ });
   }, []);
 
   return (

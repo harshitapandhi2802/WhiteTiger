@@ -1,0 +1,500 @@
+{
+ "generatedAt": "2026-10-14T15:24:18.702Z",
+ "warnings": [
+  "BSE master is 45 days old (file dated 2026-08-30); listings after that date are missing until it is re-downloaded manually."
+ ],
+ "counts": {
+  "nseMainRows": 2605,
+  "nseSmeRows": 580,
+  "bseActiveRows": 4979,
+  "nseListed": 3185,
+  "bseListed": 4979,
+  "both": 2422,
+  "nseOnly": 763,
+  "bseOnly": 2557,
+  "uniqueCompanies": 5742,
+  "withoutIsin": 2,
+  "nseSeries": {
+   "BE": 227,
+   "BZ": 30,
+   "EQ": 2348,
+   "SM": 478,
+   "ST": 101,
+   "SZ": 1
+  },
+  "withOfficialIndustry": 748,
+  "withCapClass": 902,
+  "unclassifiedSector": 4840
+ },
+ "baseline": {
+  "appEntriesBefore": 5128,
+  "officialCompaniesRepresented": 5094,
+  "missingOfficialCompanies": 648,
+  "coveragePct": 88.71,
+  "nseCoveragePct": 79.18,
+  "bseCoveragePct": 99.74,
+  "phantomSymbolsNotOnAnyExchangeMaster": 22,
+  "measuredAt": "2026-10-14T14:33:24.440Z"
+ },
+ "overlay": {
+  "applied": 606,
+  "symbolNotOfficial": [
+   {
+    "symbol": "AARTISURFA",
+    "name": "Aarti Surfactants",
+    "src": "extended"
+   },
+   {
+    "symbol": "ADANITRANS",
+    "name": "Adani Transmission",
+    "src": "extended"
+   },
+   {
+    "symbol": "AEGISCHEM",
+    "name": "Aegis Logistics",
+    "src": "extended"
+   },
+   {
+    "symbol": "AKZOINDIA",
+    "name": "Akzo Nobel India",
+    "src": "extended"
+   },
+   {
+    "symbol": "AMARAJABAT",
+    "name": "Amara Raja Energy",
+    "src": "extended"
+   },
+   {
+    "symbol": "AMIORG",
+    "name": "Ami Organics",
+    "src": "extended"
+   },
+   {
+    "symbol": "ARCHEAN",
+    "name": "Archean Chemical",
+    "src": "extended"
+   },
+   {
+    "symbol": "AROHAN",
+    "name": "Arohan Financial",
+    "src": "extended"
+   },
+   {
+    "symbol": "ASIRVAD",
+    "name": "Asirvad Micro Finance",
+    "src": "extended"
+   },
+   {
+    "symbol": "ATFL",
+    "name": "Agro Tech Foods",
+    "src": "extended"
+   },
+   {
+    "symbol": "BFRX",
+    "name": "Bharat FIH",
+    "src": "extended"
+   },
+   {
+    "symbol": "BHARATBIJ",
+    "name": "Bharat Bijlee",
+    "src": "extended"
+   },
+   {
+    "symbol": "BIRET",
+    "name": "Brookfield India REIT",
+    "src": "extended"
+   },
+   {
+    "symbol": "CENTURYTEX",
+    "name": "Century Textiles (Paper)",
+    "src": "extended"
+   },
+   {
+    "symbol": "CIGNITITEC",
+    "name": "CIGNITI Technologies",
+    "src": "extended"
+   },
+   {
+    "symbol": "ELINELEX",
+    "name": "Elin Electronics",
+    "src": "extended"
+   },
+   {
+    "symbol": "EMBASSY",
+    "name": "Embassy Office Parks REIT",
+    "src": "extended"
+   },
+   {
+    "symbol": "EPCIND",
+    "name": "EPC Industrie",
+    "src": "extended"
+   },
+   {
+    "symbol": "FRETAIL",
+    "name": "Future Supply Chain",
+    "src": "extended"
+   },
+   {
+    "symbol": "GATI",
+    "name": "Gati",
+    "src": "curated"
+   },
+   {
+    "symbol": "GDL",
+    "name": "Gateway Distriparks",
+    "src": "extended"
+   },
+   {
+    "symbol": "GET&D",
+    "name": "GE T&D India",
+    "src": "extended"
+   },
+   {
+    "symbol": "GMRINFRA",
+    "name": "GMR Airports",
+    "src": "curated"
+   },
+   {
+    "symbol": "GOLDBEES",
+    "name": "Gold ETF (Nippon)",
+    "src": "curated"
+   },
+   {
+    "symbol": "GSPL",
+    "name": "Gujarat State Petronet",
+    "src": "extended"
+   },
+   {
+    "symbol": "GUJGASLTD",
+    "name": "Gujarat Gas",
+    "src": "curated"
+   },
+   {
+    "symbol": "HITACHIIN",
+    "name": "Hitachi India",
+    "src": "extended"
+   },
+   {
+    "symbol": "IBREALEST",
+    "name": "Indiabulls Real Estate",
+    "src": "extended"
+   },
+   {
+    "symbol": "IIFLSEC",
+    "name": "IIFL Securities",
+    "src": "extended"
+   },
+   {
+    "symbol": "INDIAPEST",
+    "name": "India Pesticides",
+    "src": "extended"
+   },
+   {
+    "symbol": "ITDCEM",
+    "name": "ITD Cementation",
+    "src": "extended"
+   },
+   {
+    "symbol": "JBCHEPHARM",
+    "name": "JB Chemicals",
+    "src": "extended"
+   },
+   {
+    "symbol": "KALPATPOWR",
+    "name": "Kalpataru Power",
+    "src": "extended"
+   },
+   {
+    "symbol": "KALYANISTR",
+    "name": "Kalyani Steels",
+    "src": "extended"
+   },
+   {
+    "symbol": "LAXMIMACH",
+    "name": "Lakshmi Machine Works",
+    "src": "extended"
+   },
+   {
+    "symbol": "LIQUIDBEES",
+    "name": "Liquid ETF (Nippon)",
+    "src": "curated"
+   },
+   {
+    "symbol": "LTFH",
+    "name": "L&T Finance",
+    "src": "curated"
+   },
+   {
+    "symbol": "LTIM",
+    "name": "LTIMindtree",
+    "src": "curated"
+   },
+   {
+    "symbol": "MAJESCO",
+    "name": "Majesco",
+    "src": "extended"
+   },
+   {
+    "symbol": "MEGH",
+    "name": "Meghmani Organics",
+    "src": "extended"
+   },
+   {
+    "symbol": "MIDCPNIFTY",
+    "name": "Nifty Midcap 150 ETF",
+    "src": "curated"
+   },
+   {
+    "symbol": "MINDAIND",
+    "name": "Minda Industries",
+    "src": "curated"
+   },
+   {
+    "symbol": "MINDSPACE",
+    "name": "Mindspace REIT",
+    "src": "extended"
+   },
+   {
+    "symbol": "MMYT",
+    "name": "MakeMyTrip",
+    "src": "curated"
+   },
+   {
+    "symbol": "NAVKAR",
+    "name": "Navkar Corporation",
+    "src": "extended"
+   },
+   {
+    "symbol": "NBVENTURES",
+    "name": "Nava Bharat Ventures",
+    "src": "extended"
+   },
+   {
+    "symbol": "NIITTECH",
+    "name": "NIIT Technologies",
+    "src": "curated"
+   },
+   {
+    "symbol": "NXST",
+    "name": "Nexus Select Trust",
+    "src": "extended"
+   },
+   {
+    "symbol": "PAUSHAK",
+    "name": "Paushak",
+    "src": "extended"
+   },
+   {
+    "symbol": "SAVITR",
+    "name": "Savita Oil Technologies",
+    "src": "extended"
+   },
+   {
+    "symbol": "SEQUENT",
+    "name": "Sequent Scientific",
+    "src": "extended"
+   },
+   {
+    "symbol": "SESHASAYEE",
+    "name": "Seshasayee Paper",
+    "src": "extended"
+   },
+   {
+    "symbol": "SHALPAINT",
+    "name": "Shalimar Paints",
+    "src": "extended"
+   },
+   {
+    "symbol": "SHANTIEDU",
+    "name": "Shanti Edutech",
+    "src": "extended"
+   },
+   {
+    "symbol": "SIGNATUREG",
+    "name": "Signature Global",
+    "src": "curated"
+   },
+   {
+    "symbol": "SILVERBEES",
+    "name": "Silver ETF (Nippon)",
+    "src": "curated"
+   },
+   {
+    "symbol": "SINCLAIRS",
+    "name": "Sinclairs Hotels",
+    "src": "extended"
+   },
+   {
+    "symbol": "SUNDRMCLAY",
+    "name": "Sundaram Clayton",
+    "src": "extended"
+   },
+   {
+    "symbol": "SUVENPHAR",
+    "name": "Suven Pharma",
+    "src": "extended"
+   },
+   {
+    "symbol": "TATACOFFEE",
+    "name": "Tata Coffee (now Tata Consumer)",
+    "src": "curated"
+   },
+   {
+    "symbol": "TATAMOTORS",
+    "name": "Tata Motors",
+    "src": "curated"
+   },
+   {
+    "symbol": "TCNSBRANDS",
+    "name": "TCNS Clothing",
+    "src": "extended"
+   },
+   {
+    "symbol": "THDC",
+    "name": "THDC India",
+    "src": "extended"
+   },
+   {
+    "symbol": "TIPSINDLTD",
+    "name": "Tips Industries",
+    "src": "extended"
+   },
+   {
+    "symbol": "TV18BRDCST",
+    "name": "TV18 Broadcast",
+    "src": "curated"
+   },
+   {
+    "symbol": "UJJIVAN",
+    "name": "Ujjivan Financial",
+    "src": "curated"
+   },
+   {
+    "symbol": "WABCOINDIA",
+    "name": "Wabco India",
+    "src": "extended"
+   },
+   {
+    "symbol": "WEBSOLENER",
+    "name": "Websol Energy",
+    "src": "curated"
+   }
+  ],
+  "nameMismatch": [
+   {
+    "symbol": "BANKBEES",
+    "curatedName": "Bank Nifty ETF (Nippon)",
+    "officialName": "Reliance Mutual Fund-Permitted"
+   },
+   {
+    "symbol": "CPSEETF",
+    "curatedName": "CPSE ETF",
+    "officialName": "Nippon India Mutual Fund"
+   },
+   {
+    "symbol": "HIRECT",
+    "curatedName": "Hira Ferro Alloys",
+    "officialName": "Hirect Limited"
+   },
+   {
+    "symbol": "JUNIORBEES",
+    "curatedName": "Next 50 ETF (ICICI)",
+    "officialName": "Reliance Mutual Fund-Permitted"
+   },
+   {
+    "symbol": "NIFTYBEES",
+    "curatedName": "Nifty 50 ETF (Nippon)",
+    "officialName": "Reliance Mutual Fund-Permitted"
+   },
+   {
+    "symbol": "RAJRATAN",
+    "curatedName": "Raj Rayon Industries",
+    "officialName": "Rajratan Global Wire Limited"
+   },
+   {
+    "symbol": "SHANTIGEAR",
+    "curatedName": "Shanti Educational",
+    "officialName": "Shanthi Gears Limited"
+   },
+   {
+    "symbol": "SMALLCAP",
+    "curatedName": "Nifty Smallcap 250 ETF",
+    "officialName": "Mirae Asset Mutual Fund"
+   },
+   {
+    "symbol": "WESTLIFE",
+    "curatedName": "West Coast Paper",
+    "officialName": "WESTLIFE FOODWORLD LIMITED"
+   }
+  ],
+  "capConflicts": 190,
+  "resolvedViaBseId": 7
+ },
+ "lifecycle": {
+  "added": 0,
+  "removed": 0,
+  "symbolChanged": 0,
+  "renamed": 0
+ },
+ "sources": {
+  "nse_EQUITY_L.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "83154043b3431346",
+   "rows": 2605
+  },
+  "nse_SME_EQUITY_L.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "39718036197085fb",
+   "rows": 580
+  },
+  "bse_Equity.csv": {
+   "fileDate": "2026-08-30",
+   "sha256": "33f33901b336f4bf",
+   "rows": 4979
+  },
+  "idx_nifty100.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "0a53ad14c15e9ec2",
+   "rows": 100
+  },
+  "idx_niftymidcap150.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "3fe5312472d11302",
+   "rows": 150
+  },
+  "idx_niftysmallcap250.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "48ed754ed01486a3",
+   "rows": 251
+  },
+  "idx_niftymicrocap250.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "974ff2493bbb8b71",
+   "rows": 254
+  },
+  "idx_nifty500.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "2959bf206239284e",
+   "rows": 501
+  },
+  "idx_niftytotalmarket.csv": {
+   "fileDate": "2026-10-14",
+   "sha256": "692caee1b8e4fd11",
+   "rows": 755
+  }
+ },
+ "bseWithoutIsin": [
+  {
+   "exchange": "BSE",
+   "code": "523031",
+   "id": "ADSDIAG",
+   "name": "A D S Diagnostics Ltd"
+  },
+  {
+   "exchange": "BSE",
+   "code": "531562",
+   "id": "PUSHPIN",
+   "name": "Pushpsons Industries Ltd"
+  }
+ ]
+}

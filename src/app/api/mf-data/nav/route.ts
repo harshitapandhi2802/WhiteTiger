@@ -1,84 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSchemeHistory } from "@/lib/amfi-service";
+import { parseMfapiHistory, trailingReturn, STANDARD_PERIODS, shiftDate, navOnOrBefore } from "@/lib/mf-returns";
 
 export const maxDuration = 30;
 
 /**
  * GET /api/mf-data/nav?code=119598
- * Returns historical NAV data for a specific scheme code
+ * NAV history summary for one AMFI scheme code. Returns are date-based (see
+ * src/lib/mf-returns.ts) — a missing period is null, never 0.
  */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
-
-  if (!code) {
+  const code = Number(new URL(req.url).searchParams.get("code"));
+  if (!Number.isInteger(code) || code <= 0) {
     return NextResponse.json({ error: "Scheme code required (e.g., ?code=119598)" }, { status: 400 });
   }
 
-  const schemeCode = parseInt(code, 10);
-  if (isNaN(schemeCode)) {
-    return NextResponse.json({ error: "Invalid scheme code" }, { status: 400 });
-  }
-
   try {
-    const history = await getSchemeHistory(schemeCode);
-    if (!history) {
+    const history = await getSchemeHistory(code);
+    if (!history?.data?.length) {
       return NextResponse.json({ error: "Scheme not found or data unavailable" }, { status: 404 });
     }
+    const { series, issues } = parseMfapiHistory(history.data);
+    if (series.length < 2) return NextResponse.json({ error: "Not enough NAV history" }, { status: 404 });
 
-    // Parse and compute basic stats
-    const navData = history.data
-      .slice(0, 365) // Last 1 year of data
-      .map(d => ({ date: d.date, nav: parseFloat(d.nav) }))
-      .filter(d => !isNaN(d.nav));
+    const latest = series[series.length - 1], prev = series[series.length - 2];
+    const returns: Record<string, number | null> = {};
+    for (const p of STANDARD_PERIODS.filter(p => ["1W", "1M", "3M", "6M", "1Y"].includes(p.label))) {
+      const r = trailingReturn(series, p);
+      returns[p.label] = r.absolutePct === null ? null : Math.round(r.absolutePct * 100) / 100;
+    }
+    // YTD: from the last NAV of the previous calendar year.
+    const ytdStart = navOnOrBefore(series, `${+latest.date.slice(0, 4) - 1}-12-31`);
+    returns.YTD = ytdStart ? Math.round((latest.nav / ytdStart.nav - 1) * 1e4) / 100 : null;
 
-    const latestNav = navData[0]?.nav || 0;
-    const prevNav = navData[1]?.nav || latestNav;
-    const dayChange = latestNav - prevNav;
-    const dayChangePct = prevNav ? ((dayChange / prevNav) * 100) : 0;
-
-    // Compute period returns
-    const getNavAtOffset = (days: number) => {
-      const entry = navData[Math.min(days, navData.length - 1)];
-      return entry?.nav || latestNav;
-    };
-
-    const computeReturn = (startNav: number) =>
-      startNav ? Number(((latestNav - startNav) / startNav * 100).toFixed(2)) : 0;
-
-    const returns = {
-      "1W": computeReturn(getNavAtOffset(5)),
-      "1M": computeReturn(getNavAtOffset(22)),
-      "3M": computeReturn(getNavAtOffset(66)),
-      "6M": computeReturn(getNavAtOffset(132)),
-      "1Y": computeReturn(getNavAtOffset(252)),
-      "YTD": computeReturn(getNavAtOffset(Math.min(navData.length - 1, 120))), // approximate
-    };
-
-    // Compute 52W high/low
-    const yearNavs = navData.slice(0, 252).map(d => d.nav);
-    const high52W = Math.max(...yearNavs);
-    const low52W = Math.min(...yearNavs);
+    const yearAgo = shiftDate(latest.date, { years: -1 });
+    const lastYear = series.filter(p => p.date > yearAgo);
+    const hasFullYear = series[0].date <= yearAgo;
 
     return NextResponse.json({
       success: true,
       meta: history.meta,
-      latestNav,
-      latestDate: navData[0]?.date,
-      dayChange: Number(dayChange.toFixed(2)),
-      dayChangePct: Number(dayChangePct.toFixed(2)),
+      latestNav: latest.nav,
+      latestDate: latest.date,
+      previousNavDate: prev.date,
+      dayChange: Math.round((latest.nav - prev.nav) * 1e4) / 1e4,
+      dayChangePct: Math.round((latest.nav / prev.nav - 1) * 1e4) / 100,
       returns,
-      high52W: Number(high52W.toFixed(2)),
-      low52W: Number(low52W.toFixed(2)),
-      sparkline: navData.slice(0, 30).reverse().map(d => d.nav), // 30-day sparkline
-      navHistory: navData.slice(0, 90), // 90-day history
-      totalDataPoints: history.data.length,
+      high52W: hasFullYear ? Math.max(...lastYear.map(p => p.nav)) : null,
+      low52W: hasFullYear ? Math.min(...lastYear.map(p => p.nav)) : null,
+      sparkline: series.slice(-30).map(d => d.nav),
+      navHistory: series.slice(-90),
+      totalDataPoints: series.length,
+      dataQuality: { droppedPoints: issues.dropped, gapsOver10Days: issues.gaps.length },
+      note: "latestDate is the NAV date published by AMFI, not today's date.",
     });
   } catch (err) {
     console.error("NAV API error:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch NAV data", details: String(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch NAV data", details: String(err) }, { status: 500 });
   }
 }

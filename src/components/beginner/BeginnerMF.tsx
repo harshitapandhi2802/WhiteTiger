@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { calculateSIP, formatINR } from "@/app/beginner/utils/calculations";
 import { COLORS, card, SectionHeader, AIExplanation, RiskMeter, StatCard, Disclaimer, UpsellBanner, Accordion, InfoQA } from "./shared";
 import { LearnTerm } from "./LearnTooltips";
@@ -10,14 +10,17 @@ import { LearnTerm } from "./LearnTooltips";
    SIP calculator, beginner funds, AI recommendations.
    ═══════════════════════════════════════════════════════════════ */
 
+/** Direct-plan Growth variants, identified by AMFI scheme code. NAV and returns are fetched live. */
 const BEGINNER_FUNDS = [
-  { name: "UTI Nifty 50 Index Fund", type: "Index Fund", risk: "medium" as const, returns: "12.5%", nav: "132.45", rating: 5, emoji: "📊", why: "Tracks India's top 50 companies. The simplest way to invest in the entire market. Very low cost (0.1% expense ratio)." },
-  { name: "HDFC Balanced Advantage Fund", type: "Hybrid Fund", risk: "medium" as const, returns: "11.2%", nav: "387.20", rating: 4, emoji: "⚖️", why: "Automatically balances between stocks and bonds based on market conditions. Less risky than pure equity funds." },
-  { name: "SBI Small Cap Fund", type: "Small Cap", risk: "high" as const, returns: "18.4%", nav: "168.90", rating: 4, emoji: "🚀", why: "Invests in smaller growing companies. Higher risk but potentially higher returns. Best for 7+ year investment horizon." },
-  { name: "Axis Liquid Fund", type: "Liquid Fund", risk: "low" as const, returns: "6.8%", nav: "2,456.10", rating: 4, emoji: "💧", why: "Park emergency money here instead of savings account. Slightly better returns than FD, and you can withdraw anytime." },
-  { name: "Parag Parikh Flexi Cap Fund", type: "Flexi Cap", risk: "medium" as const, returns: "15.1%", nav: "72.35", rating: 5, emoji: "🌍", why: "Invests in Indian + international stocks (Google, Alphabet, Microsoft). Great diversification across geographies." },
-  { name: "ICICI Prudential Retirement Fund", type: "Retirement", risk: "medium" as const, returns: "13.2%", nav: "34.80", rating: 4, emoji: "🏖️", why: "Designed for retirement planning with 5-year lock-in. Automatic asset allocation based on your age." },
+  { code: 120716, name: "UTI Nifty 50 Index Fund", type: "Index Fund", risk: "medium" as const, emoji: "📊", why: "Tracks India's 50 largest listed companies, so you own the whole index instead of picking stocks. Index funds generally have lower costs than actively managed funds." },
+  { code: 118968, name: "HDFC Balanced Advantage Fund", type: "Hybrid Fund", risk: "medium" as const, emoji: "⚖️", why: "Shifts between stocks and bonds as market conditions change. Usually less volatile than a pure equity fund." },
+  { code: 125497, name: "SBI Small Cap Fund", type: "Small Cap", risk: "high" as const, emoji: "🚀", why: "Invests in smaller companies. Higher potential growth with much larger swings — suited to a 7+ year horizon." },
+  { code: 120389, name: "Axis Liquid Fund", type: "Liquid Fund", risk: "low" as const, emoji: "💧", why: "Holds very short-term debt, so the NAV moves little. Often used to park emergency money; returns track short-term interest rates." },
+  { code: 122639, name: "Parag Parikh Flexi Cap Fund", type: "Flexi Cap", risk: "medium" as const, emoji: "🌍", why: "Can invest across large, mid and small companies and also holds some international stocks, which adds diversification." },
 ];
+
+type Live = { nav: number | null; navDate: string | null; cagr3y: number | null } | "error";
+
 
 export default function BeginnerMF() {
   const [sipAmount, setSipAmount] = useState(5000);
@@ -25,6 +28,15 @@ export default function BeginnerMF() {
   const [sipYears, setSipYears] = useState(10);
 
   const sipResult = useMemo(() => calculateSIP(sipAmount, sipReturn, sipYears), [sipAmount, sipReturn, sipYears]);
+  const [live, setLive] = useState<Record<number, Live>>({});
+  useEffect(() => {
+    for (const f of BEGINNER_FUNDS) {
+      fetch(`/api/mf-scheme?code=${f.code}`).then(r => r.json()).then(j => {
+        const t = j.performance?.trailing?.find((x: { label: string }) => x.label === "3Y");
+        setLive(prev => ({ ...prev, [f.code]: j.success ? { nav: j.scheme.nav, navDate: j.scheme.navDate, cagr3y: t?.annualizedPct ?? null } : "error" }));
+      }).catch(() => setLive(prev => ({ ...prev, [f.code]: "error" })));
+    }
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -110,7 +122,7 @@ export default function BeginnerMF() {
 
       {/* ── RECOMMENDED FUNDS ── */}
       <div>
-        <SectionHeader emoji="⭐" title="Beginner-Friendly Funds" subtitle="AI-picked funds for new investors" />
+        <SectionHeader emoji="⭐" title="Examples to Learn From" subtitle="Well-known funds from different categories — examples, not recommendations" />
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {BEGINNER_FUNDS.map(fund => (
             <div key={fund.name} style={{ ...card({ padding: "16px" }) }}>
@@ -124,13 +136,20 @@ export default function BeginnerMF() {
                 </div>
                 <RiskMeter level={fund.risk} />
               </div>
-              <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
-                <div style={{ fontSize: "0.62rem", color: COLORS.textDim }}>Returns: <span style={{ color: COLORS.accent, fontWeight: 700 }}>{fund.returns}/yr</span></div>
-                <div style={{ fontSize: "0.62rem", color: COLORS.textDim }}>NAV: <span style={{ fontWeight: 700, color: COLORS.textPrimary }}>₹{fund.nav}</span></div>
-                <div style={{ fontSize: "0.62rem", color: COLORS.textDim }}>Rating: <span style={{ color: COLORS.amber }}>{"★".repeat(fund.rating)}{"☆".repeat(5 - fund.rating)}</span></div>
-              </div>
+              {(() => {
+                const l = live[fund.code];
+                if (!l) return <div style={{ fontSize: "0.62rem", color: COLORS.textDim, marginBottom: 8 }}>Loading AMFI data…</div>;
+                if (l === "error") return <div style={{ fontSize: "0.62rem", color: COLORS.textDim, marginBottom: 8 }}>Live data unavailable right now.</div>;
+                return (
+                  <div style={{ display: "flex", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+                    <div style={{ fontSize: "0.62rem", color: COLORS.textDim }}>3-yr return: <span style={{ color: (l.cagr3y ?? 0) >= 0 ? COLORS.accent : COLORS.red, fontWeight: 700 }}>{l.cagr3y !== null ? `${l.cagr3y.toFixed(1)}%/yr` : "—"}</span></div>
+                    <div style={{ fontSize: "0.62rem", color: COLORS.textDim }}>NAV: <span style={{ fontWeight: 700, color: COLORS.textPrimary }}>{l.nav !== null ? `₹${l.nav.toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : "—"}</span>{l.navDate ? ` on ${l.navDate}` : ""}</div>
+                    <a href={`/mf-intelligence/${fund.code}`} style={{ fontSize: "0.62rem", color: COLORS.purple, fontWeight: 700 }}>Details →</a>
+                  </div>
+                );
+              })()}
               <div style={{ padding: "10px 12px", borderRadius: 8, background: COLORS.accentSoft, border: `1px solid ${COLORS.accentBorder}` }}>
-                <p style={{ fontSize: "0.68rem", color: COLORS.accent, margin: 0, lineHeight: 1.5 }}>🤖 {fund.why}</p>
+                <p style={{ fontSize: "0.68rem", color: COLORS.accent, margin: 0, lineHeight: 1.5 }}>{fund.why}</p>
               </div>
             </div>
           ))}

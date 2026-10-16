@@ -4,7 +4,6 @@ import {
   searchSchemes,
   filterSchemes,
   findEnrichment,
-  resolveNav,
   INDUSTRY_STATS,
 } from "@/lib/amfi-service";
 import { cacheHeaders } from "@/lib/services/apiGuard";
@@ -20,9 +19,14 @@ export const maxDuration = 60;
  *   mode=amc&name=X    → All schemes for a specific AMC
  *   mode=search&q=X    → Search schemes
  *   mode=categories    → List all categories
+ *   mode=facets        → Filter values with active-code counts
  *
- * Additional filters for mode=schemes:
- *   category, amc, type, minNav, maxNav, limit, offset
+ * Filters for mode=schemes (exact match, case-insensitive):
+ *   assetClass, subCategory, category (substring), amc, plan, option, type,
+ *   status (default "active"; "all" for every code), q, limit, offset
+ *
+ * Every scheme carries its AMFI scheme code, plan, option, status and navDate
+ * (the date the NAV applies to — not the request date).
  */
 export async function GET(req: NextRequest) {
   try {
@@ -37,15 +41,17 @@ export async function GET(req: NextRequest) {
         const amcSummaries = data.amcList.map(amc => {
           const enrichment = findEnrichment(amc.name);
           // Classify schemes by category
-          const equitySchemes = amc.schemes.filter(s => s.schemeCategory.toLowerCase().includes("equity"));
-          const debtSchemes = amc.schemes.filter(s => s.schemeCategory.toLowerCase().includes("debt") || s.schemeCategory.toLowerCase().includes("bond") || s.schemeCategory.toLowerCase().includes("liquid") || s.schemeCategory.toLowerCase().includes("money market") || s.schemeCategory.toLowerCase().includes("gilt") || s.schemeCategory.toLowerCase().includes("overnight") || s.schemeCategory.toLowerCase().includes("floating"));
-          const hybridSchemes = amc.schemes.filter(s => s.schemeCategory.toLowerCase().includes("hybrid") || s.schemeCategory.toLowerCase().includes("balanced") || s.schemeCategory.toLowerCase().includes("multi asset") || s.schemeCategory.toLowerCase().includes("arbitrage"));
-          const indexSchemes = amc.schemes.filter(s => s.schemeCategory.toLowerCase().includes("index") || s.schemeCategory.toLowerCase().includes("etf") || s.schemeCategory.toLowerCase().includes("fund of funds"));
+          const active = amc.schemes.filter(s => s.status === "active");
+          const equitySchemes = active.filter(s => s.assetClass === "Equity");
+          const debtSchemes = active.filter(s => s.assetClass === "Debt");
+          const hybridSchemes = active.filter(s => s.assetClass === "Hybrid");
+          const indexSchemes = active.filter(s => s.assetClass === "Index Fund" || s.assetClass === "ETF" || s.assetClass === "Fund of Funds");
 
           return {
             name: amc.name,
             slug: amc.slug,
-            schemeCount: amc.schemeCount,
+            schemeCount: active.length,
+            schemeCountWithNav: amc.schemeCount,
             categories: amc.categories,
             lastUpdated: amc.lastUpdated,
             equitySchemes: equitySchemes.length,
@@ -66,7 +72,7 @@ export async function GET(req: NextRequest) {
               weaknesses: enrichment.weaknesses,
               ownershipStructure: enrichment.ownershipStructure,
             } : {
-              category: amc.schemeCount > 80 ? "Mid" : amc.schemeCount > 30 ? "Small" : "Boutique",
+              category: "Not classified",
             }),
           };
         });
@@ -75,14 +81,19 @@ export async function GET(req: NextRequest) {
           success: true,
           industry: {
             ...INDUSTRY_STATS,
-            liveSchemeCount: data.totalSchemes,
+            totalAMCs: String(data.totalAMCs),
+            liveSchemeCount: data.activeSchemes,
+            schemesWithNav: data.totalSchemes,
+            allSchemeCodes: data.allSchemes.length,
             liveAMCCount: data.totalAMCs,
             navDate: data.navDate,
+            navSource: data.navSource,
+            snapshotDate: data.snapshotDate,
             lastFetched: data.lastFetched,
           },
           amcs: amcSummaries,
           totalAMCs: data.totalAMCs,
-          totalSchemes: data.totalSchemes,
+          totalSchemes: data.activeSchemes,
           categories: data.categories,
         });
       }
@@ -90,13 +101,11 @@ export async function GET(req: NextRequest) {
       case "schemes": {
         const limit = Math.min(200, parseInt(searchParams.get("limit") || "50", 10));
         const offset = parseInt(searchParams.get("offset") || "0", 10);
+        const g = (k: string) => searchParams.get(k) || undefined;
         const result = filterSchemes(data, {
-          category: searchParams.get("category") || undefined,
-          amcName: searchParams.get("amc") || undefined,
-          schemeType: searchParams.get("type") || undefined,
-          minNav: searchParams.get("minNav") ? parseFloat(searchParams.get("minNav")!) : undefined,
-          maxNav: searchParams.get("maxNav") ? parseFloat(searchParams.get("maxNav")!) : undefined,
-          search: searchParams.get("q") || undefined,
+          assetClass: g("assetClass"), subCategory: g("subCategory"), category: g("category"),
+          amcName: g("amc"), plan: g("plan"), option: g("option"), schemeType: g("type"),
+          status: g("status"), search: g("q"),
         }, limit, offset);
 
         return NextResponse.json({
@@ -106,6 +115,8 @@ export async function GET(req: NextRequest) {
           limit,
           offset,
           hasMore: offset + limit < result.total,
+          navDate: data.navDate,
+          navSource: data.navSource,
         });
       }
 
@@ -154,7 +165,7 @@ export async function GET(req: NextRequest) {
       case "search": {
         const q = searchParams.get("q") || "";
         const limit = Math.min(100, parseInt(searchParams.get("limit") || "30", 10));
-        const results = searchSchemes(data, q, limit);
+        const results = searchSchemes(data, q, limit, { includeInactive: searchParams.get("inactive") === "1" });
         return NextResponse.json({
           success: true,
           results,
@@ -171,20 +182,19 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      case "navmatch": {
-        // Resolve live AMFI NAVs for a batch of curated fund names (pipe-separated).
-        // Used to overlay real NAVs on fund cards instead of synthetic estimates (D2).
-        const namesParam = searchParams.get("names") || "";
-        const names = namesParam.split("|").map(n => n.trim()).filter(Boolean).slice(0, 30);
-        const navs: Record<string, { nav: number; navDate: string; schemeName: string } | null> = {};
-        for (const n of names) {
-          const m = resolveNav(data, n);
-          navs[n] = m ? { nav: m.nav, navDate: m.navDate, schemeName: m.schemeName } : null;
-        }
-        return NextResponse.json(
-          { success: true, navs, navDate: data.navDate },
-          { headers: cacheHeaders(3600) }
-        );
+      case "facets": {
+        const active = data.allSchemes.filter(x => x.status === "active");
+        const tally = (f: (x: typeof active[number]) => string) => Object.entries(active.reduce<Record<string, number>>((m, x) => { const k = f(x); m[k] = (m[k] || 0) + 1; return m; }, {})).sort((p, q) => q[1] - p[1]).map(([value, count]) => ({ value, count }));
+        return NextResponse.json({
+          success: true,
+          assetClasses: tally(x => x.assetClass),
+          subCategories: tally(x => `${x.assetClass}|${x.subCategory}`).map(({ value, count }) => ({ assetClass: value.split("|")[0], value: value.split("|")[1], count })),
+          amcs: tally(x => x.amcName),
+          plans: tally(x => x.plan),
+          options: tally(x => x.option),
+          statuses: Object.entries(data.allSchemes.reduce<Record<string, number>>((m, x) => { m[x.status] = (m[x.status] || 0) + 1; return m; }, {})).map(([value, count]) => ({ value, count })),
+          navDate: data.navDate, navSource: data.navSource,
+        }, { headers: cacheHeaders(3600) });
       }
 
       default:
