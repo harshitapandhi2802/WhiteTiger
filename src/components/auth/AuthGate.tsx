@@ -99,11 +99,13 @@ export function AuthGate({
     document.head.appendChild(s);
   }, [clientId]);
 
-  const handleGoogleCredential = useCallback((credential: string) => {
-    signIn("/api/auth/google", { credential });
-  }, [signIn]);
+  // Latest sign-in handler, read by Google's callback. Kept in a ref so the
+  // button below is created once: the parent re-renders every few seconds
+  // (live prices), and re-creating the button on each render swallowed clicks.
+  const signInRef = useRef(signIn);
+  useEffect(() => { signInRef.current = signIn; }, [signIn]);
 
-  // Initialize + render the Google sign-in button.
+  // Initialize + render the Google sign-in button (once per open dialog).
   useEffect(() => {
     if (!gsiReady || !clientId || !googleBtnRef.current) return;
     const g = (window as GoogleIdentityWindow).google;
@@ -111,7 +113,7 @@ export function AuthGate({
     try {
       g.accounts.id.initialize({
         client_id: clientId,
-        callback: (r) => handleGoogleCredential(r.credential),
+        callback: (r) => signInRef.current("/api/auth/google", { credential: r.credential }),
         auto_select: false,
         cancel_on_tap_outside: false,
       });
@@ -124,7 +126,7 @@ export function AuthGate({
     } catch {
       // Silent — fall back to email entry.
     }
-  }, [gsiReady, clientId, handleGoogleCredential]);
+  }, [gsiReady, clientId]);
 
   const submitEmail = (e: React.FormEvent) => {
     e.preventDefault();
