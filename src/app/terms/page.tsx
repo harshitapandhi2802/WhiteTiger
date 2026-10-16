@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage, H2 } from "@/components/legal/LegalPage";
+import { OwnerTodo } from "@/components/OwnerTodo";
 
 export const metadata: Metadata = {
   title: "Terms of Service — White Tiger",
@@ -59,13 +60,25 @@ export default function TermsPage() {
         for any unlawful purpose. Paid plans are subject to the limits shown at purchase.
       </p>
 
-      <H2>7. Changes</H2>
+      <H2>7. Billing &amp; Refunds</H2>
+      <p>
+        Paid plans (Starter, Pro and Elite) are one-time payments in Indian Rupees, processed by
+        Razorpay. Each payment unlocks the selected plan for 30 days from activation. Plans do not
+        renew automatically; you are only charged again if you choose to make a new purchase.
+      </p>
+      {/* TODO(owner): write the refund & cancellation policy (eligibility, window,
+          how to request, processing time). Razorpay expects a published policy. */}
+      <p><OwnerTodo>refund &amp; cancellation policy</OwnerTodo></p>
+      {/* TODO(owner): state whether listed prices include GST (and GSTIN if registered). */}
+      <p><OwnerTodo>GST treatment of listed prices</OwnerTodo></p>
+
+      <H2>8. Changes</H2>
       <p>
         These terms may be updated from time to time. Continued use after changes constitutes
         acceptance of the revised terms.
       </p>
 
-      <H2>8. Contact</H2>
+      <H2>9. Contact</H2>
       <p>
         Questions about these terms can be sent to the contact address listed on the About page.
       </p>

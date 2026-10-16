@@ -14,7 +14,7 @@ import {
 type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 
 const MARKETS: { id: MainTab; icon: React.ReactNode; label: string; desc: string; color: string }[] = [
-  { id: "stocks", icon: <TrendingUp size={22} />, label: "Stocks", desc: "NSE · 3,000+ stocks", color: "#4A9EFF" },
+  { id: "stocks", icon: <TrendingUp size={22} />, label: "Stocks", desc: "NSE · 3,100+ stocks", color: "#4A9EFF" },
   { id: "crypto", icon: <Bitcoin size={22} />, label: "Crypto", desc: "BTC · ETH · 100+ coins", color: "#f7931a" },
   { id: "currency", icon: <DollarSign size={22} />, label: "Forex", desc: "USD/INR · 50+ pairs", color: "#34D399" },
   { id: "commodities", icon: <Flame size={22} />, label: "Commodities", desc: "Gold · Oil · Metals", color: "#FBBF24" },

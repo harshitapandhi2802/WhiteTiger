@@ -345,7 +345,7 @@ export default function HeroSection() {
             color: "rgba(255,255,255,0.2)", letterSpacing: "0.01em",
             animation: "heroFadeUp 1s cubic-bezier(0.16,1,0.3,1) 1s both",
           }}>
-            5 free analyses · No credit card · 3,000+ NSE stocks · Real-time prices
+            5 free analyses · No credit card · 3,100+ NSE stocks · Real-time prices
           </p>
         </div>
       </div>
