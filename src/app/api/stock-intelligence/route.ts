@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchLiveCommodityPrices } from "@/lib/services/livePrice";
 import { findStock } from "@/lib/stocks";
 import { computeTechnicals, type Bar } from "@/lib/technicals";
+import { withAiAccess } from "@/lib/aiAccess";
 
 export const maxDuration = 60;
 
@@ -834,7 +835,7 @@ async function fetchRealPrice(ticker: string): Promise<RealPriceData | null> {
   return null;
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const { ticker, companyName } = await req.json();
   if (!ticker) return NextResponse.json({ error: "Ticker required" }, { status: 400 });
 
@@ -1301,3 +1302,6 @@ export async function POST(req: NextRequest) {
     },
   });
 }
+
+// Signed-in users only (src/lib/aiAccess.ts).
+export const POST = withAiAccess("none", handlePOST);

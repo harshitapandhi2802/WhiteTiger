@@ -652,7 +652,7 @@ export default function FXIntelligenceDashboard({ pair, pairName, base, quote, s
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol, pair, name: pairName, base, quote, category }),
       });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `API error ${res.status}`);
       const result = await res.json();
       setData(result as FXIntelligenceData);
       setFetched(true);

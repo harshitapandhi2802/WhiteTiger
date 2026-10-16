@@ -123,7 +123,7 @@ function AIIntelligenceSection({ entry }: { entry: CurrencyEntry }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol: entry.symbol, pair: entry.pair, name: entry.name, base: entry.base, quote: entry.quote, category: entry.category }),
       });
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `API ${res.status}`);
       setData(await res.json() as FXIntelligenceData);
     } catch (e) { setError(e instanceof Error ? e.message : "Failed"); }
     finally { setLoading(false); }

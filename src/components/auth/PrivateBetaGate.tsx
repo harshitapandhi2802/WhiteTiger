@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 import { Lock, LogIn, Mail, AlertTriangle } from "lucide-react";
 import { AuthGate } from "@/components/auth/AuthGate";
 import type { WtUser } from "@/lib/auth";
-import { isAllowedEmail, BETA_CONTACT } from "@/lib/allowlist";
+import { isAllowedEmail, BETA_CONTACT, PRIVATE_BETA } from "@/lib/allowlist";
 
 /* ═══════════════════════════════════════════════════════════════
    WHITE TIGER — PRIVATE BETA GATE
@@ -11,6 +12,9 @@ import { isAllowedEmail, BETA_CONTACT } from "@/lib/allowlist";
    (or when the stored user's email is not on the allowlist).
    Cannot be dismissed — the only way past is sign-in with an
    allowed email.
+
+   When PRIVATE_BETA is off (public launch) the same screen becomes the
+   public sign-in page for /analyze: no allowlist, no invite copy.
    ═══════════════════════════════════════════════════════════════ */
 
 const C = {
@@ -68,22 +72,26 @@ export function PrivateBetaGate({ rejectedEmail }: { rejectedEmail?: string | nu
             background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <Lock size={18} color="#fff" />
+            {PRIVATE_BETA ? <Lock size={18} color="#fff" /> : <LogIn size={18} color="#fff" />}
           </div>
           <div>
             <div style={{
               fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.12em",
               color: C.accent, textTransform: "uppercase",
-            }}>Private Beta · Invite Only</div>
+            }}>{PRIVATE_BETA ? "Private Beta · Invite Only" : "Free to start · 5 AI analyses a month"}</div>
             <h1 style={{ fontSize: "1.18rem", fontWeight: 900, margin: 0, letterSpacing: "-0.01em" }}>
-              White Tiger is still being built.
+              {PRIVATE_BETA ? "White Tiger is still being built." : "Sign in to White Tiger"}
             </h1>
           </div>
         </div>
 
         <p style={{ fontSize: "0.82rem", color: C.muted, lineHeight: 1.55, margin: "0 0 18px" }}>
-          Access is currently limited to a small group of early testers.
-          You&apos;ll need an invited account to enter the platform.
+          {PRIVATE_BETA
+            ? <>Access is currently limited to a small group of early testers.
+          You&apos;ll need an invited account to enter the platform.</>
+            : <>All your markets in one AI research app: stocks, mutual funds, forex,
+          bonds, commodities, derivatives, real estate and global markets. Sign in with
+          Google to start.</>}
         </p>
 
         {/* If a non-allowlisted user just got bounced, explain why */}
@@ -119,6 +127,7 @@ export function PrivateBetaGate({ rejectedEmail }: { rejectedEmail?: string | nu
           display: "flex", alignItems: "flex-start", gap: 8,
         }}>
           <Mail size={12} style={{ flexShrink: 0, marginTop: 2 }} />
+          {PRIVATE_BETA ? (
           <div>
             Want a beta invite? Email{" "}
             <a href={`mailto:${BETA_CONTACT}`} style={{ color: C.accent, textDecoration: "none", fontWeight: 700 }}>
@@ -126,6 +135,15 @@ export function PrivateBetaGate({ rejectedEmail }: { rejectedEmail?: string | nu
             </a>
             {" "}with a short note about why you&apos;d like to try the platform.
           </div>
+          ) : (
+          <div>
+            Questions? Email{" "}
+            <a href={`mailto:${BETA_CONTACT}`} style={{ color: C.accent, textDecoration: "none", fontWeight: 700 }}>
+              {BETA_CONTACT}
+            </a>.{" "}
+            <Link href="/" style={{ color: C.accent, textDecoration: "none", fontWeight: 700 }}>See what White Tiger does →</Link>
+          </div>
+          )}
         </div>
       </div>
 

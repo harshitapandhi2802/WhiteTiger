@@ -17,8 +17,9 @@ import {
   runStressTests,
   seededRng,
 } from "@/lib/quant-engine";
+import { withAiAccess } from "@/lib/aiAccess";
 
-export async function GET(req: Request) {
+async function handleGET(req: Request) {
   const { searchParams } = new URL(req.url);
   const symbol = searchParams.get("symbol") || "NIFTY";
   const tick = Date.now();
@@ -201,3 +202,6 @@ function generateFallbackChain(symbol: string, spotPrice: number, tick: number) 
 
   return chain;
 }
+
+// Signed-in users only (src/lib/aiAccess.ts).
+export const GET = withAiAccess("none", handleGET);

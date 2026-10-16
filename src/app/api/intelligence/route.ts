@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cacheHeaders } from "@/lib/services/apiGuard";
+import { withAiAccess } from "@/lib/aiAccess";
 
 const TOPICS_BY_TAB: Record<string, string> = {
   stocks:
@@ -82,7 +83,7 @@ const FALLBACK: Record<string, unknown[]> = {
   ],
 };
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tab = searchParams.get("tab") || "stocks";
   const apiKey = process.env.GEMINI_API_KEY;
@@ -184,3 +185,6 @@ Return ONLY a valid JSON array of 6 objects. Start with [ and end with ]. No oth
     return NextResponse.json({ articles: fb, generatedAt: new Date().toISOString(), source: "fallback" });
   }
 }
+
+// Signed-in users only (src/lib/aiAccess.ts).
+export const GET = withAiAccess("none", handleGET);

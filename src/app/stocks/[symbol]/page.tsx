@@ -228,7 +228,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ticker: stock.ticker, companyName: stock.name }),
     })
-      .then(r => r.json())
+      .then(r => (r.ok ? r.json() : null)) // 401 when signed out: show the error state, not a broken page
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [stock?.ticker, stock?.name]); // eslint-disable-line react-hooks/exhaustive-deps

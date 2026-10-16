@@ -52,6 +52,7 @@ export function clearUser(): void {
     localStorage.removeItem(USER_KEY);
     window.dispatchEvent(new CustomEvent("wt-auth-change"));
   } catch { /* ignore */ }
+  fetch("/api/auth/logout", { method: "POST" }).catch(() => { /* offline: cookie expires on its own */ });
 }
 
 /** Decode the payload of a Google ID token (claims only, no signature check). */

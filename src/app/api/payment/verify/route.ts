@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { signEntitlement, type PlanTier } from "@/lib/entitlement";
+import { signEntitlement, verifyEntitlement, verifyOrder, type PlanTier } from "@/lib/entitlement";
+import { ENTITLEMENT_COOKIE, entitlementCookieOptions } from "@/lib/aiAccess";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +20,7 @@ export async function POST(req: NextRequest) {
       razorpay_payment_id?: string;
       razorpay_signature?: string;
       plan?: string;
+      orderToken?: string;
     };
     try {
       payload = await req.json();
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } = payload;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, orderToken } = payload;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return NextResponse.json({ error: "Missing payment details" }, { status: 400 });
@@ -49,17 +51,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
     }
 
+    // The plan must be the one this order was created (and priced) for.
+    if (!plan || !verifyOrder(razorpay_order_id, plan, orderToken)) {
+      return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
+    }
+
     // Issue a tamper-proof entitlement token so the plan can be validated
     // server-side later (a fabricated localStorage plan won't have one).
-    const entitlement = signEntitlement((plan || "free") as PlanTier, razorpay_payment_id);
+    const entitlement = signEntitlement(plan as PlanTier, razorpay_payment_id);
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       verified: true,
       plan,
       paymentId: razorpay_payment_id,
       orderId: razorpay_order_id,
       entitlement,
     });
+    // The AI routes read the plan from this cookie (src/lib/aiAccess.ts).
+    if (entitlement) {
+      res.cookies.set(ENTITLEMENT_COOKIE, entitlement, entitlementCookieOptions(verifyEntitlement(entitlement).expiresAt));
+    }
+    return res;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error("Payment verify error:", msg);

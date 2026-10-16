@@ -1,6 +1,11 @@
+import { getUser } from "@/lib/auth";
+
 const FREE_LIMIT = 5;
 const STORAGE_KEY = "wt_usage";
 const PLAN_KEY = "wt_plan";
+// Last count the server reported (the server enforces the limit; this copy
+// only drives the "N analyses left" label between requests).
+const SERVER_KEY = "wt_server_usage";
 
 // Migration: move old keys to new ones (one-time)
 if (typeof window !== "undefined") {
@@ -122,16 +127,90 @@ export function incrementUsage(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
 
-export function canAnalyze(): boolean {
-  const plan = getPlan();
-  return getUsage().count < plan.limit;
+export interface ServerUsage {
+  email: string;
+  plan: PlanData["plan"];
+  used: number;
+  limit: number;
+  remaining: number;
+  period: string; // "2026-10"
 }
 
+/** The server's count for the signed-in user this month, if we have one. */
+export function getServerUsage(): ServerUsage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SERVER_KEY);
+    if (!raw) return null;
+    const u: ServerUsage = JSON.parse(raw);
+    const me = getUser()?.email?.toLowerCase();
+    if (!me || u.email !== me || u.period !== currentMonth()) return null;
+    return u;
+  } catch {
+    return null;
+  }
+}
+
+function saveServerUsage(u: ServerUsage): void {
+  try { localStorage.setItem(SERVER_KEY, JSON.stringify(u)); } catch { /* ignore */ }
+}
+
+/**
+ * Asks the server how many analyses the signed-in user has left this month.
+ * Returns null on a network/server error (the label keeps its last value).
+ */
+export async function fetchServerUsage(): Promise<
+  { signedIn: false; authConfigured: boolean } | { signedIn: true; usage: ServerUsage } | null
+> {
+  if (typeof window === "undefined") return null;
+  try {
+    const res = await fetch("/api/usage", { cache: "no-store" });
+    if (!res.ok) return null;
+    const d = await res.json();
+    if (!d.signedIn) return { signedIn: false, authConfigured: !!d.authConfigured };
+    const usage: ServerUsage = {
+      email: String(d.email).toLowerCase(), plan: d.plan, used: d.used, limit: d.limit, remaining: d.remaining, period: d.period,
+    };
+    saveServerUsage(usage);
+    return { signedIn: true, usage };
+  } catch {
+    return null;
+  }
+}
+
+/** Reads the usage the server attached to a successful analysis response. */
+export function updateUsageFromResponse(res: Response): ServerUsage | null {
+  const used = Number(res.headers.get("X-WT-Usage-Used"));
+  const limit = Number(res.headers.get("X-WT-Usage-Limit"));
+  const email = getUser()?.email?.toLowerCase();
+  if (!email || !res.headers.has("X-WT-Usage-Used") || !Number.isFinite(used) || !Number.isFinite(limit)) return null;
+  const usage: ServerUsage = {
+    email, plan: (res.headers.get("X-WT-Plan") || "free") as PlanData["plan"],
+    used, limit, remaining: Math.max(0, limit - used), period: currentMonth(),
+  };
+  saveServerUsage(usage);
+  return usage;
+}
+
+/** Records that the server said the monthly quota is used up (402). */
+export function markQuotaExhausted(d: { plan?: PlanData["plan"]; limit?: number; used?: number }): void {
+  const email = getUser()?.email?.toLowerCase();
+  if (!email || typeof d.limit !== "number") return;
+  saveServerUsage({ email, plan: d.plan || "free", used: d.used ?? d.limit, limit: d.limit, remaining: 0, period: currentMonth() });
+}
+
+export function canAnalyze(): boolean {
+  return remainingAnalyses() > 0;
+}
+
+/** Analyses left this month: the server's count when known, else this browser's. */
 export function remainingAnalyses(): number {
+  const server = getServerUsage();
+  if (server) return server.remaining;
   const plan = getPlan();
   return Math.max(0, plan.limit - getUsage().count);
 }
 
 export function getLimit(): number {
-  return getPlan().limit;
+  return getServerUsage()?.limit ?? getPlan().limit;
 }

@@ -14,8 +14,9 @@ import { getSchemeHistory } from "@/lib/amfi-service";
 import { parseMfapiHistory, sip, shiftDate } from "@/lib/mf-returns";
 
 type Trailing = { label: string; absolutePct: number | null; annualizedPct: number | null; annualized: boolean; startDate: string | null };
+import { withAiAccess } from "@/lib/aiAccess";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "analyze-mf", limit: 5, windowMs: 60000 });
   if (limited) return limited;
   const { schemeCode, symbol } = await req.json();
@@ -146,3 +147,6 @@ Scores are judgements from the FACTS only; use null for any score the FACTS cann
     return NextResponse.json({ error: "Analysis failed." }, { status: 500 });
   }
 }
+
+// Signed-in users only; counts toward the monthly plan quota (src/lib/aiAccess.ts).
+export const POST = withAiAccess("analysis", handlePOST);

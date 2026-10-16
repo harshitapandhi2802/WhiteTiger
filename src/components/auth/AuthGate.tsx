@@ -1,8 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, Mail, Shield, Sparkles, ArrowRight } from "lucide-react";
-import { setUser, userFromGoogleJwt, userFromEmail, type WtUser } from "@/lib/auth";
-import { isAllowedEmail, BETA_CONTACT } from "@/lib/allowlist";
+import { setUser, type WtUser } from "@/lib/auth";
 
 /* ═══════════════════════════════════════════════════════════════
    WHITE TIGER — AUTH GATE MODAL
@@ -10,6 +9,11 @@ import { isAllowedEmail, BETA_CONTACT } from "@/lib/allowlist";
    "Sign in with Google" via Google Identity Services. Email entry
    is the always-available fallback so the gate works even before
    Google OAuth credentials are configured.
+
+   Every sign-in is verified server-side (/api/auth/google), saved to
+   the user database and triggers a one-time welcome email. The email
+   box only exists in local development (/api/auth/dev-login); in
+   production, Google is the only way in, so every saved address is real.
 
    To enable real Google sign-in, set NEXT_PUBLIC_GOOGLE_CLIENT_ID
    in your Vercel env vars (from console.cloud.google.com →
@@ -50,8 +54,34 @@ export function AuthGate({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [gsiReady, setGsiReady] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const consentRef = useRef(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const clientId = (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "").trim();
+  const devEmailLogin = process.env.NODE_ENV !== "production";
+
+  // Server confirms the identity, saves the user and sets the session cookie.
+  const signIn = useCallback(async (endpoint: string, payload: Record<string, unknown>) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, marketingConsent: consentRef.current }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || !data.user) { setError(data.error || "Sign-in failed. Please try again."); return; }
+      const u = data.user as WtUser;
+      setUser(u);
+      onAuthed(u);
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }, [onAuthed]);
 
   // Load the Google Identity Services script once.
   useEffect(() => {
@@ -70,15 +100,8 @@ export function AuthGate({
   }, [clientId]);
 
   const handleGoogleCredential = useCallback((credential: string) => {
-    const u = userFromGoogleJwt(credential);
-    if (!u) { setError("Could not read Google sign-in. Please try email."); return; }
-    if (!isAllowedEmail(u.email)) {
-      setError(`Sorry — ${u.email} is not on the private-beta allowlist. Email ${BETA_CONTACT} to request access.`);
-      return;
-    }
-    setUser(u);
-    onAuthed(u);
-  }, [onAuthed]);
+    signIn("/api/auth/google", { credential });
+  }, [signIn]);
 
   // Initialize + render the Google sign-in button.
   useEffect(() => {
@@ -108,13 +131,7 @@ export function AuthGate({
     setError(null);
     const trimmed = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) { setError("Please enter a valid email."); return; }
-    if (!isAllowedEmail(trimmed)) {
-      setError(`Sorry — ${trimmed} is not on the private-beta allowlist. Email ${BETA_CONTACT} to request access.`);
-      return;
-    }
-    const u = userFromEmail(trimmed, name);
-    setUser(u);
-    onAuthed(u);
+    signIn("/api/auth/dev-login", { email: trimmed, name });
   };
 
   return (
@@ -160,7 +177,9 @@ export function AuthGate({
                   : <div style={{ height: 44, display: "flex", alignItems: "center", color: C.muted, fontSize: "0.78rem" }}>Loading Google sign-in…</div>
               ) : (
                 <button
-                  onClick={() => setError("Google sign-in is not configured yet — please continue with email below.")}
+                  onClick={() => setError(devEmailLogin
+                    ? "Google sign-in is not configured yet. Use the email option below (development only)."
+                    : "Sign-in is being set up. Please try again shortly.")}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                     width: "100%", padding: "11px 16px", background: "#fff", border: "none",
@@ -172,6 +191,11 @@ export function AuthGate({
               )}
             </div>
 
+            {busy && (
+              <div style={{ textAlign: "center", fontSize: "0.74rem", color: C.muted, marginBottom: 10 }}>Signing you in…</div>
+            )}
+
+            {devEmailLogin && (<>
             {/* Divider */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "10px 0 14px" }}>
               <div style={{ flex: 1, height: 1, background: C.border }} />
@@ -185,8 +209,9 @@ export function AuthGate({
               padding: "11px 16px", background: C.soft, border: `1px solid ${C.border}`,
               borderRadius: 8, color: C.text, fontSize: "0.82rem", fontWeight: 700, cursor: "pointer",
             }}>
-              <Mail size={14} /> Continue with email
+              <Mail size={14} /> Continue with email (dev only)
             </button>
+            </>)}
 
             {error && (
               <div style={{ marginTop: 12, padding: "8px 12px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: 8, fontSize: "0.7rem", color: C.danger }}>
@@ -212,12 +237,12 @@ export function AuthGate({
                 border: `1px solid ${C.border}`, color: C.text, fontSize: "0.86rem", outline: "none",
               }}
             />
-            <button type="submit" style={{
+            <button type="submit" disabled={busy} style={{
               padding: "11px 16px", borderRadius: 8, border: "none", cursor: "pointer",
               background: `linear-gradient(135deg, ${C.accent}, ${C.purple})`, color: "#fff",
               fontSize: "0.86rem", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
             }}>
-              Continue <ArrowRight size={14} />
+              {busy ? "Signing in…" : <>Continue <ArrowRight size={14} /></>}
             </button>
             <button type="button" onClick={() => { setError(null); setMode("choose"); }} style={{
               background: "transparent", border: "none", color: C.muted,
@@ -231,10 +256,16 @@ export function AuthGate({
           </form>
         )}
 
-        {/* Trust line */}
-        <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 8, fontSize: "0.62rem", color: C.muted, lineHeight: 1.5 }}>
+        {/* Optional marketing consent (unticked by default) */}
+        <label style={{ marginTop: 16, display: "flex", alignItems: "flex-start", gap: 8, fontSize: "0.7rem", color: C.text, lineHeight: 1.5, cursor: "pointer" }}>
+          <input type="checkbox" checked={consent} onChange={e => { setConsent(e.target.checked); consentRef.current = e.target.checked; }} style={{ marginTop: 2, accentColor: C.accent }} />
+          <span>Also email me White Tiger product updates and offers (optional, unsubscribe any time).</span>
+        </label>
+
+        {/* Notice + trust line */}
+        <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", gap: 8, fontSize: "0.62rem", color: C.muted, lineHeight: 1.5 }}>
           <Shield size={12} style={{ flexShrink: 0, marginTop: 2 }} />
-          <span>By continuing you agree to our <a href="/terms" style={{ color: C.accent }}>Terms</a> and <a href="/privacy" style={{ color: C.accent }}>Privacy Policy</a>. White Tiger is educational research — not investment advice.</span>
+          <span>By continuing you agree to our <a href="/terms" style={{ color: C.accent }}>Terms</a> and <a href="/privacy" style={{ color: C.accent }}>Privacy Policy</a>. We save your name and email to create your account and send you one welcome email. White Tiger is educational research, not investment advice.</span>
         </div>
       </div>
     </div>

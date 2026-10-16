@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { fetchLiveYields } from "@/lib/services/livePrice";
+import { withAiAccess } from "@/lib/aiAccess";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "bond-intelligence", limit: 5, windowMs: 60000 });
   if (limited) return limited;
   const { symbol, name, issuer, coupon, tenure, rating, category, yieldApprox } = await req.json();
@@ -191,3 +192,6 @@ REQUIREMENTS:
     return NextResponse.json({ error: "Failed to generate intelligence" }, { status: 500 });
   }
 }
+
+// Signed-in users only; daily fair-use cap (src/lib/aiAccess.ts).
+export const POST = withAiAccess("detail", handlePOST);

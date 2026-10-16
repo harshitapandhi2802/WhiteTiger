@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { fetchLiveStockPrice } from "@/lib/services/livePrice";
+import { withAiAccess } from "@/lib/aiAccess";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "analyze", limit: 5, windowMs: 60000 });
   if (limited) return limited;
   const { ticker, companyName } = await req.json();
@@ -287,3 +288,6 @@ All scores are 1-10 (1=worst/highest risk, 10=best/lowest risk). Fill ALL fields
     return NextResponse.json({ error: `Analysis failed: ${msg}` }, { status: 500 });
   }
 }
+
+// Signed-in users only; counts toward the monthly plan quota (src/lib/aiAccess.ts).
+export const POST = withAiAccess("analysis", handlePOST);

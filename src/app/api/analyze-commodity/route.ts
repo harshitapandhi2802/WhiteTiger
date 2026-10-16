@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
+import { withAiAccess } from "@/lib/aiAccess";
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "analyze-commodity", limit: 5, windowMs: 60000 });
   if (limited) return limited;
   const { symbol, name, category, exchange, unit } = await req.json();
@@ -187,3 +188,6 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Be specific with 
     return NextResponse.json({ error: `Analysis failed: ${msg}` }, { status: 500 });
   }
 }
+
+// Signed-in users only; counts toward the monthly plan quota (src/lib/aiAccess.ts).
+export const POST = withAiAccess("analysis", handlePOST);

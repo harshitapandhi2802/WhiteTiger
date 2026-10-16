@@ -12,22 +12,29 @@
     "test": "node --no-warnings --test \"tests/**/*.test.mjs\"",
     "sync:mf": "node --no-warnings scripts/sync-mf-universe.mjs",
     "sync:mf:fetch": "node --no-warnings scripts/sync-mf-universe.mjs --fetch",
-    "verify:mf": "python3 scripts/verify-mf-calcs.py"
+    "verify:mf": "python3 scripts/verify-mf-calcs.py",
+    "db:local": "pglite-server --port=5544 --max-connections=4"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.0",
     "@google/genai": "^2.0.0",
     "axios": "^1.16.0",
+    "jose": "^6.2.12",
     "lucide-react": "^1.14.0",
     "next": "16.2.5",
+    "nodemailer": "^10.1.1",
+    "postgres": "^3.4.9",
     "razorpay": "^2.9.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-socket": "^0.2.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

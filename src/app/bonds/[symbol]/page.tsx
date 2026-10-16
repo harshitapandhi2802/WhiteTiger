@@ -160,7 +160,7 @@ function AIIntelligenceSection({ entry }: { entry: BondEntry }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ symbol: entry.symbol, name: entry.name, issuer: entry.issuer, coupon: entry.coupon, tenure: entry.tenure, rating: entry.rating, category: entry.category, yieldApprox: entry.yieldApprox }),
       });
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `API ${res.status}`);
       setData(await res.json());
     } catch (e) { setError(e instanceof Error ? e.message : "Failed"); }
     finally { setLoading(false); }
