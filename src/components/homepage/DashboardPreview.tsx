@@ -22,6 +22,8 @@ function Sparkline({ data, color, w = 80, h = 28 }: { data: number[]; color: str
   );
 }
 
+// Every figure below is a made-up sample for the product mockup — it is not
+// tied to any stock or live feed, so it must stay labelled as illustrative.
 export default function DashboardPreview() {
   return (
     <section style={{
@@ -66,6 +68,14 @@ export default function DashboardPreview() {
               fontFamily: "'SF Mono', 'Fira Code', monospace",
             }}>
               whitetiger-research.vercel.app/analyze
+            </div>
+            <div style={{
+              padding: "6px 12px", borderRadius: 8, whiteSpace: "nowrap",
+              fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.08em",
+              color: "#FBBF24", background: "rgba(251,191,36,0.08)",
+              border: "1px solid rgba(251,191,36,0.25)",
+            }}>
+              ILLUSTRATIVE · SAMPLE DATA
             </div>
           </div>
 
@@ -146,6 +156,14 @@ export default function DashboardPreview() {
               </div>
             ))}
           </div>
+
+          <p style={{
+            marginTop: 18, marginBottom: 0, fontSize: "0.72rem",
+            color: "rgba(255,255,255,0.35)", textAlign: "center",
+          }}>
+            Illustrative mockup with sample figures — not a real stock, live price, target or
+            recommendation.
+          </p>
         </div>
       </Reveal>
     </section>

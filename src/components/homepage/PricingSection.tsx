@@ -2,33 +2,45 @@
 import { CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { Reveal, SectionHeader } from "./shared";
+import { OwnerTodo } from "@/components/OwnerTodo";
 
+// Paid feature lists mirror the in-app upgrade modal (src/app/analyze/page.tsx,
+// "Upgrade Modal") so the homepage and checkout promise the same thing.
+// Paid plans are one-time Razorpay payments that unlock 30 days
+// (src/app/api/payment/route.ts, signEntitlement ttlDays = 30) — no auto-renewal.
+// TODO(owner): "PDF upload" is listed in both places but no PDF upload feature
+// exists in the codebase yet — ship it or drop it from both lists before launch.
 const PLANS = [
   {
-    name: "Free", price: "₹0", period: "forever",
+    name: "Free", price: "₹0", period: "no payment needed",
     analyses: 5, color: "#34D399", primary: false,
-    features: ["DCF fair value", "Geopolitical risk scoring", "Entry zone + stop loss", "AI sentiment analysis"],
+    features: ["DCF fair value", "Geopolitical risk scoring", "AI sentiment analysis"],
     cta: "Start Free",
   },
   {
-    name: "Starter", price: "₹199", period: "/month",
+    name: "Starter", price: "₹199", period: "one-time · 30 days access",
     analyses: 20, color: "#00e5ff", primary: false,
-    features: ["Everything in Free", "Full risk dashboards", "Commodity analytics", "Priority support"],
+    features: ["Stocks + Commodities + Crypto", "Risk dashboards", "Priority support"],
     cta: "Get Starter",
   },
   {
-    name: "Pro", price: "₹499", period: "/month",
+    name: "Pro", price: "₹499", period: "one-time · 30 days access",
     analyses: 100, color: "#4A9EFF", primary: true,
-    features: ["Supply chain mapping", "Ownership analysis", "Derivatives AI", "All features below"],
+    features: ["All Starter features", "Commodity heatmaps", "CoinDCX insights", "Supply chain maps"],
     cta: "Get Pro",
   },
   {
-    name: "Elite", price: "₹999", period: "/month",
+    name: "Elite", price: "₹999", period: "one-time · 30 days access",
     analyses: 300, color: "#7c4dff", primary: false,
-    features: ["PDF report upload", "Portfolio watchlist", "Dedicated support", "All features below"],
+    features: ["All Pro features", "PDF upload", "Portfolio watchlist", "Dedicated support"],
     cta: "Get Elite",
   },
 ];
+
+// TODO(owner): decide whether the prices above include GST (and the rate /
+// GSTIN if registered), then set the final line here. Until then nothing is
+// shown in production and a TODO marker is shown in development.
+const GST_NOTE: string | null = null;
 
 export default function PricingSection() {
   return (
@@ -49,7 +61,7 @@ export default function PricingSection() {
           label="Pricing"
           title="Start Free."
           titleAccent="Scale When Ready."
-          subtitle="No hidden fees. Cancel anytime. Every plan includes AI-powered analysis."
+          subtitle="Paid plans are a one-time payment that unlocks 30 days of access. No subscription, no auto-renewal. Every plan includes AI-powered analysis."
         />
 
         <div style={{
@@ -68,16 +80,6 @@ export default function PricingSection() {
                 onMouseEnter={(e) => { if (!plan.primary) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.transform = "translateY(-4px)"; } }}
                 onMouseLeave={(e) => { if (!plan.primary) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)"; e.currentTarget.style.transform = "none"; } }}
               >
-                {plan.primary && (
-                  <div style={{
-                    position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                    background: "linear-gradient(135deg, #4A9EFF, #7c4dff)",
-                    color: "#fff", fontSize: "0.6rem", fontWeight: 800,
-                    padding: "5px 18px", borderRadius: 20,
-                    textTransform: "uppercase", letterSpacing: "0.1em",
-                  }}>Most Popular</div>
-                )}
-
                 <div style={{
                   fontSize: "0.7rem", color: plan.color, fontWeight: 700,
                   letterSpacing: "0.12em", marginBottom: 8, textTransform: "uppercase",
@@ -129,6 +131,13 @@ export default function PricingSection() {
             </Reveal>
           ))}
         </div>
+
+        <p style={{
+          marginTop: 28, textAlign: "center",
+          fontSize: "0.78rem", color: "rgba(255,255,255,0.35)",
+        }}>
+          Prices in INR. {GST_NOTE ?? <OwnerTodo>state whether prices include GST</OwnerTodo>}
+        </p>
       </div>
     </section>
   );

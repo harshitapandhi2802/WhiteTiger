@@ -137,7 +137,7 @@ export default function AIOverview() {
       <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
         <SectionHeader
           label="AI Platform"
-          title="Eight Asset Classes."
+          title="Nine Asset Classes."
           titleAccent="One Intelligence Layer."
           subtitle="Every market, every asset, every signal — analyzed by institutional-grade AI and delivered in seconds."
         />

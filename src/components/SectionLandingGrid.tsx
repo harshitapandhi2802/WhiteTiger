@@ -31,7 +31,7 @@ export interface SectionDef {
 export const SECTIONS: SectionDef[] = [
   { id: "stocks", label: "Stocks", color: "#4A9EFF", icon: <TrendingUp size={22} />,
     tagline: "Live NSE/BSE prices + institutional AI reports + Business Intelligence Suite",
-    highlights: ["722 NSE stocks", "Live price grounded AI", "5-tab BI Suite"] },
+    highlights: ["3,100+ NSE stocks", "Live price grounded AI", "5-tab BI Suite"] },
   { id: "mutualfunds", label: "Mutual Funds", color: "#34D399", icon: <PieChart size={22} />,
     tagline: "All ~14,000 AMFI schemes, live NAVs, calculators, compare and peer rank",
     highlights: ["Live AMFI NAVs", "SIP / Lumpsum / SWP", "Fund vs benchmark"] },

@@ -1,34 +1,35 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { ArrowRight, Sparkles, TrendingUp, Globe, Brain, Shield } from "lucide-react";
+import { useLiveTicker, type TickerItem } from "@/hooks/useLiveTicker";
+import { SECTIONS } from "@/components/SectionLandingGrid";
 
 /* ═══════════════════════════════════════════════════════════════
    WHITE TIGER — WELCOME INTRO (inside /analyze)
    Animated arrival experience that sits before the SectionLandingGrid.
    - Gradient hero text with shimmer
    - Floating ambient orbs
-   - Live-pulsing market ticker (mock symbols, just for feel)
+   - Market ticker fed by /api/live-prices + /api/live-yields
    - Stat highlights
    - Big "Start Analyzing" CTA
    ═══════════════════════════════════════════════════════════════ */
 
-const TICKER = [
-  { sym: "NIFTY 50", val: "24,820", chg: "+0.42%", up: true },
-  { sym: "SENSEX", val: "81,420", chg: "+0.38%", up: true },
-  { sym: "USD/INR", val: "₹83.42", chg: "-0.06%", up: false },
-  { sym: "BTC", val: "$67,840", chg: "+1.18%", up: true },
-  { sym: "GOLD", val: "$2,418/oz", chg: "+0.74%", up: true },
-  { sym: "CRUDE", val: "$82.5/bbl", chg: "-0.31%", up: false },
-  { sym: "10Y G-SEC", val: "6.92%", chg: "-2 bps", up: false },
-  { sym: "RELIANCE", val: "₹1,350", chg: "+1.02%", up: true },
-  { sym: "TCS", val: "₹4,184", chg: "+0.55%", up: true },
-  { sym: "HDFCBANK", val: "₹1,712", chg: "+0.21%", up: true },
+// Shown until /api/live-prices responds (or if every feed is down) —
+// never a hard-coded price.
+const TICKER_PLACEHOLDER: TickerItem[] = [
+  { sym: "NIFTY 50", val: "—", chg: "—", up: true },
+  { sym: "SENSEX", val: "—", chg: "—", up: true },
+  { sym: "USD/INR", val: "—", chg: "—", up: true },
+  { sym: "BTC", val: "—", chg: "—", up: true },
+  { sym: "GOLD", val: "—", chg: "—", up: true },
+  { sym: "10Y G-SEC", val: "—", chg: "—", up: true },
 ];
 
 export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userName?: string }) {
   // gentle entrance sequence
   const [show, setShow] = useState(false);
   useEffect(() => { const t = setTimeout(() => setShow(true), 60); return () => clearTimeout(t); }, []);
+  const ticker = useLiveTicker() ?? TICKER_PLACEHOLDER;
 
   return (
     <div style={{
@@ -97,7 +98,7 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
           opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(10px)",
           transition: "opacity 0.7s 0.18s ease-out, transform 0.7s 0.18s ease-out",
         }}>
-          Eleven asset classes. Live prices grounded in real exchange feeds. Institutional-grade AI reports.
+          Nine asset classes. Live prices grounded in real exchange feeds. Institutional-grade AI reports.
           Every number labelled with where it came from.
         </p>
 
@@ -157,12 +158,12 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
         opacity: show ? 1 : 0, transition: "opacity 1s 0.6s ease-out",
       }}>
         <div style={{ display: "flex", gap: 36, animation: "wtTickerScroll 38s linear infinite", whiteSpace: "nowrap" }}>
-          {[...TICKER, ...TICKER, ...TICKER].map((t, i) => (
+          {[...ticker, ...ticker, ...ticker].map((t, i) => (
             <div key={i} style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: "0.74rem", fontWeight: 800, color: "rgba(232,237,245,0.85)" }}>{t.sym}</span>
               <span style={{ fontSize: "0.74rem", fontWeight: 700, color: "rgba(232,237,245,0.55)" }}>{t.val}</span>
-              <span style={{ fontSize: "0.7rem", fontWeight: 800, color: t.up ? "#34D399" : "#F87171" }}>
-                {t.up ? "▲" : "▼"} {t.chg}
+              <span style={{ fontSize: "0.7rem", fontWeight: 800, color: t.chg === "—" ? "rgba(232,237,245,0.35)" : t.up ? "#34D399" : "#F87171" }}>
+                {t.chg === "—" ? t.chg : `${t.up ? "▲" : "▼"} ${t.chg}`}
               </span>
               <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(232,237,245,0.15)" }} />
             </div>
@@ -181,9 +182,9 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
         transition: "opacity 0.9s 0.85s ease-out, transform 0.9s 0.85s ease-out",
       }}>
         {[
-          { v: "11", l: "Asset classes" },
+          { v: String(SECTIONS.length), l: "Asset classes" },
           { v: "~14k", l: "AMFI MF schemes" },
-          { v: "722", l: "NSE stocks" },
+          { v: "3,100+", l: "NSE stocks" },
           { v: "25", l: "Global markets" },
         ].map((s, i) => (
           <div key={i} style={{
