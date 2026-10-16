@@ -15,7 +15,7 @@ import DownloadApp from "@/components/homepage/DownloadApp";
 import CTASection from "@/components/homepage/CTASection";
 import Footer from "@/components/homepage/Footer";
 import { useUser, clearUser } from "@/lib/auth";
-import { isAllowedEmail } from "@/lib/allowlist";
+import { isAllowedEmail, PRIVATE_BETA } from "@/lib/allowlist";
 
 const PrivateBetaGate = dynamic(
   () => import("@/components/auth/PrivateBetaGate").then(m => ({ default: m.PrivateBetaGate })),
@@ -45,7 +45,8 @@ export default function LandingPage() {
   }, [user]);
   const allowed = !!user && isAllowedEmail(user.email);
 
-  if (!hydrated || !allowed) {
+  // Public launch: the marketing site is open to everyone; sign-in happens on /analyze.
+  if (PRIVATE_BETA && (!hydrated || !allowed)) {
     return <PrivateBetaGate rejectedEmail={evictedEmail} />;
   }
 
