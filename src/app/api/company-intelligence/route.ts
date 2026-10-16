@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimitResponse, cacheHeaders } from "@/lib/services/apiGuard";
 import { fetchLiveStockPrice } from "@/lib/services/livePrice";
+import { withAiAccess } from "@/lib/aiAccess";
 
 export const maxDuration = 60;
 
@@ -165,7 +166,7 @@ Output ONLY a single valid JSON object matching the schema below. No prose, no m
 Length guidance: include 3-6 business segments, up to 5 subsidiaries, 3-5 peers (closest competitors), 4-7 risks, 4-7 items per thesis list. Keep descriptions concise (one or two lines).`;
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "company-intelligence", limit: 5, windowMs: 60_000 });
   if (limited) return limited;
 
@@ -253,3 +254,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Company intelligence generation failed" }, { status: 500 });
   }
 }
+
+// Signed-in users only; daily fair-use cap (src/lib/aiAccess.ts).
+export const POST = withAiAccess("detail", handlePOST);

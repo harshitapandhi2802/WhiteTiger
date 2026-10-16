@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MCX_CONTRACTS, type MCXContract } from "@/lib/commodities";
+import { withAiAccess } from "@/lib/aiAccess";
 
 export const maxDuration = 60;
 
@@ -953,7 +954,7 @@ function checkCommodityStaleness(timestamp: number, session: MCXSession): {
 }
 
 // ── POST Handler ─────────────────────────────────────────────────
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const { slug, name } = await req.json();
   if (!slug) return NextResponse.json({ error: "Slug required" }, { status: 400 });
 
@@ -1148,3 +1149,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(enhancedData);
 }
+
+// Signed-in users only (src/lib/aiAccess.ts).
+export const POST = withAiAccess("none", handlePOST);

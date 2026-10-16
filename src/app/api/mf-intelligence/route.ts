@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
+import { withAiAccess } from "@/lib/aiAccess";
 
 export const maxDuration = 60;
 
@@ -562,7 +563,7 @@ function generateLocalData(fundName: string, amc: string, category: string) {
   };
 }
 
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "mf-intelligence", limit: 5, windowMs: 60000 });
   if (limited) return limited;
   const { fundName, amc, category } = await req.json();
@@ -612,3 +613,6 @@ Use real data. 8 return periods, 10+ holdings, 8+ sectors, 8 macro linkages, 6 s
   const localData = generateLocalData(fundName, amc || "Unknown AMC", category || "Equity");
   return NextResponse.json(localData);
 }
+
+// Signed-in users only; daily fair-use cap (src/lib/aiAccess.ts).
+export const POST = withAiAccess("detail", handlePOST);

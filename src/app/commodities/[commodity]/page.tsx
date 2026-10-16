@@ -94,7 +94,7 @@ export default function CommodityDetailPage({ params }: { params: Promise<{ comm
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ slug: commodity, name: entry?.name || commodity }),
     })
-      .then(r => r.json())
+      .then(r => (r.ok ? r.json() : null)) // 401 when signed out: show the error state, not a broken page
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [commodity, entry?.name]);

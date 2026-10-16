@@ -94,3 +94,22 @@ export function verifyEntitlement(token: string | null | undefined): VerifyResul
 
   return { valid: true, plan: payload.plan, expiresAt: new Date(payload.exp).toISOString() };
 }
+
+/**
+ * Binds a Razorpay order to the plan it was created for, so /api/payment/verify
+ * can't be told a bigger plan than the one that was paid for.
+ */
+export function signOrder(orderId: string, plan: PlanTier): string | null {
+  const key = secret();
+  if (!key) return null;
+  return b64url(crypto.createHmac("sha256", key).update(`order:${orderId}:${plan}`).digest());
+}
+
+export function verifyOrder(orderId: string, plan: string, token: string | null | undefined): boolean {
+  if (!token || !PLAN_LIMITS[plan as PlanTier]) return false;
+  const expected = signOrder(orderId, plan as PlanTier);
+  if (!expected) return false;
+  const a = Buffer.from(token);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}

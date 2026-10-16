@@ -83,7 +83,11 @@ Without a Google Client ID, the sign-in box shows a **"Continue with email (dev 
 
 Without the Gmail settings, the welcome email is printed in the terminal instead of being sent.
 
-## Before you scale: known limits
+## AI usage limits (enforced on the server)
 
-- **Free-plan limits are only counted in the browser.** Someone can clear their storage and get another 5 analyses. Now that users are signed in, the next step is to count analyses per user in the database, because every analysis costs you AI credits.
-- **Login is checked in the browser, not on the server.** The analysis APIs don't yet check the `wt_session` cookie. The page asks for sign-in, but the API endpoints themselves are still callable without it. Protecting them belongs with the per-user counting above.
+- **Every AI route needs a signed-in user.** Without the `wt_session` cookie the API answers 401 "Please sign in".
+- **Analyses are counted per user per calendar month (India time)** in the `wt_usage` table, created automatically on first use. Free 5, Starter 20, Pro 100, Elite 300. Over the limit, the API answers 402 and the app opens the upgrade window. A failed analysis is not counted.
+- **AI detail pages** (bond, FX, mutual fund and company intelligence) call the AI on page load, so they have a separate daily fair-use cap instead: Free 30, Starter 60, Pro 150, Elite 300 a day.
+- **Paid plans** are read from a signed `wt_ent` cookie set at payment. The first account that uses a payment owns it (`wt_entitlements` table), so one purchase can't be shared.
+- If `DATABASE_URL` or `SESSION_SECRET` is missing, AI analysis is switched off (fails closed) instead of running unmetered.
+- The per-IP rate limits (5 a minute per route) still apply on top.

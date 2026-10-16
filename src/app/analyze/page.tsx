@@ -11,7 +11,7 @@ import {
   DollarSign, PiggyBank, ArrowUpRight, ArrowDownRight, RefreshCw, Building2,
   Pill, Car, Wifi, Monitor, ChevronLeft
 } from "lucide-react";
-import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan, validatePlanServerSide } from "@/lib/usage";
+import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan, validatePlanServerSide, fetchServerUsage, updateUsageFromResponse, markQuotaExhausted } from "@/lib/usage";
 import { useUser, clearUser, type WtUser } from "@/lib/auth";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { SectionLandingGrid, SECTIONS, type SectionId } from "@/components/SectionLandingGrid";
@@ -262,12 +262,34 @@ export default function AnalyzePage() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // The server counts analyses per user; show its number, not just this browser's.
+  const syncServerUsage = useCallback(async () => {
+    const r = await fetchServerUsage();
+    if (!r) return;
+    if (!r.signedIn) {
+      // Signed in here but the server has no session (e.g. signed in before
+      // the session cookie existed): sign in again so the AI routes work.
+      if (r.authConfigured) clearUser();
+      return;
+    }
+    setRemaining(r.usage.remaining);
+    setCurrentPlan(r.usage.plan);
+  }, []);
+
   useEffect(() => {
+    if (!user?.email) return;
     setRemaining(remainingAnalyses());
     setCurrentPlan(getPlan().plan);
     // Confirm any paid plan with the server — a fabricated localStorage plan
-    // lacks a valid signed token and is downgraded to free.
-    validatePlanServerSide().then(p => { setCurrentPlan(p.plan); setRemaining(remainingAnalyses()); }).catch(() => {});
+    // lacks a valid signed token and is downgraded to free. This also hands
+    // the plan to the AI routes (wt_ent cookie), so read usage afterwards.
+    validatePlanServerSide()
+      .then(p => { setCurrentPlan(p.plan); setRemaining(remainingAnalyses()); })
+      .catch(() => {})
+      .finally(() => { syncServerUsage(); });
+  }, [user?.email, syncServerUsage]);
+
+  useEffect(() => {
     if (!document.getElementById("razorpay-script")) {
       const s = document.createElement("script");
       s.id = "razorpay-script"; s.src = "https://checkout.razorpay.com/v1/checkout.js"; s.async = true;
@@ -446,9 +468,14 @@ export default function AnalyzePage() {
 
     try {
       const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) { clearUser(); throw new Error(data.error || "Please sign in again to continue."); }
+      if (res.status === 402) {
+        markQuotaExhausted(data); setRemaining(0); setShowUpgrade(true);
+        throw new Error(data.error || "You've used all your analyses this month. Upgrade for more.");
+      }
       if (!res.ok) throw new Error(data.error || "Analysis failed");
-      incrementUsage(); setRemaining(remainingAnalyses());
+      incrementUsage(); updateUsageFromResponse(res); setRemaining(remainingAnalyses());
       setAnalysis(data.analysis); setScores(data.scores); setResultView("dashboard");
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     } catch (err) {
@@ -469,9 +496,9 @@ export default function AnalyzePage() {
         name: "White Tiger", description: `${data.planName} Plan — ${data.analyses} analyses/month`,
         order_id: data.orderId,
         handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-          const v = await fetch("/api/payment/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...response, plan }) });
+          const v = await fetch("/api/payment/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...response, plan, orderToken: data.orderToken }) });
           const vd = await v.json();
-          if (vd.verified) { activatePlan(plan, response.razorpay_payment_id, vd.entitlement); setRemaining(remainingAnalyses()); setCurrentPlan(plan); setPaymentSuccess(data.planName); setTimeout(() => setShowUpgrade(false), 2000); }
+          if (vd.verified) { activatePlan(plan, response.razorpay_payment_id, vd.entitlement); setRemaining(remainingAnalyses()); setCurrentPlan(plan); syncServerUsage(); setPaymentSuccess(data.planName); setTimeout(() => setShowUpgrade(false), 2000); }
           else setError("Payment verification failed.");
           setPaymentLoading("");
         },

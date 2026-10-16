@@ -134,7 +134,7 @@ function AIIntelligenceSection({ entry }: { entry: MutualFundEntry }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fundName: entry.name, amc: entry.amc, category: entry.category }),
       });
-      if (!res.ok) throw new Error(`API ${res.status}`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `API ${res.status}`);
       const json = await res.json();
       if (json.error) throw new Error(json.error);
       setData(json);

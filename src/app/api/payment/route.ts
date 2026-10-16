@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
+import { signOrder, type PlanTier } from "@/lib/entitlement";
 
 const PLANS: Record<string, { amount: number; name: string; analyses: number }> = {
   starter: { amount: 19900, name: "Starter", analyses: 20 },
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       orderId: order.id,
+      orderToken: signOrder(order.id, plan as PlanTier),
       amount: order.amount,
       currency: order.currency,
       plan,
