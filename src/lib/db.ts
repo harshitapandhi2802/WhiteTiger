@@ -36,7 +36,7 @@ function sql(): postgres.Sql {
     const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
     if (!url) throw new Error("DATABASE_URL is not set");
     // prepare:false keeps it compatible with Neon's pooled (pgbouncer) URL.
-    client = postgres(url, { max: 1, idle_timeout: 20, connect_timeout: 10, prepare: false });
+    client = postgres(url, { max: 1, idle_timeout: 20, connect_timeout: 10, prepare: false, onnotice: () => {} });
   }
   return client;
 }
