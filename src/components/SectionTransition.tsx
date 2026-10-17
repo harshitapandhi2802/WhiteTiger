@@ -16,7 +16,7 @@ import type { SectionId } from "@/components/SectionLandingGrid";
 
 const SECTION_META: Record<SectionId, { label: string; tagline: string; color: string; gradient: string; icon: React.ReactNode; theme: ThemeKey; }> = {
   stocks:        { label: "Stocks",          tagline: "Live NSE/BSE prices · institutional AI reports",       color: "#4A9EFF", gradient: "from-[#0A1B3D] via-[#0A1326] to-[#0A0E1A]", icon: <TrendingUp size={56} />, theme: "candles" },
-  mutualfunds:   { label: "Mutual Funds",    tagline: "~14,000 AMFI schemes · calculators · compare",        color: "#34D399", gradient: "from-[#0D3326] via-[#0E2018] to-[#0A0E1A]", icon: <PieChart size={56} />,  theme: "pie" },
+  mutualfunds:   { label: "Mutual Funds",    tagline: "8,600+ active AMFI schemes · calculators · compare",        color: "#34D399", gradient: "from-[#0D3326] via-[#0E2018] to-[#0A0E1A]", icon: <PieChart size={56} />,  theme: "pie" },
   crypto:        { label: "Crypto",          tagline: "Live CoinDCX + CoinGecko · AI thesis per coin",         color: "#FB923C", gradient: "from-[#3D1F0A] via-[#26160A] to-[#0A0E1A]", icon: <Bitcoin size={56} />,   theme: "coins" },
   currency:      { label: "Forex",           tagline: "Live rates · RBI-aware FX intelligence",               color: "#22D3EE", gradient: "from-[#073A40] via-[#0A1F26] to-[#0A0E1A]", icon: <DollarSign size={56} />,theme: "fx" },
   debt:          { label: "Bonds",           tagline: "Live India 10Y G-Sec anchor · AI debt analysis",       color: "#A78BFA", gradient: "from-[#291A4D] via-[#1A1226] to-[#0A0E1A]", icon: <Layers size={56} />,    theme: "curve" },

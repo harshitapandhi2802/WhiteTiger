@@ -58,7 +58,6 @@ const dirColors: Record<string, { c: string; bg: string }> = {
    ═══════════════════════════════════════════════════════════════ */
 
 export default function BondsPlatform() {
-  const router = useRouter();
   const [activeSection, setActiveSection] = useState<BondSection>("overview");
   const [debtCategory, setDebtCategory] = useState("All");
   const [glossaryCat, setGlossaryCat] = useState("All");
@@ -66,20 +65,19 @@ export default function BondsPlatform() {
   // Live bond yield data
   const { data: liveYields, source: yieldSource, isStale: yieldStale, lastUpdated: yieldUpdated } = useBondYields();
 
-  // Data — merge live yields into synthetic sovereign data
+  // Only live benchmark yields are shown (TradingView via /api/live-prices?type=bonds).
+  // The generated sovereign data (policy rates, ratings, outlooks) was removed in the launch audit.
   const sovereignYields = useMemo(() => {
-    const base = generateSovereignYields();
-    if (Object.keys(liveYields).length === 0) return base;
-    // Map live yield keys to country names
-    const yieldMap: Record<string, string> = {
-      "US_10Y": "United States", "US_2Y": "United States", "US_30Y": "United States", "US_5Y": "United States",
-    };
-    return base.map(s => {
-      // Try to match US yields
-      if (s.country === "United States" && liveYields["US_10Y"]) {
-        return { ...s, yield10y: liveYields["US_10Y"].yield, change1d: Math.round(liveYields["US_10Y"].change * 100) / 100 };
-      }
-      return s;
+    const rows: { flag: string; country: string; benchmark: string; key: string }[] = [
+      { flag: "🇮🇳", country: "India", benchmark: "10Y G-Sec", key: "INDIA_10Y" },
+      { flag: "🇺🇸", country: "United States", benchmark: "10Y Treasury", key: "US_10Y" },
+      { flag: "🇺🇸", country: "United States", benchmark: "2Y Treasury", key: "US_2Y" },
+      { flag: "🇺🇸", country: "United States", benchmark: "30Y Treasury", key: "US_30Y" },
+    ];
+    return rows.flatMap(r => {
+      const y = liveYields[r.key];
+      if (!y || !(y.yield > 0)) return [];
+      return [{ ...r, yield10y: +y.yield.toFixed(3), change1d: +(y.change * 100).toFixed(1) }]; // change in bps
     });
   }, [liveYields]);
   const copilot = useMemo(() => generateBondCopilot(), []);
@@ -99,17 +97,18 @@ export default function BondsPlatform() {
       {/* Sovereign Yield Cards */}
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>Global Sovereign Yields</h3>
-        <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 14 }}>Live benchmark government bond yields across major economies</p>
+        <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 14 }}>Live benchmark government bond yields</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(185px, 1fr))", gap: 10 }}>
-          {sovereignYields.map(s => {
-            const spark = generateBondSparkline(s.country, 20);
-            return (
-              <div key={s.country} style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0", position: "relative", overflow: "hidden" }}>
+          {sovereignYields.length === 0 && (
+            <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>Live yields are loading or unavailable right now.</div>
+          )}
+          {sovereignYields.map(s => (
+              <div key={s.key} style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0", position: "relative", overflow: "hidden" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <span style={{ fontSize: "1.2rem" }}>{s.flag}</span>
                   <div>
                     <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#1e293b" }}>{s.country}</div>
-                    <div style={{ fontSize: "0.55rem", color: "#94a3b8" }}>{s.benchmark} · {s.rating}</div>
+                    <div style={{ fontSize: "0.55rem", color: "#94a3b8" }}>{s.benchmark}</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
@@ -118,24 +117,16 @@ export default function BondsPlatform() {
                     {s.change1d >= 0 ? "+" : ""}{s.change1d} bps
                   </span>
                 </div>
-                <Spark data={spark} color="#00897b" w={140} h={22} />
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: "0.55rem", color: "#94a3b8" }}>
-                  <span>Policy: {s.policyRate}%</span>
-                  <span>Debt/GDP: {s.debtToGdp}%</span>
-                </div>
-                <div style={{ marginTop: 4 }}>
-                  <Badge text={s.outlook} variant={s.outlookColor === "#10b981" ? "green" : s.outlookColor === "#ef4444" ? "red" : s.outlookColor === "#f59e0b" ? "orange" : "neutral"} />
-                </div>
+                <div style={{ fontSize: "0.55rem", color: "#94a3b8" }}>Live · {yieldSource || "TradingView"}</div>
               </div>
-            );
-          })}
+          ))}
         </div>
       </div>
 
       {/* Bond Categories */}
       <div style={{ marginBottom: 20 }}>
         <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>Indian Fixed Income Universe</h3>
-        <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 12 }}>Browse bonds by category — Government, Corporate, Tax-Free & more</p>
+        <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 12 }}>Browse bonds by category. Yields shown here are indicative reference values, not live quotes; check the current yield with your broker or RBI Retail Direct before investing.</p>
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
           {BOND_CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setDebtCategory(cat)} style={{
@@ -150,17 +141,15 @@ export default function BondsPlatform() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
           {filteredBonds.map(b => {
             const ratingColor = b.rating === "Sovereign" ? "#00897b" : b.rating === "AAA" ? "#2962ff" : b.rating === "AA+" ? "#7c3aed" : "#ff9800";
-            const spark = generateBondSparkline(b.symbol, 20);
             return (
-              <div key={b.symbol} onClick={() => { router.push(`/bonds/${b.symbol.toLowerCase()}`); }}
+              <div key={b.symbol}
                 style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${ratingColor}`, cursor: "pointer", transition: "all 0.2s" }}>
                 <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e293b", marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
                 <div style={{ fontSize: "0.62rem", color: "#94a3b8", marginBottom: 8 }}>{b.issuer} · {b.tenure}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                  <Spark data={spark} color={ratingColor} w={80} h={22} />
                   <div style={{ display: "flex", gap: 12 }}>
                     <div>
-                      <div style={{ fontSize: "0.48rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>Yield</div>
+                      <div style={{ fontSize: "0.48rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>Yield (indicative)</div>
                       <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#00897b" }}>{b.yieldApprox}</div>
                     </div>
                     <div>
@@ -174,7 +163,7 @@ export default function BondsPlatform() {
                     <Badge text={b.category} variant="neutral" />
                     <Badge text={b.rating} variant={b.rating === "Sovereign" ? "teal" : b.rating === "AAA" ? "blue" : "purple"} />
                   </div>
-                  <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "#00897b" }}>View →</span>
+                  <span style={{ fontSize: "0.55rem", fontWeight: 600, color: "#94a3b8" }}>Indicative</span>
                 </div>
               </div>
             );
@@ -182,30 +171,7 @@ export default function BondsPlatform() {
         </div>
       </div>
 
-      {/* Global Markets Table */}
-      <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #e2e8f0" }}>
-        <div style={{ padding: "12px 16px", background: "#0f766e", color: "#fff", fontSize: "0.78rem", fontWeight: 800 }}>Global Bond Markets</div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.72rem" }}>
-          <thead><tr style={{ background: "#f8fafc" }}>
-            <th style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 600 }}>Country</th>
-            <th style={{ padding: "8px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>10Y Yield</th>
-            <th style={{ padding: "8px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>1D</th>
-            <th style={{ padding: "8px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>Policy Rate</th>
-            <th style={{ padding: "8px 12px", textAlign: "right", color: "#64748b", fontWeight: 600 }}>Rating</th>
-          </tr></thead>
-          <tbody>
-            {globalMarkets.map((m, i) => (
-              <tr key={m.country} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>
-                <td style={{ padding: "8px 12px", fontWeight: 600 }}>{m.flag} {m.country}</td>
-                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 800, color: "#00897b" }}>{m.yield10y}%</td>
-                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: m.change1d >= 0 ? "#ef4444" : "#10b981" }}>{m.change1d >= 0 ? "+" : ""}{m.change1d}</td>
-                <td style={{ padding: "8px 12px", textAlign: "right" }}>{m.policyRate}%</td>
-                <td style={{ padding: "8px 12px", textAlign: "right" }}><Badge text={m.rating} variant={m.rating === "AAA" ? "green" : m.rating.startsWith("AA") ? "blue" : "neutral"} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Global bond market table removed: its figures were generated (launch audit) */}
     </div>
   );
 
@@ -626,6 +592,9 @@ export default function BondsPlatform() {
      RENDER
      ═══════════════════════════════════════════════════════════════ */
 
+  // Generated sections (copilot, yield curve, long duration, stories, impact, calendar)
+  // are hidden until they use real data (launch audit 17 Oct 2026).
+  const SHOWN_SECTIONS = new Set<string>(["overview", "learn"]);
   const sectionMap: Record<BondSection, () => React.JSX.Element> = {
     overview: renderOverview, copilot: renderCopilot, yieldcurve: renderYieldCurve,
     longduration: renderLongDuration, stories: renderStories, impact: renderImpact,
@@ -643,7 +612,7 @@ export default function BondsPlatform() {
               <span style={{ fontSize: "0.62rem", fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.8 }}>AI-Powered Fixed Income Intelligence</span>
             </div>
             <div style={{ fontSize: "1.4rem", fontWeight: 900, marginBottom: 4 }}>Bond Intelligence Terminal</div>
-            <div style={{ fontSize: "0.72rem", opacity: 0.7 }}>Sovereign yields · Yield curve · Credit analysis · AI insights</div>
+            <div style={{ fontSize: "0.72rem", opacity: 0.7 }}>Live benchmark yields · Bond basics</div>
             {yieldUpdated > 0 && (
               <DataSourceBadge source={yieldSource} isStale={yieldStale} lastUpdated={yieldUpdated} compact />
             )}
@@ -651,10 +620,10 @@ export default function BondsPlatform() {
           <div style={{ textAlign: "right" }}>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               {sovereignYields.slice(0, 3).map(s => (
-                <div key={s.country} style={{ textAlign: "center" }}>
+                <div key={s.key} style={{ textAlign: "center" }}>
                   <div style={{ fontSize: "0.5rem", opacity: 0.6, textTransform: "uppercase" }}>{s.flag} {s.benchmark}</div>
                   <div style={{ fontSize: "0.88rem", fontWeight: 900, color: "#00e676" }}>{s.yield10y}%</div>
-                  <div style={{ fontSize: "0.48rem", color: s.change1d >= 0 ? "#fca5a5" : "#86efac" }}>{s.change1d >= 0 ? "+" : ""}{s.change1d}</div>
+                  <div style={{ fontSize: "0.48rem", color: s.change1d >= 0 ? "#fca5a5" : "#86efac" }}>{s.change1d >= 0 ? "+" : ""}{s.change1d} bps</div>
                 </div>
               ))}
             </div>
@@ -664,7 +633,7 @@ export default function BondsPlatform() {
 
       {/* Navigation */}
       <div style={{ display: "flex", gap: 4, padding: "8px 0", marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-        {BOND_NAV_SECTIONS.map(sec => (
+        {BOND_NAV_SECTIONS.filter(sec => SHOWN_SECTIONS.has(sec.id)).map(sec => (
           <button key={sec.id} onClick={() => setActiveSection(sec.id)} style={{
             padding: "8px 16px", borderRadius: 10, border: "1px solid",
             borderColor: activeSection === sec.id ? "#0f766e" : "#e2e8f0",
@@ -679,7 +648,7 @@ export default function BondsPlatform() {
       </div>
 
       {/* Content */}
-      {sectionMap[activeSection]()}
+      {SHOWN_SECTIONS.has(activeSection) ? sectionMap[activeSection]() : renderOverview()}
 
       {/* Footer */}
       <div style={{ marginTop: 24, padding: "12px 16px", borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0", textAlign: "center", fontSize: "0.6rem", color: "#94a3b8" }}>

@@ -107,16 +107,15 @@ function generateDailyStories() {
 
 /* === Commodity Card === */
 function CommodityCard({ c, livePrice }: { c: CommodityEntry; livePrice?: { price: number; changePercent: number; currency?: string } }) {
-  const rng = seededRng(c.slug);
-  const fallbackChange = ((rng() * 6 - 2.5) * 100 | 0) / 100;
-  const change = livePrice ? livePrice.changePercent : fallbackChange;
+  // No live quote → show "—" (never a generated price or change).
+  const change: number | null = livePrice ? livePrice.changePercent : null;
   const displayPrice = livePrice
     ? `$${livePrice.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-    : `${c.unit.startsWith("$") ? "$" : ""}${(50 + Math.abs(c.slug.length * 137 % 5000)).toLocaleString()}`;
+    : "—";
   const catColor = getCategoryColor(c.category);
 
   return (
-    <Link href={`/commodities/${c.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+    <div style={{ textDecoration: "none", color: "inherit" }}>
       <div style={{
         background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "18px 20px",
         transition: "all 0.2s", cursor: "pointer", height: "100%",
@@ -143,15 +142,17 @@ function CommodityCard({ c, livePrice }: { c: CommodityEntry; livePrice?: { pric
               {livePrice && <span style={{ fontSize: "0.45rem", color: "#10b981", marginLeft: 4 }}>LIVE</span>}
             </div>
           </div>
+          {change !== null && (
           <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.78rem", fontWeight: 700, color: change >= 0 ? "#059669" : "#dc2626" }}>
             {change >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
             {Math.abs(change).toFixed(2)}%
           </div>
+          )}
         </div>
 
         <div style={{ fontSize: "0.66rem", color: "#9ca3af", marginTop: 8, lineHeight: 1.4 }}>{c.description}</div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -175,7 +176,7 @@ export default function CommodityIntelligencePage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [showAI, setShowAI] = useState(true);
-  const [activeSection, setActiveSection] = useState("brief");
+  const [activeSection, setActiveSection] = useState("power-map");
   const [expandedStory, setExpandedStory] = useState<number | null>(null);
   const [expandedChain, setExpandedChain] = useState<number | null>(null);
 
@@ -264,8 +265,6 @@ export default function CommodityIntelligencePage() {
         <div style={{ background: "#fff", borderBottom: "1px solid #e5e7eb", padding: "10px 40px", position: "sticky", top: 68, zIndex: 40 }}>
           <div style={{ maxWidth: 1260, margin: "0 auto", display: "flex", gap: 8, overflowX: "auto" }}>
             {[
-              { id: "brief", label: "AI Market Brief" },
-              { id: "stories", label: "Story Feed" },
               { id: "power-map", label: "Global Power Map" },
               { id: "chokepoints", label: "Strategic Chokepoints" },
               { id: "impact", label: "Impact Flows" },
@@ -279,8 +278,8 @@ export default function CommodityIntelligencePage() {
 
       <div style={{ maxWidth: 1260, margin: "0 auto", padding: "24px 40px" }}>
 
-        {/* ============ AI MARKET BRIEF ============ */}
-        {showAI && (
+        {/* ============ AI MARKET BRIEF (hidden: generated figures, launch audit) ============ */}
+        {false && showAI && (
           <section id="brief" style={{ marginBottom: 32 }}>
             <div style={{ background: "linear-gradient(135deg, #0f0f23, #1a1035)", borderRadius: 16, padding: "26px 30px", color: "#fff", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(245,158,11,0.1) 0%, transparent 70%)" }} />
@@ -333,7 +332,7 @@ export default function CommodityIntelligencePage() {
         )}
 
         {/* ============ AI STORY FEED ============ */}
-        {showAI && (
+        {false && showAI && (
           <section id="stories" style={{ marginBottom: 32 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
               <BookOpen size={18} style={{ color: "#f59e0b" }} />

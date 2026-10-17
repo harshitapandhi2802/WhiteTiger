@@ -8,6 +8,7 @@
  * are null.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { buildSchemeReport } from "@/lib/mf-scheme-report";
 import { getSchemeHistory } from "@/lib/amfi-service";
@@ -107,7 +108,7 @@ Scores are judgements from the FACTS only; use null for any score the FACTS cann
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 8000, temperature: 0.3 } }),
+      body: JSON.stringify({ systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 8000, temperature: 0.3 } }),
     });
     if (!res.ok) {
       console.error("Gemini error:", await res.text());

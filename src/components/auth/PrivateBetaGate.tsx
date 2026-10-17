@@ -90,7 +90,7 @@ export function PrivateBetaGate({ rejectedEmail }: { rejectedEmail?: string | nu
             ? <>Access is currently limited to a small group of early testers.
           You&apos;ll need an invited account to enter the platform.</>
             : <>All your markets in one AI research app: stocks, mutual funds, forex,
-          bonds, commodities, crypto and derivatives. Sign in with
+          bonds, commodities and crypto. Sign in with
           Google to start.</>}
         </p>
 

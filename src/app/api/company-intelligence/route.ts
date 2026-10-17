@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse, cacheHeaders } from "@/lib/services/apiGuard";
 import { fetchLiveStockPrice } from "@/lib/services/livePrice";
 import { withAiAccess } from "@/lib/aiAccess";
@@ -204,7 +205,7 @@ async function handlePOST(req: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 16000, temperature: 0.55, responseMimeType: "application/json" },
       }),
     });

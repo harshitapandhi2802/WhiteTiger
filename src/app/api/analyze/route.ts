@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { fetchLiveStockPrice } from "@/lib/services/livePrice";
 import { withAiAccess } from "@/lib/aiAccess";
@@ -33,17 +34,11 @@ You MUST output your analysis in TWO parts:
 
 ## PART 1: ANALYSIS
 
-### 1. Investment Rating & Fair Value
+### 1. Snapshot & Valuation Context
 
-Give one of: STRONG BUY / BUY / HOLD / SELL / STRONG SELL
-Explain in 2-3 sentences with macro/geopolitical context.
-
-**Fair Value Estimate (DCF):**
-- Fair Value: ₹[X] per share
 ${priceLine}
-- Upside/Downside: [Z]% (compute from the live current price above)
-- WACC: X% | Terminal Growth Rate: Y% | Horizon: 5 years
-Brief DCF reasoning.
+In 3-4 sentences, describe where the company stands today with macro/geopolitical context.
+Describe valuation only in relative, factual terms (e.g. P/E versus its own 5-year range and sector average). Do NOT give a rating, fair value, price target or upside/downside.
 
 ### 2. Business & Import Dependency
 
@@ -140,9 +135,9 @@ Brief DCF reasoning.
 - Market perception of succession
 - Impact on company growth and investor confidence
 
-### 12. Investment Thesis
+### 12. Strengths & Competitive Position
 
-5-6 bullet points — specific segments, products, competitive advantages, and why NOW is/isn't good.
+5-6 bullet points — specific segments, products and competitive advantages. Describe facts, not whether to invest.
 
 ### 13. Key Catalysts (Next 12 months)
 
@@ -152,28 +147,19 @@ Brief DCF reasoning.
 
 6-8 concrete risks — at least 3 must be geopolitical/macro/supply-chain risks.
 
-### 15. Smart Entry Strategy
+### 15. Business Scenarios
 
-- Ideal buy zone: ₹[X] – ₹[Y]
-- Stop loss: ₹[Z]
-- Target (12 months): ₹[W]
-- Position sizing recommendation
+Present 3 business scenarios in a table (no share-price targets, no probabilities of returns):
 
-### 16. Scenario Analysis
+| Scenario | Trigger | Revenue Impact | Margin Impact |
+|----------|---------|---------------|---------------|
+| Upside case | [describe] | +X% | +Y bps |
+| Base case | [describe] | X% | Y bps |
+| Downside case | [describe] | -X% | -Y bps |
 
-Present 3 scenarios in a table format:
+### 16. What to Watch
 
-| Scenario | Trigger | Revenue Impact | Margin Impact | Stock Price Target | Probability |
-|----------|---------|---------------|---------------|-------------------|------------|
-| Bull | [describe] | +X% | +Y bps | ₹[Z] | X% |
-| Base | [describe] | X% | Y bps | ₹[Z] | X% |
-| Bear | [describe] | -X% | -Y bps | ₹[Z] | X% |
-
-### 17. Verdict
-
-**Outlook: BULLISH / NEUTRAL / BEARISH**
-
-One decisive paragraph for a strategic long-term Indian investor considering global macro, geopolitics, commodity cycles, and supply chain realities.
+One neutral paragraph summarising the key facts and the indicators a reader should track (results, margins, macro, policy). Do not say whether to buy, sell or hold.
 
 ---
 
@@ -183,12 +169,7 @@ After your markdown analysis, output this EXACT JSON block with numerical scores
 
 \`\`\`json
 {
-  "investmentRating": "STRONG BUY/BUY/HOLD/SELL/STRONG SELL",
-  "outlook": "BULLISH/NEUTRAL/BEARISH",
-  "fairValue": 0,
   "currentPrice": 0,
-  "targetPrice": 0,
-  "upside": 0,
   "scores": {
     "geopoliticalRisk": 0,
     "commodityRisk": 0,
@@ -238,7 +219,7 @@ All scores are 1-10 (1=worst/highest risk, 10=best/lowest risk). Fill ALL fields
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 12000, temperature: 0.7 },
       }),
     });
@@ -265,12 +246,10 @@ All scores are 1-10 (1=worst/highest risk, 10=best/lowest risk). Fill ALL fields
       }
     }
 
-    // D1 — Authoritative override: force the live price into the scores and
-    // recompute upside from it so the dashboard never shows a hallucinated price.
+    // D1 — Authoritative override: force the live price into the scores so the
+    // dashboard never shows a hallucinated price. (No targets/upside: neutral research.)
     if (scores && live) {
       scores.currentPrice = +live.price.toFixed(2);
-      const tgt = Number(scores.targetPrice) || Number(scores.fairValue) || 0;
-      if (tgt > 0) scores.upside = +(((tgt - live.price) / live.price) * 100).toFixed(1);
       scores.priceSource = live.source;
       scores.priceAsOf = live.asOf;
     }

@@ -6,9 +6,7 @@ import MarketTicker from "@/components/homepage/MarketTicker";
 import StatsBar from "@/components/homepage/StatsBar";
 import DashboardPreview from "@/components/homepage/DashboardPreview";
 import AIOverview from "@/components/homepage/AIOverview";
-import DerivativesAI from "@/components/homepage/DerivativesAI";
 import MarketNewsWall from "@/components/homepage/MarketNewsWall";
-import ComparisonTable from "@/components/homepage/ComparisonTable";
 import PricingSection from "@/components/homepage/PricingSection";
 import DownloadApp from "@/components/homepage/DownloadApp";
 import CTASection from "@/components/homepage/CTASection";
@@ -90,9 +88,9 @@ export default function LandingPage() {
       <DashboardPreview />
       <AIOverview />
       {/* RealEstateWorldMap hidden until Real Estate launches (src/lib/comingSoon.ts) */}
-      <DerivativesAI />
+      {/* DerivativesAI hidden until Derivatives launches (src/lib/comingSoon.ts) */}
       <MarketNewsWall />
-      <ComparisonTable />
+      {/* ComparisonTable removed: it named Zerodha and Groww with unverified claims (launch audit) */}
       <PricingSection />
       <DownloadApp />
       <CTASection />

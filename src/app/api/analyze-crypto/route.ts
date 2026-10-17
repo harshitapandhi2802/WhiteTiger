@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { withAiAccess } from "@/lib/aiAccess";
 
@@ -28,8 +29,8 @@ You MUST output your analysis in TWO parts:
 
 ## PART 1: ANALYSIS
 
-### 1. Token Overview & Rating
-- Give one of: STRONG BUY / BUY / HOLD / SELL / STRONG SELL
+### 1. Token Overview
+- Describe its current position factually. Do not give a rating, price target or recommendation.
 - Current approximate price in both USD and INR
 - Market cap ranking and dominance
 - What is this project? Core value proposition in 2-3 sentences
@@ -90,28 +91,11 @@ You MUST output your analysis in TWO parts:
 - Volume profile
 - Key Fibonacci levels
 
-### 9. Scenario Analysis
 
-| Scenario | Trigger | Price Target (USD) | INR Target | Probability | Timeframe |
-|----------|---------|-------------------|-----------|------------|-----------|
-| Bull | [describe] | $[X] | ₹[Y] | X% | [months] |
-| Base | [describe] | $[X] | ₹[Y] | X% | [months] |
-| Bear | [describe] | $[X] | ₹[Y] | X% | [months] |
-
-### 10. CoinDCX Trading Strategy
-- Ideal entry zone (INR)
-- Stop loss (INR)
-- Target 3M and 12M (INR)
-- DCA (Dollar Cost Averaging) recommendation
-- Portfolio allocation suggestion (% of crypto portfolio)
-- Tax-efficient strategy for Indian investors
 
 ### 11. Key Risks
 5-6 concrete risks including regulatory, technical, and market risks.
 
-### 12. Verdict
-**Outlook: BULLISH / NEUTRAL / BEARISH**
-One decisive paragraph for an Indian crypto investor on CoinDCX.
 
 ---
 
@@ -119,12 +103,8 @@ One decisive paragraph for an Indian crypto investor on CoinDCX.
 
 \`\`\`json
 {
-  "rating": "STRONG BUY/BUY/HOLD/SELL/STRONG SELL",
-  "outlook": "BULLISH/NEUTRAL/BEARISH",
   "currentPriceUSD": 0,
   "currentPriceINR": 0,
-  "targetPriceUSD": 0,
-  "targetPriceINR": 0,
   "upside": 0,
   "marketCap": "",
   "marketCapRank": 0,
@@ -166,7 +146,7 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Be specific with 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 12000, temperature: 0.7 },
       }),
     });

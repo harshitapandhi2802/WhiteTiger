@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { withAiAccess } from "@/lib/aiAccess";
 
@@ -28,8 +29,8 @@ You MUST output your analysis in TWO parts:
 
 ## PART 1: ANALYSIS
 
-### 1. Currency Overview & Rating
-- Give one of: STRONG BUY / BUY / HOLD / SELL / STRONG SELL (from base currency perspective)
+### 1. Currency Overview
+- Describe its current position factually. Do not give a rating, price target or recommendation.
 - Current approximate exchange rate
 - 52-week range
 - YTD performance
@@ -82,28 +83,11 @@ You MUST output your analysis in TWO parts:
 - Remittance flow impact
 - NSE currency futures trading strategy
 
-### 8. Scenario Analysis
 
-| Scenario | Trigger | Rate Target | Probability | Timeframe |
-|----------|---------|------------|------------|-----------|
-| Bull (base strengthens) | [describe] | [rate] | X% | [months] |
-| Base | [describe] | [rate] | X% | [months] |
-| Bear (base weakens) | [describe] | [rate] | X% | [months] |
-
-### 9. Trading Strategy
-- Ideal entry zone
-- Stop loss level
-- 3-month and 12-month targets
-- Hedging recommendation for Indian businesses
-- Carry trade assessment
-- Best instruments: spot, futures, options
 
 ### 10. Key Risks
 5-6 concrete risks including central bank surprises, geopolitical events, and policy changes.
 
-### 11. Verdict
-**Outlook: BULLISH / NEUTRAL / BEARISH** (for base currency)
-One decisive paragraph for an Indian forex trader/hedger.
 
 ---
 
@@ -111,11 +95,7 @@ One decisive paragraph for an Indian forex trader/hedger.
 
 \`\`\`json
 {
-  "rating": "STRONG BUY/BUY/HOLD/SELL/STRONG SELL",
-  "outlook": "BULLISH/NEUTRAL/BEARISH",
   "currentRate": 0,
-  "target3M": 0,
-  "target12M": 0,
   "change52W": 0,
   "scores": {
     "centralBankDivergence": 0,
@@ -155,7 +135,7 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Write like a JPMo
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 12000, temperature: 0.7 },
       }),
     });

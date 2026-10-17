@@ -35,7 +35,7 @@ export const SECTIONS: SectionDef[] = [
     tagline: "Live NSE/BSE prices + institutional AI reports + Business Intelligence Suite",
     highlights: ["3,100+ NSE stocks", "Live price grounded AI", "5-tab BI Suite"] },
   { id: "mutualfunds", label: "Mutual Funds", color: "#34D399", icon: <PieChart size={22} />,
-    tagline: "All ~14,000 AMFI schemes, live NAVs, calculators, compare and peer rank",
+    tagline: "8,600+ active AMFI schemes, official NAVs, calculators, compare and peer rank",
     highlights: ["Live AMFI NAVs", "SIP / Lumpsum / SWP", "Fund vs benchmark"] },
   { id: "crypto", label: "Crypto", color: "#FB923C", icon: <Bitcoin size={22} />,
     tagline: "Live prices from CoinDCX + CoinGecko, AI thesis per coin",

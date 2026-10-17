@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { withAiAccess } from "@/lib/aiAccess";
 
@@ -160,7 +161,7 @@ REQUIREMENTS:
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: 16000,
           temperature: 0.6,

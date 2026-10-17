@@ -22,6 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/session";
 import { PLAN_LIMITS, verifyEntitlement, type PlanTier } from "@/lib/entitlement";
 import { claimEntitlement, dbConfigured, getUsageCount, refundUsage, reserveUsage } from "@/lib/db";
+import { neutralizeData } from "@/lib/neutral";
 
 export type Meter = "analysis" | "detail" | "none";
 
@@ -99,11 +100,24 @@ export function signInRequired() {
 
 type Handler = (req: NextRequest) => Promise<Response>;
 
+/** Strip buy/sell calls, targets and stop-losses from a successful JSON response. */
+async function neutralizeResponse(res: Response): Promise<Response> {
+  if (res.status >= 400 || !(res.headers.get("content-type") || "").includes("application/json")) return res;
+  try {
+    const data = neutralizeData(await res.clone().json());
+    const headers = new Headers(res.headers);
+    headers.delete("content-length");
+    return new NextResponse(JSON.stringify(data), { status: res.status, headers });
+  } catch {
+    return res;
+  }
+}
+
 export function withAiAccess(meter: Meter, handler: Handler): Handler {
   return async (req: NextRequest) => {
     const email = sessionEmail(req);
     if (!email) return signInRequired();
-    if (meter === "none") return handler(req);
+    if (meter === "none") return neutralizeResponse(await handler(req));
 
     if (!dbConfigured()) {
       console.error("[ai-access] DATABASE_URL not set; blocking metered AI route");
@@ -148,6 +162,7 @@ export function withAiAccess(meter: Meter, handler: Handler): Handler {
       await refundUsage(email, meter, period).catch(() => {});
       return res;
     }
+    res = await neutralizeResponse(res);
     if (meter === "analysis") {
       try {
         res.headers.set("X-WT-Plan", plan);

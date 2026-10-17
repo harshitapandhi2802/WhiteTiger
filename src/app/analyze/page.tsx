@@ -30,7 +30,7 @@ interface MfHit { schemeCode: number; schemeName: string; amcName: string; subCa
 import { searchBonds, BONDS_LIST, BOND_CATEGORIES, type BondEntry } from "@/lib/bonds";
 import { INTL_INDICES, INTL_STOCKS, INTL_COUNTRIES, getIndicesByCountry, getStocksForIndex } from "@/lib/international";
 /* ── Lightweight, always-needed components (keep static) ── */
-import { ScoreGauge, ScenarioTable, TagList, renderMarkdown, getRatingBadge, getOutlookBadge } from "@/components/DashboardWidgets";
+import { ScoreGauge, TagList, renderMarkdown } from "@/components/DashboardWidgets";
 import { MiniSparkline, TradingViewChart, MarketTicker, ScrollingTicker, MarketPulseBar, LiveChartGrid } from "@/components/LiveCharts";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TabLoadingSkeleton } from "@/components/LoadingSkeleton";
@@ -63,28 +63,6 @@ const StocksExplorer = dynamic(() => import("@/components/stocks/StocksExplorer"
 type MainTab = "stocks" | "commodities" | "crypto" | "currency" | "mutualfunds" | "debt" | "international" | "derivatives" | "realestate";
 type ResultView = "dashboard" | "report";
 
-/** Small teaser pill shown top-right on Stocks & MF tabs — trading is coming to the platform */
-function TradingSoonBadge() {
-  return (
-    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-      <div style={{
-        display: "inline-flex", alignItems: "center", gap: 8,
-        padding: "6px 14px", borderRadius: 999,
-        background: "linear-gradient(135deg, rgba(74,158,255,0.12), rgba(167,139,250,0.12))",
-        border: "1px solid rgba(74,158,255,0.25)",
-        fontSize: "0.74rem", fontWeight: 600, color: "var(--accent, #4A9EFF)",
-        whiteSpace: "nowrap",
-      }}>
-        <span style={{
-          width: 7, height: 7, borderRadius: "50%", background: "#34D399",
-          boxShadow: "0 0 0 3px rgba(52,211,153,0.2)",
-          animation: "wtPulse 2s ease-in-out infinite",
-        }} />
-        Trading on White Tiger — launching soon
-      </div>
-    </div>
-  );
-}
 
 declare global { interface Window { Razorpay: new (o: Record<string, unknown>) => { open: () => void }; } }
 
@@ -575,8 +553,7 @@ export default function AnalyzePage() {
   const analysisName = analysisType === "stocks" ? (stockName || stockTicker) : analysisType === "commodities" ? (commSelected?.name || commSymbol) : analysisType === "crypto" ? (cryptoSelected?.name || cryptoSymbol) : analysisType === "currency" ? (currSelected?.name || currSymbol) : analysisType === "mutualfunds" ? (mfSelected?.schemeName || mfSymbol) : (debtSelected?.name || debtSymbol);
   const analysisSymbol = analysisType === "stocks" ? stockTicker : analysisType === "commodities" ? commSymbol : analysisType === "crypto" ? cryptoSymbol : analysisType === "currency" ? currSymbol : analysisType === "mutualfunds" ? mfSymbol : debtSymbol;
 
-  const rating = scores ? getRatingBadge((scores as Record<string, unknown>).investmentRating as string || (scores as Record<string, unknown>).rating as string || "") : analysis ? getRatingBadge(analysis) : null;
-  const outlook = scores ? getOutlookBadge((scores as Record<string, unknown>).outlook as string || "") : null;
+  // Neutral research: no buy/sell rating or bullish/bearish outlook badges.
 
   const sc = (scores as Record<string, unknown>)?.scores as Record<string, number> | undefined;
 
@@ -989,7 +966,7 @@ export default function AnalyzePage() {
         {/* ══════ STOCKS TAB ══════ */}
         {mainTab === "stocks" && (
           <div>
-            <TradingSoonBadge />
+            
             <div className="card" style={{ padding: "16px 20px", marginBottom: 20 }}>
               <form onSubmit={handleAnalyze} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <div ref={searchRef} className="search-container" style={{ flex: 1 }}>
@@ -1395,11 +1372,11 @@ export default function AnalyzePage() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
                   {filteredCurr.map(c => {
                     const fxPrice = forexPrices[c.symbol];
-                    const isPositive = fxPrice ? fxPrice.change24h >= 0 : c.name.charCodeAt(0) % 2 === 0;
-                    const changeVal = fxPrice ? fxPrice.change24h : (isPositive ? 0.12 : -0.08);
+                    const isPositive = fxPrice ? fxPrice.change24h >= 0 : true;
+                    const changeVal: number | null = fxPrice ? fxPrice.change24h : null; // no live rate → no change shown
                     const currSymbolDisplay = c.quote === "INR" ? "₹" : c.quote === "JPY" ? "¥" : c.quote === "Index" ? "" : "$";
                     return (
-                      <button key={c.symbol} onClick={() => { selectCurrency(c); setFxIntelPair(c); router.push(`/currency/${c.symbol.toLowerCase()}`); }} className="card fx-pair-card" style={{
+                      <button key={c.symbol} onClick={() => { selectCurrency(c); setFxIntelPair(c); }} className="card fx-pair-card" style={{
                         padding: 0, textAlign: "left", cursor: "pointer", overflow: "hidden",
                         border: currSymbol === c.symbol ? "2px solid var(--accent)" : "1px solid var(--border)",
                         background: "#fff", transition: "all 0.3s", position: "relative",
@@ -1413,7 +1390,6 @@ export default function AnalyzePage() {
                               <div style={{ fontWeight: 900, fontSize: "1.1rem", color: "var(--accent)", marginBottom: 1 }}>{c.pair}</div>
                               <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>{c.name}</div>
                             </div>
-                            <MiniSparkline seed={c.symbol} positive={isPositive} width={72} height={30} />
                           </div>
 
                           {/* Rate Display — large and prominent */}
@@ -1421,6 +1397,7 @@ export default function AnalyzePage() {
                             <span style={{ fontSize: "1.4rem", fontWeight: 900, color: "#1a1a2e", letterSpacing: -0.5 }}>
                               {fxPrice ? `${currSymbolDisplay}${fxPrice.rate.toFixed(c.quote === "JPY" ? 2 : c.pair === "DXY" ? 2 : 4)}` : "—"}
                             </span>
+                            {changeVal !== null && (
                             <span style={{
                               fontSize: "0.72rem", fontWeight: 700,
                               color: isPositive ? "#00c853" : "#ef5350",
@@ -1428,6 +1405,7 @@ export default function AnalyzePage() {
                             }}>
                               {isPositive ? "▲" : "▼"} {Math.abs(changeVal).toFixed(2)}%
                             </span>
+                            )}
                           </div>
                         </div>
 
@@ -1435,7 +1413,7 @@ export default function AnalyzePage() {
                         <div style={{ padding: "6px 16px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span className="badge badge-gray" style={{ padding: "2px 8px", fontSize: "0.6rem" }}>{c.category}</span>
                           <span style={{ fontSize: "0.58rem", fontWeight: 700, color: "var(--accent)", display: "flex", alignItems: "center", gap: 3 }}>
-                            View Analysis →
+                            Select for AI research →
                           </span>
                         </div>
                       </button>
@@ -1450,7 +1428,7 @@ export default function AnalyzePage() {
         {/* ══════ MUTUAL FUNDS TAB ══════ */}
         {mainTab === "mutualfunds" && (
           <div>
-            <TradingSoonBadge />
+            
             <div className="card" style={{ padding: "16px 20px", marginBottom: 20 }}>
               <form onSubmit={handleAnalyze} style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <div ref={searchRef} className="search-container" style={{ flex: 1 }}>
@@ -1796,8 +1774,6 @@ export default function AnalyzePage() {
                   <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>{analysisSymbol}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {rating && <span className={`badge ${rating.cls}`}>{rating.label}</span>}
-                  {outlook && <span className={`badge ${outlook.cls}`}>{outlook.label}</span>}
                   <span className="badge badge-blue">
                     {analysisType === "commodities" ? "Koyfin Insights" : analysisType === "crypto" ? "CoinDCX" : analysisType === "currency" ? "RBI · NSE Forex" : analysisType === "mutualfunds" ? "Morningstar Grade" : analysisType === "debt" ? "CCIL · RBI Policy" : "AI Research"}
                   </span>
@@ -1827,12 +1803,9 @@ export default function AnalyzePage() {
                   if (analysisType === "stocks") {
                     const cards = [
                       { label: "Current Price", value: s.currentPrice ? `₹${Number(s.currentPrice).toLocaleString("en-IN")}` : "—", color: "var(--text-primary)", cls: "accent" },
-                      { label: "Fair Value (DCF)", value: s.fairValue ? `₹${Number(s.fairValue).toLocaleString("en-IN")}` : "—", color: "var(--accent)", cls: "purple" },
-                      { label: "12M Target", value: s.targetPrice ? `₹${Number(s.targetPrice).toLocaleString("en-IN")}` : "—", color: "var(--success)", cls: "success" },
-                      { label: "Upside", value: s.upside ? `${Number(s.upside) > 0 ? "+" : ""}${s.upside}%` : "—", color: Number(s.upside) >= 0 ? "var(--success)" : "var(--danger)", cls: Number(s.upside) >= 0 ? "success" : "danger" },
                     ];
                     return (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                         {cards.map(c => (
                           <div key={c.label} className={`dash-card-gradient ${c.cls}`} style={{ textAlign: "center" }}>
                             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{c.label}</div>
@@ -1845,12 +1818,9 @@ export default function AnalyzePage() {
                   if (analysisType === "commodities") {
                     const cards = [
                       { label: "Current Price", value: s.currentPrice ? `₹${Number(s.currentPrice).toLocaleString("en-IN")}` : "—", color: "var(--text-primary)", cls: "warning" },
-                      { label: "3M Target", value: s.targetPrice3M ? `₹${Number(s.targetPrice3M).toLocaleString("en-IN")}` : "—", color: "var(--accent)", cls: "accent" },
-                      { label: "12M Target", value: s.targetPrice12M ? `₹${Number(s.targetPrice12M).toLocaleString("en-IN")}` : "—", color: "var(--success)", cls: "success" },
-                      { label: "Upside", value: s.upside ? `${Number(s.upside) > 0 ? "+" : ""}${s.upside}%` : "—", color: Number(s.upside) >= 0 ? "var(--success)" : "var(--danger)", cls: Number(s.upside) >= 0 ? "success" : "danger" },
                     ];
                     return (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                         {cards.map(c => (
                           <div key={c.label} className={`dash-card-gradient ${c.cls}`} style={{ textAlign: "center" }}>
                             <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.04em" }}>{c.label}</div>
@@ -1863,8 +1833,6 @@ export default function AnalyzePage() {
                   if (analysisType === "currency") {
                     const cards = [
                       { label: "Current Rate", value: s.currentRate ? String(Number(s.currentRate).toFixed(4)) : "—", color: "var(--text-primary)" },
-                      { label: "3M Target", value: s.target3M ? String(Number(s.target3M).toFixed(4)) : "—", color: "var(--accent)" },
-                      { label: "12M Target", value: s.target12M ? String(Number(s.target12M).toFixed(4)) : "—", color: "var(--success)" },
                       { label: "52W Change", value: s.change52W ? `${Number(s.change52W) > 0 ? "+" : ""}${s.change52W}%` : "—", color: Number(s.change52W) >= 0 ? "var(--success)" : "var(--danger)" },
                     ];
                     return (
@@ -1960,10 +1928,9 @@ export default function AnalyzePage() {
                     { label: "Price (USD)", value: s.currentPriceUSD ? `$${Number(s.currentPriceUSD).toLocaleString("en-US")}` : "—", color: "var(--text-primary)" },
                     { label: "Price (INR)", value: s.currentPriceINR ? `₹${Number(s.currentPriceINR).toLocaleString("en-IN")}` : "—", color: "var(--accent)" },
                     { label: "Market Cap", value: (s.marketCap as string) || "—", color: "var(--text-secondary)" },
-                    { label: "Upside", value: s.upside ? `${Number(s.upside) > 0 ? "+" : ""}${s.upside}%` : "—", color: Number(s.upside) >= 0 ? "var(--success)" : "var(--danger)" },
                   ];
                   return (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
                       {cards.map(c => (
                         <div key={c.label} className="dashboard-card" style={{ textAlign: "center", padding: 16 }}>
                           <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 600, marginBottom: 6 }}>{c.label}</div>
@@ -2241,18 +2208,7 @@ export default function AnalyzePage() {
                   </div>
                 </div>
 
-                {/* Scenarios */}
-                {(() => {
-                  const scenariosRaw = (scores as Record<string, unknown>).scenarios as Record<string, Record<string, unknown>> | undefined;
-                  if (!scenariosRaw) return null;
-                  const s = scenariosRaw;
-                  const rows = [
-                    { label: "Bull", target: s.bull?.target ? `₹${Number(s.bull.target).toLocaleString("en-IN")}` : (s.bull?.targetINR ? `₹${Number(s.bull.targetINR).toLocaleString("en-IN")}` : `$${s.bull?.targetUSD || 0}`), probability: Number(s.bull?.probability || 0), trigger: String(s.bull?.trigger || ""), color: "var(--success)", bg: "var(--success-bg)" },
-                    { label: "Base", target: s.base?.target ? `₹${Number(s.base.target).toLocaleString("en-IN")}` : (s.base?.targetINR ? `₹${Number(s.base.targetINR).toLocaleString("en-IN")}` : `$${s.base?.targetUSD || 0}`), probability: Number(s.base?.probability || 0), trigger: String(s.base?.trigger || ""), color: "var(--warning)", bg: "var(--warning-bg)" },
-                    { label: "Bear", target: s.bear?.target ? `₹${Number(s.bear.target).toLocaleString("en-IN")}` : (s.bear?.targetINR ? `₹${Number(s.bear.targetINR).toLocaleString("en-IN")}` : `$${s.bear?.targetUSD || 0}`), probability: Number(s.bear?.probability || 0), trigger: String(s.bear?.trigger || ""), color: "var(--danger)", bg: "var(--danger-bg)" },
-                  ];
-                  return <ScenarioTable scenarios={rows} />;
-                })()}
+                {/* Price-target scenarios removed: neutral research only */}
 
                 {/* Extra info tags */}
                 {((scores as Record<string, unknown>).topProducers || (scores as Record<string, unknown>).competitors || (scores as Record<string, unknown>).topImportCountries) ? (
@@ -2343,7 +2299,8 @@ export default function AnalyzePage() {
 
         {/* Right: Contextual Intelligence Panel (desktop only, Pro mode only) */}
         {/* Real Estate sidebar integrated into RealEstateExplorer */}
-        {proMode && mainTab !== "derivatives" && mainTab !== "realestate" && mainTab !== "crypto" && (
+        {/* Derivatives sidebar hidden: its figures are generated, not live (launch audit) */}
+        {false && proMode && mainTab !== "derivatives" && mainTab !== "realestate" && mainTab !== "crypto" && (
         <div className="derivatives-sidebar" style={{ width: 340, minWidth: 310, flexShrink: 0 }}>
           <div style={{ position: "sticky", top: 20 }}>
             <DerivativesPanel tab={mainTab} />

@@ -11,8 +11,8 @@ const FEATURES = [
   {
     icon: <BarChart3 size={26} />, color: "#4A9EFF",
     title: "Stock Intelligence",
-    desc: "3,100+ NSE stocks with DCF valuation, geopolitical scoring, supply chain mapping & AI-driven entry zones.",
-    metrics: ["DCF Fair Value", "8+ Risk Scores", "AI Sentiment"],
+    desc: "3,100+ NSE stocks with live prices, financials, geopolitical and supply-chain risk scoring, and AI research notes.",
+    metrics: ["Live Prices", "Risk Scores", "AI Research"],
   },
   {
     icon: <Zap size={26} />, color: "#7c4dff",
@@ -40,9 +40,9 @@ const FEATURES = [
   },
   {
     icon: <Shield size={26} />, color: "#4A9EFF",
-    title: "Derivatives Agent",
-    desc: "AI quant analysis for F&O with option chain intelligence, volatility heatmaps & IV percentile tracking.",
-    metrics: ["Option Chain", "IV Analysis", "Strategy AI"],
+    title: "Derivatives · Coming soon",
+    desc: "Option chains, Greeks and volatility for NIFTY and BANKNIFTY. Opening once the data is verified.",
+    metrics: ["Option Chain", "Greeks", "IV"],
   },
 ];
 
@@ -137,7 +137,7 @@ export default function AIOverview() {
       <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
         <SectionHeader
           label="AI Platform"
-          title="Seven Markets Live."
+          title="Six Markets Live."
           titleAccent="One Intelligence Layer."
           subtitle="Every market, every asset, every signal — analyzed by institutional-grade AI and delivered in seconds."
         />

@@ -86,18 +86,13 @@ export default function CryptoPlatform() {
 
   // Data — merge live prices into synthetic topCoins for accurate display
   const baseCoins = useMemo(() => generateTopCoins(), []);
+  // Only coins with a live price are shown. The generated card data (market cap,
+  // volume, sparkline, sentiment) is never displayed (launch audit 17 Oct 2026).
   const topCoins = useMemo(() => {
-    return baseCoins.map(coin => {
+    return baseCoins.flatMap(coin => {
       const live = livePrices[coin.symbol];
-      if (live && live.inr > 0) {
-        return {
-          ...coin,
-          price: live.usd,
-          change24h: +live.change24h.toFixed(2),
-          marketCap: coin.marketCap, // keep synthetic; live API doesn't provide
-        };
-      }
-      return coin;
+      if (!live || !(live.inr > 0)) return [];
+      return [{ ...coin, price: live.usd, change24h: +live.change24h.toFixed(2) }];
     });
   }, [baseCoins, livePrices]);
   const copilot = useMemo(() => generateCryptoCopilot(), []);
@@ -121,20 +116,18 @@ export default function CryptoPlatform() {
       {/* Top Coins */}
       <div style={{ marginBottom: 28 }}>
         <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#f8fafc", marginBottom: 4 }}>Top Digital Assets</h3>
-        <p style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: 14 }}>Market intelligence for the world's leading cryptocurrencies</p>
+        <p style={{ fontSize: "0.7rem", color: "#64748b", marginBottom: 14 }}>Live prices for the leading cryptocurrencies</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
           {topCoins.map(coin => (
-            <div key={coin.symbol} onClick={() => setSelectedCoin(coin)}
-              style={{ ...darkCard, cursor: "pointer", transition: "all 0.2s", borderLeft: `3px solid ${coin.sentimentColor}` }}>
+            <div key={coin.symbol}
+              style={{ ...darkCard, transition: "all 0.2s", borderLeft: `3px solid ${coin.change24h >= 0 ? "#10b981" : "#ef4444"}` }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <div>
                   <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#f8fafc" }}>{coin.name}</div>
                   <div style={{ fontSize: "0.6rem", color: "#64748b" }}>{coin.symbol} · {coin.category}</div>
                 </div>
-                <Badge text={coin.aiSentiment} variant={coin.aiSentiment === "Bullish" ? "green" : coin.aiSentiment === "Bearish" ? "red" : "orange"} />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                <Spark data={coin.sparkline} color={coin.change24h >= 0 ? "#10b981" : "#ef4444"} w={80} h={24} />
                 <div>
                   <div style={{ fontSize: "1.15rem", fontWeight: 900, color: "#f8fafc" }}>{fUSD(coin.price)}</div>
                   <div style={{ fontSize: "0.65rem", fontWeight: 700, color: coin.change24h >= 0 ? "#10b981" : "#ef4444" }}>
@@ -142,11 +135,7 @@ export default function CryptoPlatform() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.55rem", color: "#64748b" }}>
-                <span>MCap: {coin.marketCap}</span>
-                <span>Vol: {coin.volume24h}</span>
-                {coin.dominance && <span>Dom: {coin.dominance}%</span>}
-              </div>
+              <div style={{ fontSize: "0.55rem", color: "#64748b" }}>Live price · {priceSource || "CoinDCX"}</div>
             </div>
           ))}
         </div>
@@ -171,13 +160,13 @@ export default function CryptoPlatform() {
           {filteredCrypto.map(c => {
             const match = topCoins.find(tc => tc.symbol === c.symbol);
             return (
-              <div key={c.symbol} onClick={() => { if (match) setSelectedCoin(match); }}
-                style={{ ...darkCard, cursor: match ? "pointer" : "default", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: match ? 1 : 0.7 }}>
+              <div key={c.symbol}
+                style={{ ...darkCard, cursor: "default", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: match ? 1 : 0.7 }}>
                 <div>
                   <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#f8fafc" }}>{c.name}</div>
                   <div style={{ fontSize: "0.58rem", color: "#64748b" }}>{c.symbol} · {c.category}</div>
                 </div>
-                {match ? <span style={{ fontSize: "0.62rem", fontWeight: 700, color: "#f7931a" }}>View →</span> : <span style={{ fontSize: "0.55rem", color: "#475569" }}>Coming soon</span>}
+                {match ? <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#f8fafc" }}>{fUSD(match.price)}</span> : <span style={{ fontSize: "0.55rem", color: "#475569" }}>Coming soon</span>}
               </div>
             );
           })}
@@ -749,6 +738,9 @@ export default function CryptoPlatform() {
     );
   };
 
+  // Generated sections (copilot, stories, on-chain, heatmap, macro, risk, derivatives,
+  // ecosystem, regulation) are hidden until they use real data (launch audit).
+  const SHOWN_SECTIONS = new Set<string>(["overview", "learn"]);
   const sectionMap: Record<CryptoSectionExtra, () => React.JSX.Element> = {
     overview: renderOverview, copilot: renderCopilot, stories: renderStories,
     onchain: renderOnChain, heatmap: renderHeatmap, macro: renderMacro,
@@ -776,7 +768,7 @@ export default function CryptoPlatform() {
               }}>{"\u{1f4da}"} Learn Crypto</button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 2 }}>
-              <span style={{ fontSize: "0.72rem", opacity: 0.5 }}>On-chain · AI narratives · Risk analysis · Macro intelligence</span>
+              <span style={{ fontSize: "0.72rem", opacity: 0.5 }}>Live prices · Crypto basics</span>
               <DataSourceBadge source={priceSource} isStale={pricesStale} lastUpdated={pricesUpdated} />
             </div>
           </div>
@@ -798,7 +790,7 @@ export default function CryptoPlatform() {
 
       {/* Navigation */}
       <div style={{ display: "flex", gap: 4, padding: "8px 0", marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-        {CRYPTO_NAV_SECTIONS.map(sec => (
+        {CRYPTO_NAV_SECTIONS.filter(sec => SHOWN_SECTIONS.has(sec.id)).map(sec => (
           <button key={sec.id} onClick={() => { setSelectedCoin(null); setActiveSection(sec.id); }} style={{
             padding: "8px 14px", borderRadius: 10, border: "1px solid",
             borderColor: activeSection === sec.id ? "#f7931a" : "#1e293b",
@@ -813,11 +805,11 @@ export default function CryptoPlatform() {
       </div>
 
       {/* Content */}
-      {selectedCoin ? renderCoinDetail() : sectionMap[activeSection]()}
+      {SHOWN_SECTIONS.has(activeSection) ? sectionMap[activeSection]() : renderOverview()}
 
       {/* Footer */}
       <div style={{ marginTop: 24, padding: "12px 16px", borderRadius: 10, background: "#0f172a", border: "1px solid #1e293b", textAlign: "center", fontSize: "0.6rem", color: "#475569" }}>
-        White Tiger Crypto Intelligence · AI-powered analysis for educational purposes only · Not investment advice · Crypto is highly volatile · Never invest more than you can afford to lose · CoinGecko · CoinMarketCap · Glassnode
+        White Tiger Crypto Intelligence · AI-powered analysis for educational purposes only · Not investment advice · Crypto is highly volatile · Never invest more than you can afford to lose · Prices: CoinDCX · CoinGecko
       </div>
     </div>
   );

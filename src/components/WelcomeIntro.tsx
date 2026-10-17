@@ -99,7 +99,7 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
           opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(10px)",
           transition: "opacity 0.7s 0.18s ease-out, transform 0.7s 0.18s ease-out",
         }}>
-          Seven markets live, more coming. Live prices grounded in real exchange feeds. Institutional-grade AI reports.
+          Six markets live, more coming. Live prices grounded in real exchange feeds. Institutional-grade AI reports.
           Every number labelled with where it came from.
         </p>
 
@@ -184,7 +184,7 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
       }}>
         {[
           { v: String(SECTIONS.filter(s => !isComingSoon(s.id)).length), l: "Markets live" },
-          { v: "~14k", l: "AMFI MF schemes" },
+          { v: "8,600+", l: "Active MF schemes" },
           { v: "3,100+", l: "NSE stocks" },
           { v: "5", l: "Free AI analyses / mo" },
         ].map((s, i) => (

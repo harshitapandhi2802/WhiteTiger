@@ -10,17 +10,16 @@ export default function AboutPage() {
   return (
     <LegalPage title="About White Tiger">
       <p>
-        White Tiger is an AI-powered financial intelligence platform that brings institutional-grade
-        research to individual investors across eleven market verticals — equities, mutual funds,
-        crypto, forex, commodities, bonds, derivatives, real estate, tax, and wealth planning — in a
-        single dark, premium interface.
+        White Tiger is an AI-powered research platform for individual investors in India. It
+        covers six markets today — equities, mutual funds, crypto, forex, commodities and bonds —
+        with derivatives, real estate and global markets coming later.
       </p>
 
       <H2>What We Do</H2>
       <p>
         We combine live market data with deep AI-generated analysis to help you understand markets
         faster. Each analysis is designed to surface the same factors a professional desk would
-        consider — valuation, macro and geopolitical context, flows, and risk — explained in plain
+        consider — financials, macro and geopolitical context, flows, and risk — explained in plain
         language.
       </p>
 
@@ -31,7 +30,7 @@ export default function AboutPage() {
       <ul style={{ paddingLeft: 20, margin: "8px 0" }}>
         <li><strong>Live data</strong> — prices and NAVs streamed from exchanges and data providers.</li>
         <li><strong>Static data</strong> — reference figures and estimates that update periodically.</li>
-        <li><strong>AI insight</strong> — model-generated scores, narratives, and target levels.</li>
+        <li><strong>AI insight</strong> — model-generated research notes and risk scores. AI output can be wrong; we never give buy/sell calls or price targets.</li>
       </ul>
       <p>
         Look for source badges, timestamps, and confidence indicators throughout the app so you

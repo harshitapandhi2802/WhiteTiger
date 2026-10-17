@@ -16,7 +16,7 @@ import { useForexRates } from "@/hooks/useMarketData";
 import { DataSourceBadge } from "@/components/DataHealth";
 
 /* ═══════════════════════════════════════════════════════════════
-   MOONLIGHT FOREX INTELLIGENCE PLATFORM v2.0
+   WHITE TIGER FOREX PLATFORM
    AI Copilot · Converter · Central Banks · Story Feed · Technicals
    Market Clocks · Travel FX · Heatmap · Risk · Impact Engine
    ═══════════════════════════════════════════════════════════════ */
@@ -76,7 +76,9 @@ function Badge({ text, variant = "neutral" }: { text: string; variant?: "green" 
 
 export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "INR" }: { pair?: string; base?: string; quote?: string }) {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<ForexSection>("copilot");
+  const [activeSection, setActiveSection] = useState<ForexSection>("clocks");
+  // Only sections built on real data are shown; the rest use generated figures (launch audit 17 Oct 2026).
+  const SHOWN_SECTIONS = new Set<string>(["clocks"]);
   const [mode, setMode] = useState<"beginner" | "institutional">("beginner");
 
   // Converter state
@@ -151,7 +153,7 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
                   </span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.65rem", color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
-                  AI Macro Strategist · Central Bank Intelligence · Currency Analytics
+                  Live rates · Global market sessions
                   {fxUpdated > 0 && <DataSourceBadge source={fxSource} isStale={fxStale} lastUpdated={fxUpdated} compact />}
                 </div>
               </div>
@@ -167,12 +169,6 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
             </div>
           </div>
 
-          {/* Copilot Quick Summary */}
-          <div style={{ padding: "10px 16px", borderRadius: 10, background: `${copilot.moodColor}12`, border: `1px solid ${copilot.moodColor}25`, marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.78rem", fontWeight: 700, color: copilot.moodColor }}>
-              {copilot.moodEmoji} {copilot.headline}
-            </div>
-          </div>
 
           {/* Session Clocks Row */}
           <div style={{ display: "flex", gap: 8, overflowX: "auto" }}>
@@ -205,7 +201,7 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
         background: "var(--bg-secondary)", overflowX: "auto",
         position: "sticky", top: 0, zIndex: 50,
       }}>
-        {FOREX_NAV_SECTIONS.map(sec => (
+        {FOREX_NAV_SECTIONS.filter(sec => SHOWN_SECTIONS.has(sec.id)).map(sec => (
           <button key={sec.id} onClick={() => setActiveSection(sec.id)} style={{
             display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 10, whiteSpace: "nowrap",
             border: activeSection === sec.id ? "1.5px solid #0d47a1" : "1px solid transparent",
@@ -902,7 +898,7 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
       <div style={{ padding: "10px 28px", borderTop: "1px solid var(--border)", background: "var(--bg-secondary)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#0d47a1" }} />
-          <span style={{ fontSize: "0.56rem", color: "#aaa", fontWeight: 600, letterSpacing: 0.5 }}>MOONLIGHT FOREX INTELLIGENCE TERMINAL · v2.0</span>
+          <span style={{ fontSize: "0.56rem", color: "#aaa", fontWeight: 600, letterSpacing: 0.5 }}>WHITE TIGER · FOREX</span>
         </div>
         <span style={{ fontSize: "0.52rem", color: "#bbb" }}>Not financial advice. Rates are indicative. Consult a licensed advisor.</span>
       </div>

@@ -167,7 +167,7 @@ function LoadingBar() {
     <div style={{ textAlign: "center", padding: "100px 0" }}>
       <div style={{ fontSize: "1.8rem", marginBottom: 12 }}>⏳</div>
       <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: 6 }}>Connecting to AMFI India</div>
-      <div style={{ fontSize: "0.66rem", color: "var(--text-muted)" }}>Fetching real-time NAV data for 14,000+ schemes...</div>
+      <div style={{ fontSize: "0.66rem", color: "var(--text-muted)" }}>Fetching official NAV data for 8,600+ active schemes...</div>
       <div style={{ margin: "20px auto", width: 200, height: 3, borderRadius: 2, background: "var(--bg-slate)", overflow: "hidden" }}>
         <div style={{ width: "40%", height: "100%", background: "var(--accent)", borderRadius: 2, animation: "wtLoadBar 1.5s ease-in-out infinite" }} />
       </div>
@@ -387,7 +387,7 @@ export default function MFIntelligencePage() {
                 </div>
                 <div style={{ display: "flex", gap: 5 }}>
                   <SourceBadge source="AMFI India" />
-                  <SourceBadge source="SEBI Registered" />
+                  <SourceBadge source="AMCs regulated by SEBI" />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>

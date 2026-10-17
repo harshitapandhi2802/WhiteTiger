@@ -74,68 +74,6 @@ function MobileTicker({ items }: { items: MarketItem[] }) {
   );
 }
 
-/* ── AI Summary Card ── */
-function AISummaryCard() {
-  const [summary, setSummary] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simple market summary from cached intelligence
-    const summaries = [
-      "Markets are trading with a positive bias today. NIFTY holding above key support levels with IT and banking sectors leading gains. Gold remains firm on global uncertainty.",
-      "Mixed signals across markets today. Domestic equities consolidating near highs while crude oil pullback provides relief. FII flows turning positive this week.",
-      "Bullish momentum continues in broader markets. Mid-cap and small-cap indices outperforming. RBI policy stance remains accommodative supporting growth outlook.",
-    ];
-    const idx = new Date().getDate() % summaries.length;
-    setTimeout(() => { setSummary(summaries[idx]); setLoading(false); }, 800);
-  }, []);
-
-  return (
-    <div style={{
-      background: "linear-gradient(135deg, rgba(74,158,255,0.06) 0%, rgba(124,77,255,0.04) 100%)",
-      border: "0.5px solid rgba(74,158,255,0.1)",
-      borderRadius: 16, padding: "18px 20px",
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: 8,
-          background: "rgba(74,158,255,0.12)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <Sparkles size={14} color="#4A9EFF" />
-        </div>
-        <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#4A9EFF", letterSpacing: "0.04em" }}>
-          AI MARKET BRIEF
-        </span>
-        <span style={{
-          fontSize: "0.58rem", color: "rgba(255,255,255,0.25)", marginLeft: "auto",
-          fontWeight: 500,
-        }}>
-          {new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-        </span>
-      </div>
-      {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[85, 100, 60].map((w, i) => (
-            <div key={i} style={{
-              width: `${w}%`, height: 12, borderRadius: 6,
-              background: "rgba(255,255,255,0.04)",
-              animation: `shimmer 1.5s infinite ${i * 0.15}s`,
-            }} />
-          ))}
-        </div>
-      ) : (
-        <p style={{
-          fontSize: "0.85rem", color: "rgba(255,255,255,0.55)",
-          lineHeight: 1.65, margin: 0, fontWeight: 400,
-        }}>
-          {summary}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /* ── Quick Access Grid ── */
 function QuickAccessGrid({ onTabSelect }: { onTabSelect: (tab: MainTab) => void }) {
   const items: { id: MainTab; icon: React.ReactNode; label: string; color: string }[] = [
@@ -354,7 +292,7 @@ export default function MobileHome({
       {/* ── Content ── */}
       <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 28 }}>
         {/* AI Market Brief */}
-        <AISummaryCard />
+        {/* AISummaryCard removed: it showed canned text as an AI brief (launch audit) */}
 
         {/* Quick Access Grid */}
         <QuickAccessGrid onTabSelect={onTabSelect} />

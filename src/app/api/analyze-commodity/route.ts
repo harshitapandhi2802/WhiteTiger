@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { withAiAccess } from "@/lib/aiAccess";
 
@@ -28,9 +29,9 @@ You MUST output your analysis in TWO parts:
 
 ## PART 1: ANALYSIS
 
-### 1. Commodity Overview & Rating
-- Give one of: STRONG BUY / BUY / HOLD / SELL / STRONG SELL
-- Current approximate price and 12-month price target
+### 1. Commodity Overview
+- Describe its current position factually. Do not give a rating, price target or recommendation.
+- Current approximate price (no price target)
 - What drives this commodity's price? Key demand/supply factors
 - India's role: Is India a net importer or exporter? How much does India depend on this commodity?
 
@@ -84,27 +85,11 @@ If this is an oil/energy commodity, provide detailed analysis of:
 - Volume trends
 - Chart pattern identification
 
-### 8. Scenario Analysis
 
-| Scenario | Trigger | Price Target | Probability | Timeframe |
-|----------|---------|-------------|------------|-----------|
-| Bull | [describe] | [price] | X% | [months] |
-| Base | [describe] | [price] | X% | [months] |
-| Bear | [describe] | [price] | X% | [months] |
-
-### 9. Trade Strategy
-- Ideal entry zone
-- Stop loss level
-- Target (3-month and 12-month)
-- Position sizing for MCX
-- Hedging recommendations for Indian businesses
 
 ### 10. Key Risks
 5-6 concrete risks including at least 2 geopolitical risks.
 
-### 11. Verdict
-**Medium-Term Outlook: BULLISH / NEUTRAL / BEARISH**
-One decisive paragraph for an Indian commodity trader/investor.
 
 ---
 
@@ -112,11 +97,7 @@ One decisive paragraph for an Indian commodity trader/investor.
 
 \`\`\`json
 {
-  "rating": "STRONG BUY/BUY/HOLD/SELL/STRONG SELL",
-  "outlook": "BULLISH/NEUTRAL/BEARISH",
   "currentPrice": 0,
-  "targetPrice3M": 0,
-  "targetPrice12M": 0,
   "upside": 0,
   "scores": {
     "geopoliticalRisk": 0,
@@ -156,7 +137,7 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Be specific with 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 12000, temperature: 0.7 },
       }),
     });

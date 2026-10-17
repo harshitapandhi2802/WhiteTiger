@@ -299,8 +299,6 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
   const quoteAsOf = data.provenance ? new Date(data.provenance.quote.asOf).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null;
 
   const isPositive = data.hero.changePercent >= 0;
-  const viewColor = data.investmentConclusion?.view.includes("UNDERVALUED") ? "#059669" : data.investmentConclusion?.view.includes("OVERVALUED") ? "#dc2626" : "#d97706";
-  const viewLabel = data.investmentConclusion?.view.includes("UNDERVALUED") ? "BUY" : data.investmentConclusion?.view.includes("OVERVALUED") ? "SELL" : "HOLD";
 
   const navItems = [
     { id: "copilot", label: "AI Copilot", icon: <Brain size={13} /> },
@@ -396,12 +394,8 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
               )}
 
               {/* AI View Badge — only when valuation is sourced, never from template values */}
-              {!withheld("valuation") ? (
-                <div style={{ background: `${viewColor}18`, border: `1px solid ${viewColor}40`, borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 70 }}>
-                  <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>AI View</div>
-                  <div style={{ fontSize: "1rem", fontWeight: 900, color: viewColor, marginTop: 2 }}>{viewLabel}</div>
-                </div>
-              ) : data.provenance && (
+              {/* AI BUY/SELL/HOLD badge removed (neutral research) */}
+              {data.provenance && (
                 <div style={{ borderRadius: 10, padding: "8px 14px", border: "1px solid rgba(255,255,255,0.12)", textAlign: "left" }}>
                   <div style={{ fontSize: "0.55rem", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.05em" }}>Live quote</div>
                   <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "#a5b4fc", marginTop: 2 }}>{data.provenance.quote.symbol} · {quoteAsOf}</div>
@@ -479,7 +473,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                   { label: "Market Cap", value: fmtNum(data.hero.mcap, n => `₹${(n / 100).toFixed(0)}K Cr`), icon: <Layers size={14} /> },
                   { label: "AI Confidence", value: `${data.sentiment.confidence}%`, icon: <Brain size={14} />, color: data.sentiment.confidence > 70 ? "#4ade80" : "#fbbf24" },
                   { label: "Risk Level", value: data.aiRiskEngine?.overallRiskLevel || "Moderate", icon: <Shield size={14} />, color: data.aiRiskEngine?.overallRiskLevel === "Low" ? "#4ade80" : data.aiRiskEngine?.overallRiskLevel === "High" ? "#f87171" : "#fbbf24" },
-                  { label: "Opportunity", value: data.aiOpportunityEngine?.opportunityType || "Value", icon: <Target size={14} />, color: "#a5b4fc" },
+                  
                 ].map((m, i) => (
                   <div key={i} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
@@ -869,96 +863,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
         {/* ════════════════════════════════════════════════════════
             SECTION 3: SMART MONEY TRACKER
             ════════════════════════════════════════════════════════ */}
-        {data.smartMoney && (
-          <section ref={el => { sectionRefs.current["smartmoney"] = el; }} style={{ marginBottom: 36 }}>
-          {withheld("smartmoney") ? <WithheldSection id="smartmoney" /> : (<>
-            <SectionHeading title="Smart Money Tracker" subtitle="Institutional flows, block deals, delivery data, and derivatives positioning" icon={<Eye size={18} />} />
-
-            {/* Accumulation/Distribution Signal */}
-            <div style={{ background: data.smartMoney.accumulationDistribution === "Accumulation" ? "linear-gradient(135deg, #f0fdf4, #ecfdf5)" : data.smartMoney.accumulationDistribution === "Distribution" ? "linear-gradient(135deg, #fef2f2, #fff1f2)" : "linear-gradient(135deg, #fffbeb, #fef3c7)", borderRadius: 14, padding: "22px 26px", marginBottom: 16, border: `1px solid ${data.smartMoney.accumulationDistribution === "Accumulation" ? "#bbf7d0" : data.smartMoney.accumulationDistribution === "Distribution" ? "#fecaca" : "#fde68a"}` }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                    <span style={{ fontSize: "1.1rem", fontWeight: 800, color: data.smartMoney.accumulationDistribution === "Accumulation" ? "#059669" : data.smartMoney.accumulationDistribution === "Distribution" ? "#dc2626" : "#d97706" }}>
-                      {data.smartMoney.accumulationDistribution === "Accumulation" ? "📈" : data.smartMoney.accumulationDistribution === "Distribution" ? "📉" : "➡️"} {data.smartMoney.accumulationDistribution} Phase Detected
-                    </span>
-                  </div>
-                  <p style={{ fontSize: "0.82rem", color: "#4b5563", margin: 0, lineHeight: 1.5, maxWidth: 650 }}>{data.smartMoney.adSignal}</p>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "0.62rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase" }}>Delivery %</div>
-                  <div style={{ fontSize: "1.3rem", fontWeight: 900, color: data.smartMoney.deliveryData.todayDelivery > data.smartMoney.deliveryData.avgDeliveryPercent ? "#059669" : "#dc2626" }}>{data.smartMoney.deliveryData.todayDelivery}%</div>
-                  <div style={{ fontSize: "0.65rem", color: "#6b7280" }}>Avg: {data.smartMoney.deliveryData.avgDeliveryPercent}%</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              {/* Block Deals */}
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
-                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                  <Lock size={14} style={{ color: "#8b5cf6" }} /> Recent Block Deals
-                </div>
-                {data.smartMoney.blockDeals.map((deal, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < data.smartMoney!.blockDeals.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                    <div>
-                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1a1a2e" }}>{deal.buyer}</div>
-                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{deal.date} · {deal.quantity}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.82rem", fontWeight: 700, color: deal.type === "Buy" ? "#059669" : "#dc2626" }}>{deal.type}</div>
-                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{deal.value}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Derivatives Position */}
-              <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "20px 22px" }}>
-                <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                  <Crosshair size={14} style={{ color: "#6366f1" }} /> Derivatives Positioning
-                </div>
-                {[
-                  { label: "Futures OI", value: data.smartMoney.derivativesPosition.futuresOI },
-                  { label: "OI Change", value: data.smartMoney.derivativesPosition.oiChange },
-                  { label: "Put-Call Ratio", value: data.smartMoney.derivativesPosition.putCallRatio.toString() },
-                  { label: "Max Pain", value: `₹${data.smartMoney.derivativesPosition.maxPainStrike.toLocaleString()}` },
-                ].map((item, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: i < 3 ? "1px solid #f3f4f6" : "none" }}>
-                    <span style={{ fontSize: "0.76rem", color: "#6b7280" }}>{item.label}</span>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1a1a2e" }}>{item.value}</span>
-                  </div>
-                ))}
-                <div style={{ marginTop: 12, padding: "10px 14px", background: "#f8fafc", borderRadius: 8, fontSize: "0.74rem", color: "#4b5563", lineHeight: 1.5 }}>
-                  <Lightbulb size={12} style={{ color: "#f59e0b", marginRight: 6, verticalAlign: "middle" }} />
-                  {data.smartMoney.derivativesPosition.interpretation}
-                </div>
-              </div>
-            </div>
-
-            {/* Insider Activity */}
-            <div style={{ marginTop: 14, background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", padding: "18px 22px" }}>
-              <div style={{ fontSize: "0.76rem", fontWeight: 700, color: "#374151", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                <Users size={14} style={{ color: "#0ea5e9" }} /> Insider Activity
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                {data.smartMoney.insiderActivity.map((ins, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#f8fafc", borderRadius: 8 }}>
-                    <div>
-                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#1a1a2e" }}>{ins.who}</div>
-                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{ins.date}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: "0.76rem", fontWeight: 700, color: ins.action.includes("Acquired") || ins.action.includes("ESOP") ? "#059669" : ins.action.includes("Sold") ? "#dc2626" : "#6b7280" }}>{ins.action}</div>
-                      <div style={{ fontSize: "0.66rem", color: "#6b7280" }}>{ins.shares}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>)}
-        </section>
-        )}
+        {/* removed: neutral research, no ratings/targets */}
 
         {/* ════════════════════════════════════════════════════════
             SECTION 4: AI RISK ENGINE
@@ -1016,47 +921,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
         {/* ════════════════════════════════════════════════════════
             SECTION 5: AI OPPORTUNITY ENGINE
             ════════════════════════════════════════════════════════ */}
-        {data.aiOpportunityEngine && (
-          <section ref={el => { sectionRefs.current["opportunity"] = el; }} style={{ marginBottom: 36 }}>
-          {withheld("opportunity") ? <WithheldSection id="opportunity" /> : (<>
-            <SectionHeading title="AI Opportunity Engine" subtitle="Actionable trade setup with conviction levels and position sizing" icon={<Target size={18} />} />
-
-            <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-              {/* Thesis Header */}
-              <div style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", padding: "22px 26px", color: "#fff" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <div style={{ padding: "5px 14px", borderRadius: 6, background: "rgba(255,255,255,0.15)", fontSize: "0.72rem", fontWeight: 700 }}>
-                    {data.aiOpportunityEngine.opportunityType}
-                  </div>
-                  <div style={{ padding: "5px 14px", borderRadius: 6, background: data.aiOpportunityEngine.conviction === "High" ? "rgba(74,222,128,0.2)" : "rgba(251,191,36,0.2)", fontSize: "0.72rem", fontWeight: 700, color: data.aiOpportunityEngine.conviction === "High" ? "#4ade80" : "#fbbf24" }}>
-                    {data.aiOpportunityEngine.conviction} Conviction
-                  </div>
-                  <div style={{ padding: "5px 14px", borderRadius: 6, background: "rgba(255,255,255,0.1)", fontSize: "0.72rem", fontWeight: 600 }}>
-                    {data.aiOpportunityEngine.timeHorizon}
-                  </div>
-                </div>
-                <p style={{ fontSize: "0.88rem", lineHeight: 1.65, margin: 0, opacity: 0.92 }}>{data.aiOpportunityEngine.thesis}</p>
-              </div>
-
-              {/* Trade Parameters */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 1, background: "#e5e7eb" }}>
-                {[
-                  { label: "Entry Zone", value: data.aiOpportunityEngine.idealEntryZone, color: "#059669" },
-                  { label: "Target Zone", value: data.aiOpportunityEngine.targetZone, color: "#6366f1" },
-                  { label: "Stop Loss", value: data.aiOpportunityEngine.stopLoss, color: "#dc2626" },
-                  { label: "Position Size", value: data.aiOpportunityEngine.positionSizing, color: "#374151" },
-                  { label: "Sector Signal", value: data.aiOpportunityEngine.sectorRotationSignal.split("—")[0].trim(), color: "#0ea5e9" },
-                ].map((p, i) => (
-                  <div key={i} style={{ background: "#fff", padding: "16px", textAlign: "center" }}>
-                    <div style={{ fontSize: "0.6rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>{p.label}</div>
-                    <div style={{ fontSize: "0.82rem", fontWeight: 700, color: p.color }}>{p.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>)}
-        </section>
-        )}
+        {/* removed: neutral research, no ratings/targets */}
 
         {/* ════════════════════════════════════════════════════════
             SECTION 6: EARNINGS INTELLIGENCE
@@ -1417,76 +1282,10 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
           {withheld("valuation") ? <WithheldSection id="valuation" /> : (<>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* DCF */}
-            {data.dcfValuation && (
-              <AIInsightCard icon={<Target size={17} />} title="DCF Valuation — Intrinsic Value Estimate" accentColor="#059669" defaultOpen>
-                <div style={{ paddingTop: 16 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
-                    <div style={{ background: "#1a1a2e", borderRadius: 12, padding: "18px", textAlign: "center", color: "#fff" }}>
-                      <div style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>Intrinsic Value</div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 900 }}>₹{data.dcfValuation.intrinsicValue.toLocaleString()}</div>
-                      <div style={{ fontSize: "0.72rem", color: data.dcfValuation.upside > 0 ? "#4ade80" : "#f87171", marginTop: 4 }}>{data.dcfValuation.upside > 0 ? "+" : ""}{data.dcfValuation.upside}% vs CMP</div>
-                    </div>
-                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: "18px", textAlign: "center" }}>
-                      <div style={{ fontSize: "0.6rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>WACC</div>
-                      <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a1a2e" }}>{data.dcfValuation.wacc}%</div>
-                      <div style={{ fontSize: "0.62rem", color: "#6b7280", marginTop: 4 }}>Terminal Gr: {data.dcfValuation.terminalGrowth}%</div>
-                    </div>
-                    <div style={{ background: "#f8fafc", borderRadius: 12, padding: "18px", textAlign: "center" }}>
-                      <div style={{ fontSize: "0.6rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", marginBottom: 6 }}>Terminal % of EV</div>
-                      <div style={{ fontSize: "1.3rem", fontWeight: 800, color: "#1a1a2e" }}>{((data.dcfValuation.pvTerminal / data.dcfValuation.enterpriseValue) * 100).toFixed(0)}%</div>
-                      <div style={{ fontSize: "0.62rem", color: "#6b7280", marginTop: 4 }}>Beta: {data.dcfValuation.beta}</div>
-                    </div>
-                  </div>
-                  <div style={{ borderRadius: 10, border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.74rem" }}>
-                      <thead>
-                        <tr style={{ background: "#f8fafc" }}>
-                          <th style={{ padding: "10px 16px", textAlign: "left", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>WACC</th>
-                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Terminal Growth</th>
-                          <th style={{ padding: "10px 16px", textAlign: "right", color: "#6b7280", fontWeight: 600, borderBottom: "1px solid #e5e7eb" }}>Fair Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.dcfValuation.sensitivity.map((s, i) => (
-                          <tr key={i} style={{ borderBottom: "1px solid #f3f4f6", background: i === 2 ? "#f0f9ff" : undefined }}>
-                            <td style={{ padding: "10px 16px", fontWeight: 600, color: "#374151" }}>{s.wacc.toFixed(1)}%</td>
-                            <td style={{ padding: "10px 16px", textAlign: "right", color: "#374151" }}>{s.tg.toFixed(1)}%</td>
-                            <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 700, color: s.value > data.hero.cmp ? "#059669" : "#dc2626" }}>₹{s.value.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </AIInsightCard>
-            )}
+            {/* removed: neutral research, no ratings/targets */}
 
             {/* Scenarios */}
-            {data.scenarios && (
-              <AIInsightCard icon={<Crosshair size={17} />} title="Scenario Analysis — Bull, Base, Bear" accentColor="#f59e0b">
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, paddingTop: 16 }}>
-                  {(["bull", "base", "bear"] as const).map(sc => {
-                    const s = data.scenarios![sc];
-                    const c = sc === "bull" ? "#059669" : sc === "bear" ? "#dc2626" : "#d97706";
-                    const bg = sc === "bull" ? "#f0fdf4" : sc === "bear" ? "#fef2f2" : "#fffbeb";
-                    return (
-                      <div key={sc} style={{ background: bg, borderRadius: 12, padding: "18px", borderTop: `3px solid ${c}` }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                          <div style={{ fontSize: "0.8rem", fontWeight: 800, color: c, textTransform: "uppercase" }}>{sc} Case</div>
-                          <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "#6b7280", background: "#fff", padding: "2px 8px", borderRadius: 4 }}>P: {s.probability}%</span>
-                        </div>
-                        <div style={{ fontSize: "1.3rem", fontWeight: 900, color: c, marginBottom: 8 }}>₹{s.targetPrice.toLocaleString()}</div>
-                        <div style={{ display: "flex", gap: 12, marginBottom: 10, fontSize: "0.7rem", color: "#374151" }}>
-                          <span>EPS: ₹{s.eps.toFixed(1)}</span>
-                          <span>P/E: {s.pe.toFixed(1)}x</span>
-                        </div>
-                        <div style={{ fontSize: "0.72rem", color: "#4b5563", lineHeight: 1.55 }}>{s.narrative}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </AIInsightCard>
-            )}
+            {/* removed: neutral research, no ratings/targets */}
           </div>
         </>)}
         </section>
@@ -1655,17 +1454,7 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
                     </div>
                   ))}
                 </div>
-                {data.investmentConclusion && (
-                  <div style={{ background: "#f8fafc", borderRadius: 10, padding: "16px 20px" }}>
-                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "#374151", marginBottom: 10 }}>Key Monitorables</div>
-                    {data.investmentConclusion.keyMonitorables.map((item, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                        <span style={{ color: "#6366f1", fontWeight: 800, fontSize: "0.76rem", minWidth: 18 }}>{i + 1}.</span>
-                        <span style={{ fontSize: "0.78rem", color: "#4b5563", lineHeight: 1.5 }}>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {/* removed: neutral research, no ratings/targets */}
               </div>
             </AIInsightCard>
           </div>

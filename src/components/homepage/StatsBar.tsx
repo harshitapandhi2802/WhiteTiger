@@ -2,12 +2,13 @@
 import { Reveal, Counter } from "./shared";
 
 const STATS = [
+  // Counts verified against the data files on 17 Oct 2026 (launch audit).
   { value: 3100, suffix: "+", label: "NSE Stocks" },
-  { value: 65, suffix: "+", label: "Commodities" },
-  { value: 40, suffix: "+", label: "Crypto Tokens" },
-  { value: 30, suffix: "+", label: "Forex Pairs" },
-  { value: 48, suffix: "+", label: "Mutual Funds" },
-  { value: 15, suffix: "s", label: "Analysis Time" },
+  { value: 8600, suffix: "+", label: "Active MF Schemes" },
+  { value: 40, suffix: "+", label: "Commodities" },
+  { value: 10, suffix: "+", label: "Live Crypto Prices" },
+  { value: 12, suffix: "", label: "Live Forex Pairs" },
+  { value: 5, suffix: "", label: "Free AI Analyses / mo" },
 ];
 
 export default function StatsBar() {

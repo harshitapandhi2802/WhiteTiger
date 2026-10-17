@@ -15,6 +15,10 @@ export const COMING_SOON_SECTIONS: Record<string, { label: string; blurb: string
     label: "Global Markets",
     blurb: "World indices and the top stocks in each country.",
   },
+  derivatives: {
+    label: "Derivatives",
+    blurb: "Option chains, Greeks and F&O data for NIFTY and BANKNIFTY.",
+  },
 };
 
 export function isComingSoon(section: string): boolean {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { withAiAccess } from "@/lib/aiAccess";
 
@@ -28,8 +29,8 @@ You MUST output your analysis in TWO parts:
 
 ## PART 1: ANALYSIS
 
-### 1. Instrument Overview & Rating
-- Give one of: STRONG BUY / BUY / HOLD / SELL / STRONG SELL
+### 1. Instrument Overview
+- Describe its current position factually. Do not give a rating, price target or recommendation.
 - Current approximate price/NAV
 - Yield to Maturity (YTM)
 - Coupon rate and payment frequency
@@ -78,21 +79,7 @@ You MUST output your analysis in TWO parts:
 - Optimal holding period for tax efficiency
 - Section 80C benefit (if applicable)
 
-### 7. Portfolio Strategy
-- Role in portfolio (core/satellite/tactical)
-- Ideal allocation percentage
-- Ladder strategy recommendation
-- Duration matching for goals
-- Reinvestment risk assessment
-- Comparison with debt mutual funds
 
-### 8. Scenario Analysis
-
-| Scenario | Rate Change | Price Impact | Probability |
-|----------|------------|-------------|------------|
-| Rate Cut 50bps | [describe] | +X% | X% |
-| Status Quo | [describe] | X% | X% |
-| Rate Hike 25bps | [describe] | -X% | X% |
 
 ### 9. Alternatives Comparison
 Compare with 3-4 alternative instruments (FD, debt MF, other bonds) on yield, risk, liquidity, and tax efficiency.
@@ -100,9 +87,6 @@ Compare with 3-4 alternative instruments (FD, debt MF, other bonds) on yield, ri
 ### 10. Key Risks
 5-6 concrete risks including interest rate risk, credit risk, liquidity risk, reinvestment risk, and inflation risk.
 
-### 11. Verdict
-**Outlook: BULLISH / NEUTRAL / BEARISH** (on bond prices / yields)
-One decisive paragraph for an Indian retail investor considering this instrument for portfolio diversification and income generation.
 
 ---
 
@@ -110,8 +94,6 @@ One decisive paragraph for an Indian retail investor considering this instrument
 
 \`\`\`json
 {
-  "rating": "STRONG BUY/BUY/HOLD/SELL/STRONG SELL",
-  "outlook": "BULLISH/NEUTRAL/BEARISH",
   "currentPrice": 0,
   "ytm": 0,
   "couponRate": 0,
@@ -159,7 +141,7 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Write like an ICI
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { maxOutputTokens: 12000, temperature: 0.7 },
       }),
     });

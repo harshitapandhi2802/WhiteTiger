@@ -71,12 +71,12 @@ const INDICES: IndexData[] = [
 
 /* ─── Smart Discovery Screens ─── */
 const DISCOVERY_SCREENS = [
-  { id: "momentum", label: "Momentum", icon: <TrendingUp size={14} />, color: "#10b981", description: "Stocks with strong upward price momentum", filter: (s: StockEntry, prices: Record<string, { changePercent: number }>) => { const p = prices[quoteKey(s)]; return p ? p.changePercent > 1.5 : false; } },
-  { id: "value", label: "Value Picks", icon: <Target size={14} />, color: "#6366f1", description: "Undervalued stocks with strong fundamentals", filter: (s: StockEntry) => s.mcapType === "large" || s.mcapType === "mid" },
-  { id: "highgrowth", label: "High Growth", icon: <Zap size={14} />, color: "#f59e0b", description: "Fast-growing mid & small caps", filter: (s: StockEntry) => s.mcapType === "mid" || s.mcapType === "small" },
-  { id: "dividend", label: "Dividend", icon: <PieChart size={14} />, color: "#8b5cf6", description: "High dividend yield stocks", filter: (s: StockEntry) => ["Banking", "Oil & Gas", "Power", "FMCG"].includes(s.sector) && s.mcapType === "large" },
-  { id: "lowrisk", label: "Low Risk", icon: <Shield size={14} />, color: "#0ea5e9", description: "Blue-chip defensive stocks", filter: (s: StockEntry) => s.mcapType === "large" && ["FMCG", "IT", "Pharma"].includes(s.sector) },
-  { id: "turnaround", label: "Turnaround", icon: <RefreshCw size={14} />, color: "#ef4444", description: "Potential recovery plays", filter: (s: StockEntry, prices: Record<string, { changePercent: number }>) => { const p = prices[quoteKey(s)]; return p ? p.changePercent < -1 : false; } },
+  { id: "momentum", label: "Gaining Today", icon: <TrendingUp size={14} />, color: "#10b981", description: "Stocks rising today on live prices", filter: (s: StockEntry, prices: Record<string, { changePercent: number }>) => { const p = prices[quoteKey(s)]; return p ? p.changePercent > 1.5 : false; } },
+  { id: "value", label: "Large & Mid Caps", icon: <Target size={14} />, color: "#6366f1", description: "Large- and mid-cap companies (size filter)", filter: (s: StockEntry) => s.mcapType === "large" || s.mcapType === "mid" },
+  { id: "highgrowth", label: "Mid & Small Caps", icon: <Zap size={14} />, color: "#f59e0b", description: "Mid- and small-cap companies (size filter)", filter: (s: StockEntry) => s.mcapType === "mid" || s.mcapType === "small" },
+  { id: "dividend", label: "Dividend Sectors", icon: <PieChart size={14} />, color: "#8b5cf6", description: "Banking, Oil & Gas, Power and FMCG (sector filter, not yield-based)", filter: (s: StockEntry) => ["Banking", "Oil & Gas", "Power", "FMCG"].includes(s.sector) && s.mcapType === "large" },
+  { id: "lowrisk", label: "Large-cap Defensives", icon: <Shield size={14} />, color: "#0ea5e9", description: "Large caps in FMCG, IT and Pharma (sector filter)", filter: (s: StockEntry) => s.mcapType === "large" && ["FMCG", "IT", "Pharma"].includes(s.sector) },
+  { id: "turnaround", label: "Falling Today", icon: <RefreshCw size={14} />, color: "#ef4444", description: "Stocks falling today on live prices", filter: (s: StockEntry, prices: Record<string, { changePercent: number }>) => { const p = prices[quoteKey(s)]; return p ? p.changePercent < -1 : false; } },
 ];
 
 type SectorSummary = {
@@ -101,11 +101,13 @@ function genSectorData(def: SectorDef, stocks: StockEntry[], liveStocks: Record<
     .sort((a, b) => b.change - a.change);
   const hasLive = live.length > 0;
   const avgChange = hasLive ? Number((live.reduce((a, b) => a + b.change, 0) / live.length).toFixed(2)) : null;
-  const sentiment = avgChange === null ? "No live data" : avgChange > 1.5 ? "Bullish" : avgChange > 0 ? "Mildly Bullish" : avgChange > -1 ? "Neutral" : "Bearish";
+  // Describes today's move only (not an outlook).
+  const sentiment = avgChange === null ? "No live data" : avgChange > 1.5 ? "Up sharply today" : avgChange > 0 ? "Up today" : avgChange > -1 ? "Flat to down today" : "Down sharply today";
   const heatColor = avgChange === null ? "#6b7280" : avgChange > 2 ? "#059669" : avgChange > 0.5 ? "#10b981" : avgChange > -0.5 ? "#6b7280" : avgChange > -2 ? "#f87171" : "#dc2626";
   return {
     ...def, stockCount: sectorStocks.length, liveCount: live.length, avgChange,
-    topGainer: hasLive ? live[0] : null, topLoser: hasLive ? live[live.length - 1] : null,
+    // With a single live stock there's no separate gainer and loser.
+    topGainer: hasLive ? live[0] : null, topLoser: live.length > 1 ? live[live.length - 1] : null,
     sentiment, heatColor,
   } as typeof def & SectorSummary;
 }
@@ -642,7 +644,7 @@ export default function StocksExplorer({ stockPrices, forexPrices }: StocksExplo
           <section style={{ marginBottom: 22 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Sparkles size={15} style={{ color: "#f59e0b" }} />
-              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text-primary)" }}>Smart Discovery</span>
+              <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text-primary)" }}>Quick Filters</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8 }}>
               {DISCOVERY_SCREENS.map(d => (
@@ -683,7 +685,7 @@ export default function StocksExplorer({ stockPrices, forexPrices }: StocksExplo
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div style={{ fontSize: "0.88rem", fontWeight: 800, color: sec.avgChange === null ? "var(--text-muted)" : sec.avgChange >= 0 ? "var(--success)" : "var(--danger)" }}>{sec.avgChange === null ? "—" : `${sec.avgChange > 0 ? "+" : ""}${sec.avgChange}%`}</div>
-                      <div style={{ fontSize: "0.5rem", fontWeight: 600, padding: "1px 5px", borderRadius: 3, background: sec.sentiment.includes("Bull") ? "rgba(52,211,153,0.12)" : sec.sentiment.includes("Bear") ? "rgba(248,113,113,0.12)" : "rgba(140,153,176,0.1)", color: sec.sentiment.includes("Bull") ? "var(--success)" : sec.sentiment.includes("Bear") ? "var(--danger)" : "var(--text-secondary)" }}>{sec.sentiment}</div>
+                      <div style={{ fontSize: "0.5rem", fontWeight: 600, padding: "1px 5px", borderRadius: 3, background: sec.sentiment.startsWith("Up") ? "rgba(52,211,153,0.12)" : sec.sentiment.includes("Down sharply") ? "rgba(248,113,113,0.12)" : "rgba(140,153,176,0.1)", color: sec.sentiment.startsWith("Up") ? "var(--success)" : sec.sentiment.includes("Down sharply") ? "var(--danger)" : "var(--text-secondary)" }}>{sec.sentiment}</div>
                     </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.56rem", marginTop: 6 }}>
@@ -724,7 +726,7 @@ export default function StocksExplorer({ stockPrices, forexPrices }: StocksExplo
               background: "linear-gradient(135deg, var(--accent-deep), var(--accent))", color: "#fff", border: "none", cursor: "pointer",
               display: "inline-flex", alignItems: "center", gap: 6, boxShadow: "0 2px 12px rgba(74,158,255,0.2)",
             }}>
-              Full Stock Explorer — All {NSE_STOCKS.length}+ Stocks →
+              Full Stock Explorer — All {NSE_STOCKS.length.toLocaleString("en-IN")} NSE & BSE companies →
             </button>
           </div>
         </>
@@ -880,7 +882,7 @@ export default function StocksExplorer({ stockPrices, forexPrices }: StocksExplo
             <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
               <Search size={24} style={{ opacity: 0.3, marginBottom: 8 }} />
               <div style={{ fontSize: "0.88rem", fontWeight: 700, marginBottom: 4, color: "var(--text-primary)" }}>No stocks match this screen</div>
-              <div style={{ fontSize: "0.74rem" }}>Live price data is required for momentum and turnaround screens.</div>
+              <div style={{ fontSize: "0.74rem" }}>Live price data is required for the Gaining Today and Falling Today screens.</div>
             </div>
           )}
         </section>
