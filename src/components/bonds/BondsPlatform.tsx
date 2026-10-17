@@ -96,7 +96,7 @@ export default function BondsPlatform() {
     <div>
       {/* Sovereign Yield Cards */}
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>Global Sovereign Yields</h3>
+        <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary, #E8ECF4)", marginBottom: 4 }}>Benchmark Government Bond Yields</h3>
         <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 14 }}>Live benchmark government bond yields</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(185px, 1fr))", gap: 10 }}>
           {sovereignYields.length === 0 && (
@@ -125,8 +125,8 @@ export default function BondsPlatform() {
 
       {/* Bond Categories */}
       <div style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>Indian Fixed Income Universe</h3>
-        <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 12 }}>Browse bonds by category. Yields shown here are indicative reference values, not live quotes; check the current yield with your broker or RBI Retail Direct before investing.</p>
+        <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary, #E8ECF4)", marginBottom: 4 }}>Indian Fixed Income Universe</h3>
+        <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 12 }}>The main fixed-income options in India. Small-savings and RBI bond rates are the official rates for the period shown; market-traded bonds are marked “Market-linked” — check the live yield of a specific issue with your broker or RBI Retail Direct.</p>
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
           {BOND_CATEGORIES.map(cat => (
             <button key={cat} onClick={() => setDebtCategory(cat)} style={{
@@ -140,30 +140,31 @@ export default function BondsPlatform() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
           {filteredBonds.map(b => {
-            const ratingColor = b.rating === "Sovereign" ? "#00897b" : b.rating === "AAA" ? "#2962ff" : b.rating === "AA+" ? "#7c3aed" : "#ff9800";
+            const isOfficial = b.category === "Small Savings" || b.category === "RBI Bonds";
+            const live10 = liveYields["INDIA_10Y"];
+            const value = b.yieldApprox === "LIVE" ? (live10 && live10.yield > 0 ? `${live10.yield.toFixed(2)}%` : "—") : b.yieldApprox;
+            const isNumber = /^\d/.test(value);
+            const label = b.category === "Sovereign Gold Bonds" ? "Return" : isOfficial ? "Rate" : "Yield";
+            const accent = b.rating === "Sovereign" ? "#00897b" : b.rating.includes("AAA") ? "#2962ff" : "#7c3aed";
             return (
               <div key={b.symbol}
-                style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${ratingColor}`, cursor: "pointer", transition: "all 0.2s" }}>
+                style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0", borderTop: `3px solid ${accent}`, display: "flex", flexDirection: "column" }}>
                 <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e293b", marginBottom: 2, lineHeight: 1.3 }}>{b.name}</div>
                 <div style={{ fontSize: "0.62rem", color: "#94a3b8", marginBottom: 8 }}>{b.issuer} · {b.tenure}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div>
-                      <div style={{ fontSize: "0.48rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>Yield (indicative)</div>
-                      <div style={{ fontSize: "1.1rem", fontWeight: 900, color: "#00897b" }}>{b.yieldApprox}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: "0.48rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>Coupon</div>
-                      <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#1e293b" }}>{b.coupon}</div>
-                    </div>
+                <div style={{ display: "flex", gap: 14, marginBottom: 8 }}>
+                  <div style={{ minWidth: 70 }}>
+                    <div style={{ fontSize: "0.48rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>{label}</div>
+                    <div style={{ fontSize: isNumber ? "1.1rem" : "0.78rem", fontWeight: isNumber ? 900 : 700, color: isNumber ? "#00897b" : "#475569", marginTop: isNumber ? 0 : 3 }}>{value}</div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "0.48rem", color: "#94a3b8", fontWeight: 600, textTransform: "uppercase" }}>Coupon / interest</div>
+                    <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "#1e293b", marginTop: 3, lineHeight: 1.35 }}>{b.coupon}</div>
                   </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    <Badge text={b.category} variant="neutral" />
-                    <Badge text={b.rating} variant={b.rating === "Sovereign" ? "teal" : b.rating === "AAA" ? "blue" : "purple"} />
-                  </div>
-                  <span style={{ fontSize: "0.55rem", fontWeight: 600, color: "#94a3b8" }}>Indicative</span>
+                {b.note && <div style={{ fontSize: "0.6rem", color: "#64748b", lineHeight: 1.45, marginBottom: 8 }}>{b.note}</div>}
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: "auto" }}>
+                  <Badge text={b.category} variant="neutral" />
+                  <Badge text={b.rating} variant={b.rating === "Sovereign" ? "teal" : b.rating.includes("AAA") ? "blue" : "purple"} />
                 </div>
               </div>
             );
@@ -526,7 +527,7 @@ export default function BondsPlatform() {
 
       {/* Education Cards */}
       <div style={{ marginBottom: 28 }}>
-        <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#1e293b", marginBottom: 12 }}>{"\u{1f331}"} Bond Basics — Plain English</h3>
+        <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "var(--text-primary, #E8ECF4)", marginBottom: 12 }}>{"\u{1f331}"} Bond Basics — Plain English</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {education.map((ed, i) => (
             <div key={i} style={{ padding: "16px 20px", borderRadius: 12, background: "#fff", border: "1px solid #e2e8f0" }}>
@@ -551,7 +552,7 @@ export default function BondsPlatform() {
 
       {/* Institutional Glossary */}
       <div>
-        <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#1e293b", marginBottom: 4 }}>{"\u{1f4d6}"} Institutional Bond Glossary</h3>
+        <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "var(--text-primary, #E8ECF4)", marginBottom: 4 }}>{"\u{1f4d6}"} Institutional Bond Glossary</h3>
         <p style={{ fontSize: "0.7rem", color: "#94a3b8", marginBottom: 12 }}>Advanced fixed income terminology for deeper understanding</p>
         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
           {BOND_GLOSSARY_CATEGORIES.map(cat => (

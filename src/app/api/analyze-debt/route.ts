@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { NEUTRAL_SYSTEM_INSTRUCTION } from "@/lib/neutral";
 import { rateLimitResponse } from "@/lib/services/apiGuard";
 import { withAiAccess } from "@/lib/aiAccess";
+import { BONDS_LIST } from "@/lib/bonds";
+import { fetchLiveYields } from "@/lib/services/livePrice";
 
 async function handlePOST(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "analyze-debt", limit: 5, windowMs: 60000 });
@@ -14,124 +16,65 @@ async function handlePOST(req: NextRequest) {
 
   const bondName = name || symbol;
 
-  const prompt = `You are a senior fixed-income strategist at a top-tier Indian institution (SBI DFHI / ICICI Securities Primary Dealership / IDBI Capital caliber) with deep expertise in Indian debt markets, RBI monetary policy, G-Sec auctions, corporate bond markets, credit analysis, and yield curve dynamics.
+  // Verified facts only: catalogue entry (official rates with period) + live 10Y G-Sec.
+  const entry = BONDS_LIST.find(b => b.symbol === symbol);
+  const live = await fetchLiveYields().catch(() => null);
+  const live10 = live?.india10Y && live.india10Y > 0 ? live.india10Y : null;
+  const officialRate = entry && /^\d/.test(entry.yieldApprox) ? parseFloat(entry.yieldApprox) : null;
+  const instrumentRate = entry?.yieldApprox === "LIVE" ? live10 : officialRate;
+  const facts = [
+    `- Instrument: ${bondName} (${category || entry?.category || "Fixed income"}), issuer: ${issuer || entry?.issuer || "n/a"}, tenure: ${tenure || entry?.tenure || "n/a"}`,
+    `- Coupon / interest: ${coupon || entry?.coupon || "varies by issue"}`,
+    `- Credit: ${rating || entry?.rating || "n/a"}`,
+    instrumentRate != null
+      ? `- Current ${entry?.yieldApprox === "LIVE" ? "yield" : "rate"}: ${instrumentRate}% (${entry?.note || "verified"})`
+      : `- Current yield: market-linked; no live quote is available for this analysis`,
+    live10 != null ? `- Live India 10-year G-Sec benchmark yield: ${live10}% (TradingView, as of ${live?.asOf})` : `- Live 10-year G-Sec yield: unavailable right now`,
+  ].join("\n");
 
-Conduct an INSTITUTIONAL-GRADE comprehensive debt instrument analysis for **${bondName}** (Symbol: ${symbol}, Category: ${category || "Government Securities"}, Type: ${type || "G-Sec"}, Tenure: ${tenure || ""}, Coupon: ${coupon || ""}, Rating: ${rating || "Sovereign"}, Issuer: ${issuer || "Government of India"}).
+  const prompt = `Write a clear, neutral explainer on the Indian fixed-income instrument **${bondName}** for retail readers in India.
 
-Focus on the Indian fixed-income market context — RBI policy, FBIL benchmarks, CCIL trading, and impact on Indian retail and institutional investors.
+VERIFIED FACTS (the only current numbers you may state):
+${facts}
 
-You MUST output your analysis in TWO parts:
+RULES
+- Use ONLY the numbers in VERIFIED FACTS for current yields, rates or prices. Do not state any other current yield, price, repo rate, inflation figure, FD rate, fund return or historical range — describe them in words and say where the reader can check (RBI, FBIL, NSE/BSE, India Post, their broker or bank).
+- Do not forecast interest rates or prices. Do not recommend buying, selling or holding, and do not say who should invest.
+- Indian tax rules for debt changed in 2023–2024 (for example, indexation was removed for most debt investments). Describe tax treatment generally and tell the reader to check current rules.
+- Illustrative calculations are allowed only if clearly labelled "illustration".
 
-**PART 1: DETAILED MARKDOWN ANALYSIS**
-**PART 2: A JSON SCORES BLOCK** at the very end.
+You MUST output TWO parts:
 
----
+**PART 1: MARKDOWN EXPLAINER**
 
-## PART 1: ANALYSIS
+### 1. What This Instrument Is
+### 2. How Returns Work (coupon, yield, and how price moves when interest rates change)
+### 3. Interest-Rate Sensitivity (qualitative; one labelled illustration is fine)
+### 4. Credit and Liquidity
+### 5. Tax Treatment (general; verify current rules)
+### 6. How to Buy or Hold It in India
+### 7. Compared With Alternatives (bank FDs, debt mutual funds, small-savings schemes — qualitative)
+### 8. Key Risks (5-6 concrete risks)
+### 9. What to Check Before Investing
 
-### 1. Instrument Overview
-- Describe its current position factually. Do not give a rating, price target or recommendation.
-- Current approximate price/NAV
-- Yield to Maturity (YTM)
-- Coupon rate and payment frequency
-- Credit rating and outlook
-- Residual maturity
-- Why this instrument? Core investment thesis
-
-### 2. Yield Analysis
-- Current YTM vs similar maturity instruments
-- Spread over G-Sec benchmark
-- Historical yield range (1Y)
-- Yield curve positioning
-- Real yield (adjusted for inflation)
-- Comparison with FD rates of major banks
-- Tax-adjusted yield (for applicable slab)
-
-### 3. RBI Policy & Interest Rate Outlook
-- Current repo rate and stance
-- Expected rate trajectory (next 12 months)
-- Inflation targeting framework compliance
-- Liquidity management (LAF, MSF, SDF)
-- Impact of RBI operations on this instrument
-- Global rate environment impact (US Fed, ECB)
-
-### 4. Credit Risk Assessment
-- Issuer credit profile
-- Rating agency views (CRISIL, ICRA, CARE, Fitch)
-- Default probability assessment
-- Recovery rate estimation
-- Sector-specific risks
-- Fiscal health of issuer (if government)
-
-### 5. Duration & Sensitivity Analysis
-- Modified duration
-- Macaulay duration
-- Convexity
-- Price sensitivity to 25bps rate change
-- Key rate duration
-- DV01 (Dollar Value of 01)
-
-### 6. Tax Efficiency
-- Tax treatment of interest income
-- Capital gains tax implications (LTCG vs STCG)
-- Indexation benefit (if applicable)
-- Comparison with tax-free alternatives
-- Optimal holding period for tax efficiency
-- Section 80C benefit (if applicable)
-
-
-
-### 9. Alternatives Comparison
-Compare with 3-4 alternative instruments (FD, debt MF, other bonds) on yield, risk, liquidity, and tax efficiency.
-
-### 10. Key Risks
-5-6 concrete risks including interest rate risk, credit risk, liquidity risk, reinvestment risk, and inflation risk.
-
-
----
-
-## PART 2: SCORES JSON
+**PART 2: SCORES JSON** at the very end:
 
 \`\`\`json
 {
-  "currentPrice": 0,
-  "ytm": 0,
-  "couponRate": 0,
   "creditRating": "",
-  "modifiedDuration": 0,
   "scores": {
     "creditQuality": 0,
-    "yieldAttractiveness": 0,
     "liquidityScore": 0,
     "interestRateSensitivity": 0,
     "taxEfficiency": 0,
     "inflationProtection": 0,
-    "reinvestmentRisk": 0,
-    "portfolioFit": 0
+    "reinvestmentRisk": 0
   },
-  "rbiPolicy": {
-    "repoRate": 0,
-    "stance": "HAWKISH/NEUTRAL/DOVISH/ACCOMMODATIVE",
-    "expectedRateChange": "",
-    "inflationRate": 0
-  },
-  "scenarios": {
-    "bull": { "probability": 0, "priceImpact": 0, "trigger": "" },
-    "base": { "probability": 0, "priceImpact": 0, "trigger": "" },
-    "bear": { "probability": 0, "priceImpact": 0, "trigger": "" }
-  },
-  "yieldComparison": {
-    "fdRate": 0,
-    "gsecBenchmark": 0,
-    "debtMfReturn": 0,
-    "inflationRate": 0
-  },
-  "alternatives": ["instrument1", "instrument2", "instrument3"],
-  "suitableFor": ["profile1", "profile2"]
+  "alternatives": ["instrument1", "instrument2", "instrument3"]
 }
 \`\`\`
 
-All scores are 1-10. Fill ALL fields with realistic estimates. Write like an ICICI Securities Primary Dealership research note.`;
+Scores are 1-10 descriptive characteristics of the instrument (not recommendations).`;
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -142,7 +85,7 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Write like an ICI
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         systemInstruction: NEUTRAL_SYSTEM_INSTRUCTION, contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 12000, temperature: 0.7 },
+        generationConfig: { maxOutputTokens: 8000, temperature: 0.3 },
       }),
     });
 
@@ -166,7 +109,19 @@ All scores are 1-10. Fill ALL fields with realistic estimates. Write like an ICI
       } catch { /* scores parsing failed */ }
     }
 
-    return NextResponse.json({ analysis, scores, symbol, name: bondName });
+    // Only verified numbers reach the screen: drop any AI-estimated prices, yields,
+    // durations, policy rates or comparisons, then add the verified ones.
+    const verified: Record<string, unknown> = {};
+    if (scores && typeof scores === "object") {
+      const sc = scores as Record<string, unknown>;
+      if (sc.scores) verified.scores = sc.scores;
+      if (Array.isArray(sc.alternatives)) verified.alternatives = sc.alternatives;
+    }
+    verified.creditRating = rating || entry?.rating || (scores as Record<string, unknown> | null)?.creditRating || "";
+    if (instrumentRate != null) verified.ytm = instrumentRate;
+    if (live10 != null) verified.yieldComparison = { gsecBenchmark: live10 };
+
+    return NextResponse.json({ analysis, scores: verified, symbol, name: bondName, facts: { instrumentRate, live10, asOf: live?.asOf ?? null } });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error("Debt analysis error:", msg);

@@ -1517,7 +1517,7 @@ export default function AnalyzePage() {
                             <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{b.issuer} · {b.tenure}</div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#00897b" }}>{b.yieldApprox}</div>
+                            <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#00897b" }}>{b.yieldApprox === "LIVE" ? "Live yield" : b.yieldApprox}</div>
                             <span className="badge badge-green" style={{ fontSize: "0.6rem" }}>{b.rating}</span>
                           </div>
                         </div>
@@ -1534,7 +1534,7 @@ export default function AnalyzePage() {
                   <span className="badge badge-blue">{debtSelected.name}</span>
                   <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 600 }}>{debtSelected.issuer} · {debtSelected.tenure}</span>
                   <span className="badge badge-green">{debtSelected.rating}</span>
-                  <span className="badge badge-purple">{debtSelected.yieldApprox}</span>
+                  <span className="badge badge-purple">{debtSelected.yieldApprox === "LIVE" ? "Live yield" : debtSelected.yieldApprox}</span>
                   <button onClick={() => { setDebtSymbol(""); setDebtSelected(null); setDebtQuery(""); }} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}><X size={14} /></button>
                 </div>
               )}
@@ -1747,7 +1747,7 @@ export default function AnalyzePage() {
                   {analysisType === "crypto" && "Analyzing tokenomics, on-chain data, CoinDCX metrics, regulatory landscape..."}
                   {analysisType === "currency" && "Analyzing central bank policies, carry trades, RBI stance, macro fundamentals..."}
                   {analysisType === "mutualfunds" && "Computing returns, risk and SIP outcomes from official AMFI NAVs..."}
-                  {analysisType === "debt" && "Analyzing yield curve, RBI policy impact, credit risk, duration sensitivity, tax efficiency..."}
+                  {analysisType === "debt" && "Explaining returns, rate sensitivity, credit, tax and how to buy..."}
                 </div>
               </div>
             </div>
@@ -1775,7 +1775,7 @@ export default function AnalyzePage() {
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <span className="badge badge-blue">
-                    {analysisType === "commodities" ? "Koyfin Insights" : analysisType === "crypto" ? "CoinDCX" : analysisType === "currency" ? "RBI · NSE Forex" : analysisType === "mutualfunds" ? "Morningstar Grade" : analysisType === "debt" ? "CCIL · RBI Policy" : "AI Research"}
+                    {analysisType === "commodities" ? "Koyfin Insights" : analysisType === "crypto" ? "CoinDCX" : analysisType === "currency" ? "RBI · NSE Forex" : analysisType === "mutualfunds" ? "Morningstar Grade" : analysisType === "debt" ? "Live 10Y · Official rates" : "AI Research"}
                   </span>
                 </div>
               </div>
@@ -1868,12 +1868,12 @@ export default function AnalyzePage() {
                   if (analysisType === "debt") {
                     const yc = s.yieldComparison as Record<string, number> | undefined;
                     const rbiP = s.rbiPolicy as Record<string, unknown> | undefined;
+                    // Only verified figures are shown (the API drops AI-estimated numbers).
                     const cards = [
-                      { label: "Current Price", value: s.currentPrice ? `₹${Number(s.currentPrice).toFixed(2)}` : "—", color: "var(--text-primary)" },
-                      { label: "Yield (YTM)", value: s.ytm ? `${s.ytm}%` : "—", color: "#00897b" },
-                      { label: "Modified Duration", value: s.modifiedDuration ? `${s.modifiedDuration}` : "—", color: "var(--accent)" },
-                      { label: "Credit Rating", value: (s.creditRating as string) || "—", color: "#7c3aed" },
-                    ];
+                      { label: "Yield / Rate", value: s.ytm ? `${s.ytm}%` : "Market-linked", color: "#00897b" },
+                      { label: "G-Sec 10Y (live)", value: yc?.gsecBenchmark ? `${yc.gsecBenchmark}%` : "—", color: "var(--accent)" },
+                      { label: "Credit", value: (s.creditRating as string) || "—", color: "#7c3aed" },
+                    ].filter(c => c.value !== "—");
                     return (
                       <>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
@@ -1911,7 +1911,7 @@ export default function AnalyzePage() {
                                 { label: "Bank FD Rate", value: yc.fdRate ? `${yc.fdRate}%` : "—", color: "var(--text-secondary)" },
                                 { label: "G-Sec Benchmark", value: yc.gsecBenchmark ? `${yc.gsecBenchmark}%` : "—", color: "var(--accent)" },
                                 { label: "Debt MF Return", value: yc.debtMfReturn ? `${yc.debtMfReturn}%` : "—", color: "#7c3aed" },
-                              ].map(item => (
+                              ].filter(item => item.value !== "—").map(item => (
                                 <div key={item.label} style={{ padding: 12, background: "var(--bg-secondary)", borderRadius: 8, textAlign: "center" }}>
                                   <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 600, marginBottom: 4 }}>{item.label}</div>
                                   <div style={{ fontSize: "1.1rem", fontWeight: 800, color: item.color }}>{item.value}</div>
