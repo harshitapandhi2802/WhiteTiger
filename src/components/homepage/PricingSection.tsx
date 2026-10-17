@@ -14,25 +14,25 @@ const PLANS = [
   {
     name: "Free", price: "₹0", period: "no payment needed",
     analyses: 5, color: "#34D399", primary: false,
-    features: ["DCF fair value", "Geopolitical risk scoring", "AI sentiment analysis"],
+    features: ["Live prices across 6 markets", "Mutual fund NAVs & calculators", "AI research notes"],
     cta: "Start Free",
   },
   {
     name: "Starter", price: "₹199", period: "one-time · 30 days access",
     analyses: 20, color: "#00e5ff", primary: false,
-    features: ["Stocks + Commodities + Crypto", "Risk dashboards", "Priority support"],
+    features: ["Everything in Free", "More AI research notes", "Email support"],
     cta: "Get Starter",
   },
   {
     name: "Pro", price: "₹499", period: "one-time · 30 days access",
     analyses: 100, color: "#4A9EFF", primary: true,
-    features: ["All Starter features", "Commodity heatmaps", "CoinDCX insights", "Supply chain maps"],
+    features: ["Everything in Free", "More AI research notes", "Email support"],
     cta: "Get Pro",
   },
   {
     name: "Elite", price: "₹999", period: "one-time · 30 days access",
     analyses: 300, color: "#7c4dff", primary: false,
-    features: ["All Pro features", "PDF upload", "Portfolio watchlist", "Dedicated support"],
+    features: ["Everything in Free", "Most AI research notes", "Email support"],
     cta: "Get Elite",
   },
 ];

@@ -2331,21 +2331,20 @@ export default function AnalyzePage() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
                   {[
-                    { id: "starter", name: "Starter", price: "₹199", count: 20, color: "#0097a7", features: ["Stocks + Commodities + Crypto", "Risk dashboards", "Priority support"] },
-                    { id: "pro", name: "Pro", price: "₹499", count: 100, color: "#2962ff", popular: true, features: ["All Starter features", "Commodity heatmaps", "CoinDCX insights", "Supply chain maps"] },
-                    { id: "elite", name: "Elite", price: "₹999", count: 300, color: "#e65100", features: ["All Pro features", "PDF upload", "Portfolio watchlist", "Dedicated support"] },
+                    { id: "starter", name: "Starter", price: "₹199", count: 20, color: "#0097a7", features: ["Everything in Free", "More AI research notes", "Email support"] },
+                    { id: "pro", name: "Pro", price: "₹499", count: 100, color: "#2962ff", features: ["Everything in Free", "More AI research notes", "Email support"] },
+                    { id: "elite", name: "Elite", price: "₹999", count: 300, color: "#e65100", features: ["Everything in Free", "Most AI research notes", "Email support"] },
                   ].map(p => (
-                    <div key={p.id} style={{ border: p.popular ? "2px solid var(--accent)" : "1px solid var(--border)", borderRadius: "var(--radius)", padding: 20, position: "relative", boxShadow: p.popular ? "0 4px 20px rgba(41,98,255,0.12)" : "none" }}>
-                      {p.popular && <div style={{ position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)", background: "var(--accent)", color: "#fff", fontSize: "0.65rem", fontWeight: 700, padding: "3px 12px", borderRadius: 4 }}>POPULAR</div>}
+                    <div key={p.id} style={{ border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: 20, position: "relative" }}>
                       <div style={{ fontSize: "0.7rem", color: p.color, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 6, textTransform: "uppercase" }}>{p.name}</div>
-                      <div style={{ fontSize: "1.8rem", fontWeight: 900 }}>{p.price}<span style={{ fontSize: "0.8rem", fontWeight: 400, color: "var(--text-muted)" }}>/mo</span></div>
+                      <div style={{ fontSize: "1.8rem", fontWeight: 900 }}>{p.price}<span style={{ fontSize: "0.8rem", fontWeight: 400, color: "var(--text-muted)" }}> · 30 days</span></div>
                       <div style={{ background: `${p.color}12`, borderRadius: 6, padding: "6px 0", textAlign: "center", margin: "12px 0", fontSize: "0.85rem", fontWeight: 700, color: p.color }}>{p.count} analyses</div>
                       {p.features.map(f => (
                         <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.8rem", color: "var(--text-secondary)", marginBottom: 6 }}>
                           <Check size={13} color={p.color} /> {f}
                         </div>
                       ))}
-                      <button onClick={() => handlePayment(p.id)} disabled={!!paymentLoading} className={p.popular ? "btn-primary" : "btn-ghost"} style={{ width: "100%", marginTop: 12 }}>
+                      <button onClick={() => handlePayment(p.id)} disabled={!!paymentLoading} className="btn-primary" style={{ width: "100%", marginTop: 12 }}>
                         {paymentLoading === p.id ? "Processing..." : `Get ${p.name}`}
                       </button>
                     </div>
