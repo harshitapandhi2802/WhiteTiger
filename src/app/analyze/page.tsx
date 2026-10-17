@@ -15,6 +15,8 @@ import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan, v
 import { useUser, clearUser, type WtUser } from "@/lib/auth";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { SectionLandingGrid, SECTIONS, type SectionId } from "@/components/SectionLandingGrid";
+import { ComingSoonDialog, SoonBadge } from "@/components/ComingSoonDialog";
+import { isComingSoon } from "@/lib/comingSoon";
 const AuthGate = dynamic(() => import("@/components/auth/AuthGate").then(m => ({ default: m.AuthGate })), { ssr: false });
 const PrivateBetaGate = dynamic(() => import("@/components/auth/PrivateBetaGate").then(m => ({ default: m.PrivateBetaGate })), { ssr: false });
 const WelcomeIntro = dynamic(() => import("@/components/WelcomeIntro").then(m => ({ default: m.WelcomeIntro })), { ssr: false });
@@ -91,6 +93,7 @@ declare global { interface Window { Razorpay: new (o: Record<string, unknown>) =
 export default function AnalyzePage() {
   const router = useRouter();
   const [mainTab, setMainTab] = useState<MainTab>("stocks");
+  const [comingSoon, setComingSoon] = useState<string | null>(null);
   const [resultView, setResultView] = useState<ResultView>("dashboard");
 
   // Simple (default, clean B2C view) vs Pro (full dashboards) — persisted per device
@@ -147,6 +150,7 @@ export default function AnalyzePage() {
     setTransitioningTo(null);
   }, [transitioningTo]);
   const handlePickSection = useCallback((id: SectionId) => {
+    if (isComingSoon(id)) { setComingSoon(id); return; }
     if (!user) { setPendingSection(id); return; }
     enterSection(id);
   }, [user, enterSection]);
@@ -381,11 +385,14 @@ export default function AnalyzePage() {
   // Auto-refresh is now handled by centralized useMarketData hooks
 
   // Clear results when switching tabs
-  function switchMainTab(tab: MainTab) {
-    if (tab === "mutualfunds") { router.push("/mf-intelligence"); return; }
-    if (tab === "commodities") { router.push("/commodity-intelligence"); return; }
+  // Returns false when the tab didn't open here (coming soon, or its own page).
+  function switchMainTab(tab: MainTab): boolean {
+    if (isComingSoon(tab)) { setComingSoon(tab); return false; }
+    if (tab === "mutualfunds") { router.push("/mf-intelligence"); return false; }
+    if (tab === "commodities") { router.push("/commodity-intelligence"); return false; }
     setMainTab(tab);
     setAnalysis(""); setScores(null); setError("");
+    return true;
   }
 
   /* ── Stock search ── */
@@ -580,6 +587,9 @@ export default function AnalyzePage() {
 
   return (
     <div style={{ background: "var(--bg-secondary)", minHeight: "100vh" }}>
+      {/* ── Sections not launched yet ── */}
+      <ComingSoonDialog section={comingSoon} onClose={() => setComingSoon(null)} />
+
       {/* ── Splash Screen ── */}
       {showSplash && (
         <SplashScreen onComplete={() => {
@@ -605,13 +615,13 @@ export default function AnalyzePage() {
                 ...(commodityPrices.CRUDEOIL ? [{ name: "Crude Oil", symbol: "OIL", price: `$${commodityPrices.CRUDEOIL.price.toFixed(2)}`, change: commodityPrices.CRUDEOIL.changePercent }] : []),
                 ...(stockPrices.BANKNIFTY ? [{ name: "Bank Nifty", symbol: "BANKNIFTY", price: stockPrices.BANKNIFTY.price.toLocaleString("en-IN"), change: stockPrices.BANKNIFTY.changePercent }] : []),
               ]}
-              onTabSelect={(tab) => { switchMainTab(tab); setMobileView("tab"); }}
+              onTabSelect={(tab) => { if (switchMainTab(tab)) setMobileView("tab"); }}
               onSearch={() => setMobileView("search")}
             />
           )}
           {mobileView === "markets" && (
             <MobileMarkets
-              onTabSelect={(tab) => { switchMainTab(tab); setMobileView("tab"); }}
+              onTabSelect={(tab) => { if (switchMainTab(tab)) setMobileView("tab"); }}
               onBack={() => setMobileView("home")}
             />
           )}
@@ -954,6 +964,7 @@ export default function AnalyzePage() {
                     color: mainTab === t.id ? t.color : "rgba(255,255,255,0.4)",
                     textAlign: "center", lineHeight: 1.2,
                   }}>{t.label}</span>
+                  {isComingSoon(t.id) && <SoonBadge compact />}
                 </button>
               ))}
             </div>

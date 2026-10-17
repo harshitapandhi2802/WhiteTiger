@@ -1,5 +1,7 @@
 "use client";
 import React from "react";
+import { SoonBadge } from "@/components/ComingSoonDialog";
+import { isComingSoon } from "@/lib/comingSoon";
 import {
   TrendingUp, PieChart, Bitcoin, DollarSign, Layers, Flame,
   GitBranch, Building2, Globe, Sparkles, LogIn,
@@ -100,6 +102,7 @@ export function SectionLandingGrid({ onPick, user }: { onPick: (id: SectionId) =
               textAlign: "left", padding: "20px 18px", borderRadius: 14,
               background: C.card, border: `1px solid ${C.border}`, color: C.text,
               cursor: "pointer", position: "relative", overflow: "hidden",
+              opacity: isComingSoon(s.id) ? 0.6 : 1,
             }}
           >
             {/* Accent rail */}
@@ -118,9 +121,11 @@ export function SectionLandingGrid({ onPick, user }: { onPick: (id: SectionId) =
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: "1rem", fontWeight: 800, letterSpacing: "-0.01em" }}>{s.label}</div>
+                {isComingSoon(s.id) ? <SoonBadge /> : (
                 <div style={{ fontSize: "0.62rem", color: C.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Explore
                 </div>
+                )}
               </div>
             </div>
             {/* Tagline */}

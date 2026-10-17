@@ -28,8 +28,8 @@ const FEATURES = [
   },
   {
     icon: <Building2 size={26} />, color: "#34D399",
-    title: "Real Estate AI",
-    desc: "Global property intelligence across 9 countries with city-level growth signals, yield heatmaps & affordability analysis.",
+    title: "Real Estate AI · Coming soon",
+    desc: "City-level property intelligence: growth signals, yields and affordability. Launching after launch-day data checks.",
     metrics: ["City Heatmaps", "Yield Data", "Growth Signals"],
   },
   {
@@ -137,7 +137,7 @@ export default function AIOverview() {
       <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
         <SectionHeader
           label="AI Platform"
-          title="Nine Asset Classes."
+          title="Seven Markets Live."
           titleAccent="One Intelligence Layer."
           subtitle="Every market, every asset, every signal — analyzed by institutional-grade AI and delivered in seconds."
         />

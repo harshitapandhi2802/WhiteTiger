@@ -6,7 +6,6 @@ import MarketTicker from "@/components/homepage/MarketTicker";
 import StatsBar from "@/components/homepage/StatsBar";
 import DashboardPreview from "@/components/homepage/DashboardPreview";
 import AIOverview from "@/components/homepage/AIOverview";
-import RealEstateWorldMap from "@/components/homepage/RealEstateWorldMap";
 import DerivativesAI from "@/components/homepage/DerivativesAI";
 import MarketNewsWall from "@/components/homepage/MarketNewsWall";
 import ComparisonTable from "@/components/homepage/ComparisonTable";
@@ -90,7 +89,7 @@ export default function LandingPage() {
       <StatsBar />
       <DashboardPreview />
       <AIOverview />
-      <RealEstateWorldMap />
+      {/* RealEstateWorldMap hidden until Real Estate launches (src/lib/comingSoon.ts) */}
       <DerivativesAI />
       <MarketNewsWall />
       <ComparisonTable />

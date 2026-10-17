@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { isComingSoon } from "@/lib/comingSoon";
 import { ArrowRight, Sparkles, TrendingUp, Globe, Brain, Shield } from "lucide-react";
 import { useLiveTicker, type TickerItem } from "@/hooks/useLiveTicker";
 import { SECTIONS } from "@/components/SectionLandingGrid";
@@ -98,7 +99,7 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
           opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(10px)",
           transition: "opacity 0.7s 0.18s ease-out, transform 0.7s 0.18s ease-out",
         }}>
-          Nine asset classes. Live prices grounded in real exchange feeds. Institutional-grade AI reports.
+          Seven markets live, more coming. Live prices grounded in real exchange feeds. Institutional-grade AI reports.
           Every number labelled with where it came from.
         </p>
 
@@ -111,7 +112,7 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
           {[
             { icon: <Brain size={13} />, label: "AI thesis per asset", color: "#A78BFA" },
             { icon: <TrendingUp size={13} />, label: "Live exchange data", color: "#4A9EFF" },
-            { icon: <Globe size={13} />, label: "India + 25 global markets", color: "#34D399" },
+            { icon: <Globe size={13} />, label: "Built for Indian markets", color: "#34D399" },
             { icon: <Shield size={13} />, label: "Provenance on every number", color: "#FBBF24" },
           ].map((p, i) => (
             <span key={i} style={{
@@ -182,10 +183,10 @@ export function WelcomeIntro({ onStart, userName }: { onStart: () => void; userN
         transition: "opacity 0.9s 0.85s ease-out, transform 0.9s 0.85s ease-out",
       }}>
         {[
-          { v: String(SECTIONS.length), l: "Asset classes" },
+          { v: String(SECTIONS.filter(s => !isComingSoon(s.id)).length), l: "Markets live" },
           { v: "~14k", l: "AMFI MF schemes" },
           { v: "3,100+", l: "NSE stocks" },
-          { v: "25", l: "Global markets" },
+          { v: "5", l: "Free AI analyses / mo" },
         ].map((s, i) => (
           <div key={i} style={{
             background: "rgba(255,255,255,0.025)", border: "1px solid rgba(232,237,245,0.06)",

@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { SoonBadge } from "@/components/ComingSoonDialog";
+import { isComingSoon } from "@/lib/comingSoon";
 import {
   TrendingUp, Bitcoin, DollarSign, Building2, PiggyBank,
   Shield, Layers, Flame, Globe,
@@ -96,7 +98,7 @@ export default function MobileMarkets({
                 {market.desc}
               </div>
             </div>
-            <ArrowUpRight size={16} color="rgba(255,255,255,0.15)" />
+            {isComingSoon(market.id) ? <SoonBadge /> : <ArrowUpRight size={16} color="rgba(255,255,255,0.15)" />}
           </button>
         ))}
       </div>

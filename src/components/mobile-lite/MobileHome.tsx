@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import { SoonBadge } from "@/components/ComingSoonDialog";
+import { isComingSoon } from "@/lib/comingSoon";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -180,6 +182,7 @@ function QuickAccessGrid({ onTabSelect }: { onTabSelect: (tab: MainTab) => void 
             }}>
               {item.label}
             </span>
+            {isComingSoon(item.id) && <SoonBadge compact />}
           </button>
         ))}
       </div>

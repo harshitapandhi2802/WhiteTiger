@@ -15,7 +15,7 @@ export const viewport: Viewport = {
 
 const SITE_URL = process.env.AUTH_URL || "https://whitetiger-research.vercel.app";
 const TITLE = "White Tiger — AI-Powered Global Investment Intelligence";
-const DESCRIPTION = "Institutional-grade analysis across stocks, crypto, forex, commodities, bonds, derivatives & real estate — powered by AI.";
+const DESCRIPTION = "Institutional-grade analysis across stocks, mutual funds, crypto, forex, commodities, bonds & derivatives — powered by AI.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

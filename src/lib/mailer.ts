@@ -51,7 +51,7 @@ export function welcomeEmail(user: { email: string; name?: string | null }) {
     `Thanks for signing in to White Tiger, my AI research app for Indian and global markets.`,
     ``,
     `On the free plan you can:`,
-    `- Explore 9 market sections: stocks, mutual funds, forex, bonds, commodities, derivatives, real estate, global markets and crypto`,
+    `- Explore 7 markets: stocks, mutual funds, forex, bonds, commodities, derivatives and crypto (real estate and global markets are coming soon)`,
     `- Run 5 AI analyses every month`,
     `- See where the data comes from: sources are named on screen`,
     ``,
@@ -87,7 +87,7 @@ export function welcomeEmail(user: { email: string; name?: string | null }) {
   <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3A4560;">You're in. White Tiger puts your markets in one AI research app, built for Indian investors.</p>
   <p style="margin:0 0 8px;font-size:15px;font-weight:700;">On the free plan you can:</p>
   <ul style="margin:0 0 18px;padding-left:20px;font-size:15px;line-height:1.7;color:#3A4560;">
-    <li>Explore <b>9 market sections</b>: stocks, mutual funds, forex, bonds, commodities, derivatives, real estate, global markets and crypto</li>
+    <li>Explore <b>7 markets</b>: stocks, mutual funds, forex, bonds, commodities, derivatives and crypto (real estate and global markets are coming soon)</li>
     <li>Run <b>5 AI analyses</b> every month</li>
     <li>See where the data comes from: sources are named on screen</li>
   </ul>

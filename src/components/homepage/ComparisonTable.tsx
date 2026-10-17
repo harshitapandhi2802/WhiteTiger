@@ -4,7 +4,7 @@ import { Reveal, SectionHeader } from "./shared";
 
 const ROWS: [string, boolean, boolean, boolean][] = [
   ["AI Research Reports", true, false, false],
-  ["8 Asset Classes", true, false, false],
+  ["7 Markets in One App", true, false, false],
   ["Live Crypto Prices", true, false, false],
   ["Forex & Central Bank Intel", true, false, false],
   ["Geopolitical Risk Scoring", true, false, false],

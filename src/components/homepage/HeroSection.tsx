@@ -297,7 +297,7 @@ export default function HeroSection() {
             letterSpacing: "-0.01em",
             animation: "heroFadeUp 1s cubic-bezier(0.16,1,0.3,1) 0.6s both",
           }}>
-            Stocks, crypto, forex, real estate &amp; derivatives — all powered by institutional-grade AI in one ecosystem.
+            Stocks, mutual funds, forex, bonds, commodities &amp; derivatives — all powered by institutional-grade AI in one ecosystem.
           </p>
 
           {/* CTA Buttons */}
