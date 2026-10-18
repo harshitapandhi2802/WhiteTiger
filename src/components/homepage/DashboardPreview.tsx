@@ -100,9 +100,9 @@ export default function DashboardPreview() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
             {[
               { label: "Current Price", value: "₹2,850.45", color: "#fff", data: [40, 42, 38, 45, 50, 48, 52, 55, 53, 58] },
-              { label: "DCF Fair Value", value: "₹3,220.00", color: "#4A9EFF", data: [30, 33, 35, 34, 37, 40, 42, 44, 43, 46] },
-              { label: "12M Target", value: "₹3,650.00", color: "#34D399", data: [20, 25, 22, 28, 32, 30, 35, 38, 40, 42] },
-              { label: "AI Upside", value: "+28.1%", color: "#34D399", data: [10, 15, 18, 16, 22, 25, 28, 26, 30, 33] },
+
+              { label: "Day Change", value: "+1.20%", color: "#34D399", data: [20, 25, 22, 28, 32, 30, 35, 38, 40, 42] },
+              { label: "52W Range", value: "₹2,310–3,050", color: "#4A9EFF", data: [10, 15, 18, 16, 22, 25, 28, 26, 30, 33] },
             ].map((c, i) => (
               <div key={i} style={{
                 background: "rgba(255,255,255,0.02)", borderRadius: 16,

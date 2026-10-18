@@ -713,7 +713,7 @@ export default function FXPlatform({ pair = "USD/INR", base = "USD", quote = "IN
         {/* ═══ MARKET CLOCKS ═══ */}
         {activeSection === "clocks" && (
           <div>
-            <h2 style={{ fontSize: "1.15rem", fontWeight: 900, margin: "0 0 4px" }}>🕐 Live Global Market Sessions</h2>
+            <h2 style={{ fontSize: "1.15rem", fontWeight: 900, margin: "0 0 4px", color: "var(--text-primary, #E8ECF4)" }}>🕐 Live Global Market Sessions</h2>
             <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 16 }}>Trading sessions, volatility windows, and active currency pairs</p>
 
             {mode === "beginner" && (

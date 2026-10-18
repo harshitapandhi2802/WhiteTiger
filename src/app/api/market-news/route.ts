@@ -105,8 +105,11 @@ function parseRSSItems(xml: string, source: string, icon: string, category: stri
     const linkMatch = block.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i);
     const dateMatch = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
 
-    const headline = titleMatch?.[1]?.trim().replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'") || "";
+    const headlineRaw = titleMatch?.[1]?.trim().replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'") || "";
     let body = descMatch?.[1]?.trim().replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'") || "";
+    // Some feeds leave CDATA markers in the text (seen as a trailing "]]>").
+    const headline = headlineRaw?.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+    body = body?.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
     const url = linkMatch?.[1]?.trim() || "";
     const publishedAt = dateMatch?.[1]?.trim() || "";
 
