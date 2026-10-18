@@ -1074,6 +1074,24 @@ export async function GET(req: NextRequest) {
             }
           }
           if (Object.keys(prices).length > 0) source = "coindcx";
+
+          // Indian exchanges trade at a premium to global prices, so INR ÷ USD/INR
+          // overstates the dollar price. Use CoinGecko's global USD price when available.
+          if (source === "coindcx") {
+            try {
+              const ids = Object.values(CRYPTO_IDS).join(",");
+              const cg = await fetchWithRetry(
+                `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`,
+                { breaker: "coingecko", retries: 1, timeoutMs: 4000, cache: "no-store" }
+              );
+              if (cg.ok) {
+                const data = await cg.json();
+                for (const [sym, cgId] of Object.entries(CRYPTO_IDS)) {
+                  if (prices[sym] && data[cgId]?.usd) prices[sym].usd = data[cgId].usd;
+                }
+              }
+            } catch { /* keep the converted USD */ }
+          }
         }
       } catch { /* CoinDCX failed */ }
 

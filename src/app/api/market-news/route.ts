@@ -111,7 +111,7 @@ function parseRSSItems(xml: string, source: string, icon: string, category: stri
     const headline = headlineRaw?.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
     body = body?.replace(/<!\[CDATA\[|\]\]>/g, "").trim();
     const url = linkMatch?.[1]?.trim() || "";
-    const publishedAt = dateMatch?.[1]?.trim() || "";
+    const publishedAt = dateMatch?.[1]?.replace(/<!\[CDATA\[|\]\]>/g, "").trim() || "";
 
     if (!headline || headline.length < 10) continue;
 
