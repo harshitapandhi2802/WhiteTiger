@@ -355,6 +355,34 @@ interface QuoteResult {
   exchangeTimestamp?: number;
 }
 
+/** Live USD/INR: TradingView → Yahoo → exchangerate.host. Null if all fail. */
+async function liveUsdInr(): Promise<number | null> {
+  try {
+    const res = await fetchWithRetry("https://scanner.tradingview.com/forex/scan", {
+      breaker: "tv-forex", retries: 1, timeoutMs: 6000, method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbols: { tickers: ["FX_IDC:USDINR"] }, columns: ["close"] }),
+      next: { revalidate: 60 },
+    });
+    if (res.ok) {
+      const v = (await res.json())?.data?.[0]?.d?.[0];
+      if (typeof v === "number" && v > 50 && v < 200) return v;
+    }
+  } catch { /* next source */ }
+  try {
+    const q = await yahooChart("USDINR=X");
+    if (q && q.price > 50 && q.price < 200) return q.price;
+  } catch { /* next source */ }
+  try {
+    const res = await fetchWithRetry("https://api.exchangerate.host/latest?base=USD&symbols=INR", { breaker: "exchangerate-host", retries: 1, timeoutMs: 5000, next: { revalidate: 300 } });
+    if (res.ok) {
+      const v = (await res.json())?.rates?.INR;
+      if (typeof v === "number" && v > 50 && v < 200) return v;
+    }
+  } catch { /* none */ }
+  return null;
+}
+
 async function yahooChart(sym: string, host = "query1"): Promise<QuoteResult | null> {
   try {
     const res = await fetchWithRetry(
@@ -1019,13 +1047,12 @@ export async function GET(req: NextRequest) {
           const tickers: { market: string; last_price: string; change_24_hour: string; volume?: string }[] = await res.json();
           const tickerMap = new Map(tickers.map(t => [t.market, t]));
 
-          let usdInr = 83.5;
-          try {
-            const fxQ = await yahooChart("USDINR=X");
-            if (fxQ) usdInr = fxQ.price;
-          } catch { /* use default */ }
+          // Live USD/INR for the USD column. Never a hard-coded rate: if no live
+          // rate is available, CoinDCX is skipped and CoinGecko (native USD) is used.
+          const usdInr = await liveUsdInr();
 
           for (const [market, sym] of Object.entries(COINDCX_MARKETS)) {
+            if (!usdInr) break;
             const t = tickerMap.get(market);
             if (t) {
               const inrPrice = parseFloat(t.last_price) || 0;

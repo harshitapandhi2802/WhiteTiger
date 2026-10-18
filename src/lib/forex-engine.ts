@@ -340,6 +340,12 @@ export function getSessionStatus(session: MarketSession): { isOpen: boolean; sta
   const utcHour = now.getUTCHours();
   const localHour = (utcHour + session.utcOffset + 24) % 24;
 
+  // Spot FX trades 24/5: closed from Friday ~21:00 UTC (5pm New York) to
+  // Sunday ~21:00 UTC (when Sydney opens).
+  const utcDay = now.getUTCDay(); // 0 = Sunday, 6 = Saturday
+  const weekend = utcDay === 6 || (utcDay === 5 && utcHour >= 21) || (utcDay === 0 && utcHour < 21);
+  if (weekend) return { isOpen: false, status: "Closed (weekend)", color: "#757575" };
+
   const isOpen = localHour >= session.openHour && localHour < session.closeHour;
   if (isOpen) {
     if (localHour < session.openHour + 2) return { isOpen: true, status: "Opening", color: "#ff9800" };
