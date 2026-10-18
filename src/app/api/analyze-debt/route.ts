@@ -92,7 +92,7 @@ Scores are 1-10 descriptive characteristics of the instrument (not recommendatio
     if (!res.ok) {
       const err = await res.text();
       console.error("Gemini error:", err);
-      return NextResponse.json({ error: `Gemini API error: ${err}` }, { status: 500 });
+      return NextResponse.json({ error: res.status === 503 || res.status === 429 ? "Our AI provider is busy right now. Please try again in a minute — this didn't use up an analysis." : "AI analysis failed. Please try again — this didn't use up an analysis." }, { status: 502 });
     }
 
     const data = await res.json();
