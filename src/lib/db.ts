@@ -79,6 +79,18 @@ async function ensureSchema(): Promise<void> {
           plan       TEXT NOT NULL,
           claimed_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
+      // Saved research per user: paper positions, option strategies and
+      // journal notes (kind = "position" | "strategy" | "journal").
+      .then(() => sql()`
+        CREATE TABLE IF NOT EXISTS wt_workspace (
+          email      TEXT NOT NULL,
+          kind       TEXT NOT NULL,
+          id         TEXT NOT NULL,
+          data       JSONB NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          PRIMARY KEY (email, kind, id)
+        )`)
       .then(() => undefined).catch((e) => { schemaReady = null; throw e; });
   }
   return schemaReady;
@@ -181,4 +193,43 @@ export async function claimEntitlement(paymentId: string, email: string, plan: s
     ON CONFLICT (payment_id) DO UPDATE SET payment_id = EXCLUDED.payment_id
     RETURNING email`;
   return rows[0].email;
+}
+
+/* ─── Workspace: saved positions, strategies and journal notes ─── */
+
+export interface WorkspaceItem {
+  id: string;
+  kind: string;
+  data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const WORKSPACE_KINDS = ["position", "strategy", "journal"] as const;
+export const WORKSPACE_LIMIT = 200; // items per kind per user
+
+export async function listWorkspace(email: string, kind: string): Promise<WorkspaceItem[]> {
+  await ensureSchema();
+  return sql()<WorkspaceItem[]>`
+    SELECT id, kind, data, created_at, updated_at FROM wt_workspace
+    WHERE email = ${email.toLowerCase()} AND kind = ${kind}
+    ORDER BY created_at ASC`;
+}
+
+/** Insert or replace one item. Returns false when the per-kind limit is reached. */
+export async function saveWorkspace(email: string, kind: string, id: string, data: Record<string, unknown>): Promise<boolean> {
+  await ensureSchema();
+  const e = email.toLowerCase();
+  const [{ n }] = await sql()<{ n: number }[]>`
+    SELECT count(*)::int AS n FROM wt_workspace WHERE email = ${e} AND kind = ${kind} AND id <> ${id}`;
+  if (n >= WORKSPACE_LIMIT) return false;
+  await sql()`
+    INSERT INTO wt_workspace (email, kind, id, data) VALUES (${e}, ${kind}, ${id}, ${sql().json(data as postgres.JSONValue)})
+    ON CONFLICT (email, kind, id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`;
+  return true;
+}
+
+export async function deleteWorkspace(email: string, kind: string, id: string): Promise<void> {
+  await ensureSchema();
+  await sql()`DELETE FROM wt_workspace WHERE email = ${email.toLowerCase()} AND kind = ${kind} AND id = ${id}`;
 }

@@ -12,7 +12,8 @@ import {
   Pill, Car, Wifi, Monitor, ChevronLeft
 } from "lucide-react";
 import { incrementUsage, canAnalyze, remainingAnalyses, getPlan, activatePlan, validatePlanServerSide, fetchServerUsage, updateUsageFromResponse, markQuotaExhausted } from "@/lib/usage";
-import { useUser, clearUser, type WtUser } from "@/lib/auth";
+import { useUser, clearUser, getUser, type WtUser } from "@/lib/auth";
+import { SearchButton } from "@/components/GlobalSearchHost";
 import { isAllowedEmail } from "@/lib/allowlist";
 import { SectionLandingGrid, SECTIONS, type SectionId } from "@/components/SectionLandingGrid";
 import { ComingSoonDialog, SoonBadge } from "@/components/ComingSoonDialog";
@@ -136,6 +137,18 @@ export default function AnalyzePage() {
     if (pendingSection) enterSection(pendingSection);
     setPendingSection(null);
   }, [pendingSection, enterSection]);
+  // Deep link from unified search: /analyze?section=crypto opens that section.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("section") as SectionId | null;
+    if (!id || !SECTIONS.some(s => s.id === id)) return;
+    window.history.replaceState(null, "", "/analyze");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the URL is only readable in the browser
+    setShowWelcome(false);
+    if (isComingSoon(id)) { setComingSoon(id); return; }
+    const u = getUser();
+    if (u && isAllowedEmail(u.email)) { setMainTab(id as MainTab); setShowLanding(false); }
+    else setPendingSection(id);
+  }, []);
   const goHome = useCallback(() => setShowLanding(true), []);
   const pickedSectionDef = pendingSection ? SECTIONS.find(s => s.id === pendingSection) : undefined;
   const currentSectionDef = !showLanding ? SECTIONS.find(s => s.id === mainTab) : undefined;
@@ -825,6 +838,8 @@ export default function AnalyzePage() {
               );
             })}
           </div>
+          <SearchButton compact />
+          <Link href="/tools" className="wt-wide-only" style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-secondary)", textDecoration: "none", padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border)" }}>Tools</Link>
           <MarketStatusIndicator />
           {currentPlan !== "free" && <span className="badge badge-blue" style={{ textTransform: "uppercase" }}>{currentPlan}</span>}
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>

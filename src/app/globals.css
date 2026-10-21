@@ -725,3 +725,6 @@ body {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+/* Extra header links that only fit on wide screens */
+@media (max-width: 1279px) { .wt-wide-only { display: none !important; } }

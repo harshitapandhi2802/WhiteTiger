@@ -1,10 +1,11 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import { SoonBadge } from "@/components/ComingSoonDialog";
 import { isComingSoon } from "@/lib/comingSoon";
 import {
   TrendingUp, PieChart, Bitcoin, DollarSign, Layers, Flame,
-  GitBranch, Building2, Globe, Sparkles, LogIn,
+  GitBranch, Building2, Globe, Sparkles, LogIn, Wrench,
 } from "lucide-react";
 import type { WtUser } from "@/lib/auth";
 
@@ -147,6 +148,22 @@ export function SectionLandingGrid({ onPick, user }: { onPick: (id: SectionId) =
           </button>
         ))}
       </div>
+
+      {/* Tools: F&O and portfolio tools live on their own pages */}
+      <Link href="/tools" className="card card-interactive" style={{
+        display: "flex", alignItems: "center", gap: 14, marginTop: 14, padding: "16px 18px", borderRadius: 14,
+        background: C.card, border: `1px solid ${C.border}`, color: C.text, textDecoration: "none",
+      }}>
+        <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(74,158,255,0.1)", color: "#4A9EFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Wrench size={20} />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: "1rem", fontWeight: 800 }}>Tools</div>
+          <div style={{ fontSize: "0.72rem", color: C.muted, lineHeight: 1.5 }}>
+            Option chain, strategy builder with payoff charts, options calculator, paper portfolio and charges calculator
+          </div>
+        </div>
+      </Link>
 
       {/* Footnote */}
       <div style={{
