@@ -161,7 +161,7 @@ export default function StrategyBuilder() {
             <F id="sb-spot" label="Underlying price (₹)" value={s.spot} set={v => set("spot", v)} />
             <F id="sb-days" label="Days to expiry" value={s.days} set={v => set("days", v)} />
             <F id="sb-lot" label="Lot size (units)" value={s.lotSize} set={v => set("lotSize", v)}
-              tip="Units in one lot. It changes from time to time; the option chain shows the current value from the exchange." />
+              tip="Units in one lot. NSE revises lot sizes from time to time; check the current size on nseindia.com or with your broker." />
             <F id="sb-rate" label="Interest rate (%)" value={s.rate} set={v => set("rate", v)} />
             <F id="sb-step" label="Strike gap (₹)" value={step} set={setStep} tip="Distance between strikes, used by templates. NIFTY 50, BANK NIFTY 100." />
           </div>

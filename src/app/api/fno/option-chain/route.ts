@@ -1,92 +1,124 @@
 /**
- * Live option chain from the Upstox v2 API (broker market data).
+ * Option chain from NSE's website (nseindia.com), the same data NSE shows
+ * on its Option Chain page.
  *
  *   GET /api/fno/option-chain?underlying=NIFTY[&expiry=YYYY-MM-DD]
  *
- * Needs UPSTOX_ACCESS_TOKEN (an Upstox analytics token: long-lived,
- * read-only market data). Without it the route answers
- * { status: "not_connected" } — it never falls back to generated data.
+ * underlying: an index (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, NIFTYNXT50)
+ * or an F&O stock symbol (RELIANCE, TCS…).
+ *
+ * NSE sends prices, OI, volume and IV but no Greeks; delta/gamma/theta/vega
+ * are calculated from NSE's IV (see lib/nse-chain). If NSE can't be reached,
+ * the last good snapshot is returned marked stale; with none, an error. It
+ * never falls back to generated data.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { fetchWithRetry, rateLimitResponse } from "@/lib/services/apiGuard";
-import { UNDERLYINGS, parseUpstoxChain, parseExpiries, parseLotSize } from "@/lib/upstox-chain";
+import { NSE_INDICES, NSE_SYMBOL_RE, parseNseChain, parseNseExpiries, isoToNseDate, nseTimestampMs } from "@/lib/nse-chain";
 
-const API = "https://api.upstox.com/v2";
-const FRESH_MS = 15_000;
-const EXPIRY_TTL_MS = 6 * 3_600_000;
+const BROWSER_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+  Referer: "https://www.nseindia.com/option-chain",
+};
 
-const chainCache = new Map<string, { at: number; body: unknown }>();
-const expiryCache = new Map<string, { at: number; list: string[]; lots: Record<string, number> }>();
+const CHAIN_FRESH_MS = 30_000;
+const EXPIRY_TTL_MS = 30 * 60_000;
+const STALE_MAX_MS = 6 * 3_600_000;
 
-function headers(token: string) {
-  return { Accept: "application/json", Authorization: `Bearer ${token}` };
+const expiryCache = new Map<string, { at: number; list: string[] }>();
+const chainCache = new Map<string, { at: number; body: Record<string, unknown> }>();
+
+/** A fresh NSE session cookie. Never reused: NSE stalls requests that carry an old one. */
+async function freshCookie(): Promise<string> {
+  const res = await fetchWithRetry("https://www.nseindia.com/option-chain", {
+    breaker: "nse-cookie", retries: 0, timeoutMs: 5000,
+    headers: { ...BROWSER_HEADERS, Accept: "text/html" }, redirect: "follow", cache: "no-store",
+  });
+  const list = typeof res.headers.getSetCookie === "function" ? res.headers.getSetCookie() : [];
+  return list.map(c => c.split(";")[0].trim()).filter(Boolean).join("; ");
 }
 
-async function expiries(key: string, token: string): Promise<{ list: string[]; lots: Record<string, number> }> {
-  const hit = expiryCache.get(key);
-  if (hit && Date.now() - hit.at < EXPIRY_TTL_MS) return hit;
-  const res = await fetchWithRetry(`${API}/option/contract?instrument_key=${encodeURIComponent(key)}`, {
-    breaker: "upstox-contracts", retries: 1, timeoutMs: 8000, headers: headers(token), cache: "no-store",
-  });
-  if (!res.ok) throw new Error(`Upstox contracts responded ${res.status}`);
+/** GET an NSE API path: first without a cookie, then once with a fresh session cookie. */
+async function nseJson(path: string): Promise<unknown> {
+  let lastError: unknown = null;
+  for (const withCookie of [false, true]) {
+    try {
+      const headers: Record<string, string> = { ...BROWSER_HEADERS };
+      if (withCookie) headers.Cookie = await freshCookie();
+      const res = await fetchWithRetry(`https://www.nseindia.com/api/${path}`, {
+        retries: 0, timeoutMs: 6000, headers, cache: "no-store",
+      });
+      if (res.status === 404) throw Object.assign(new Error("NSE has no option chain for this symbol"), { final: true });
+      const type = res.headers.get("content-type") || "";
+      if (res.ok && type.includes("json")) return await res.json();
+      lastError = new Error(`NSE responded ${res.status}`);
+    } catch (err) {
+      if ((err as { final?: boolean }).final) throw err;
+      lastError = err;
+    }
+  }
+  throw new Error(`NSE did not return data (${lastError instanceof Error ? lastError.message : "unavailable"})`);
+}
+
+async function expiries(symbol: string): Promise<string[]> {
+  const hit = expiryCache.get(symbol);
+  if (hit && Date.now() - hit.at < EXPIRY_TTL_MS) return hit.list;
+  const json = await nseJson(`option-chain-contract-info?symbol=${encodeURIComponent(symbol)}`);
   const today = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10); // IST date
-  const json = await res.json();
-  const list = parseExpiries(json).filter(d => d >= today);
-  const lots: Record<string, number> = {};
-  for (const d of list) { const n = parseLotSize(json, d); if (n) lots[d] = n; }
-  const entry = { at: Date.now(), list, lots };
-  expiryCache.set(key, entry);
-  return entry;
+  const list = parseNseExpiries(json).filter(d => d >= today);
+  if (list.length) expiryCache.set(symbol, { at: Date.now(), list });
+  return list;
 }
 
 export async function GET(req: NextRequest) {
   const limited = rateLimitResponse(req, { scope: "fno-chain", limit: 40, windowMs: 60_000 });
   if (limited) return limited;
 
-  const underlying = (req.nextUrl.searchParams.get("underlying") || "NIFTY").toUpperCase();
-  const def = UNDERLYINGS[underlying];
-  if (!def) return NextResponse.json({ status: "error", message: "Unknown underlying" }, { status: 400 });
-
-  const token = process.env.UPSTOX_ACCESS_TOKEN;
-  if (!token) {
-    return NextResponse.json({
-      status: "not_connected",
-      message: "The live option chain needs a broker data connection, which isn't set up yet.",
-    }, { status: 503 });
-  }
+  const symbol = (req.nextUrl.searchParams.get("underlying") || "NIFTY").toUpperCase().trim();
+  if (!NSE_SYMBOL_RE.test(symbol)) return NextResponse.json({ status: "error", message: "Enter a valid NSE symbol" }, { status: 400 });
+  const isIndex = symbol in NSE_INDICES;
+  const asked = req.nextUrl.searchParams.get("expiry");
 
   try {
-    const { list, lots } = await expiries(def.key, token);
-    const asked = req.nextUrl.searchParams.get("expiry");
+    const list = await expiries(symbol);
+    if (list.length === 0) {
+      return NextResponse.json({ status: "error", message: `${symbol} has no listed options on NSE` }, { status: 404 });
+    }
     const expiry = asked && list.includes(asked) ? asked : list[0];
-    if (!expiry) throw new Error("No upcoming expiries returned");
+    const key = `${symbol}:${expiry}`;
+    const hit = chainCache.get(key);
+    if (hit && Date.now() - hit.at < CHAIN_FRESH_MS) return NextResponse.json(hit.body);
 
-    const cacheKey = `${underlying}:${expiry}`;
-    const hit = chainCache.get(cacheKey);
-    if (hit && Date.now() - hit.at < FRESH_MS) return NextResponse.json(hit.body);
-
-    const res = await fetchWithRetry(
-      `${API}/option/chain?instrument_key=${encodeURIComponent(def.key)}&expiry_date=${expiry}`,
-      { breaker: "upstox-chain", retries: 1, timeoutMs: 8000, headers: headers(token), cache: "no-store" },
+    const json = await nseJson(
+      `option-chain-v3?type=${isIndex ? "Indices" : "Equity"}&symbol=${encodeURIComponent(symbol)}&expiry=${isoToNseDate(expiry)}`,
     );
-    if (res.status === 401) throw new Error("Upstox rejected the access token (expired or revoked)");
-    if (!res.ok) throw new Error(`Upstox option chain responded ${res.status}`);
-
-    const chain = parseUpstoxChain(await res.json());
-    if (chain.rows.length === 0 || chain.spot === null) throw new Error("Upstox returned an empty chain");
+    const chain = parseNseChain(json);
+    if (chain.rows.length === 0 || chain.spot === null) throw new Error("NSE returned an empty option chain");
 
     const body = {
       ...chain,
-      status: "ok", underlying, label: def.label, step: def.step,
-      expiry, expiries: list, lotSize: lots[expiry] ?? null, source: "Upstox (NSE/BSE via broker API)",
+      status: "ok",
+      underlying: symbol,
+      label: isIndex ? NSE_INDICES[symbol].label : symbol,
+      expiry, expiries: list,
+      lotSize: null,
+      source: "NSE India website (nseindia.com)",
+      greeksCalculated: true,
+      dataTimeMs: nseTimestampMs(chain.dataTime),
       fetchedAt: Date.now(),
     };
-    chainCache.set(cacheKey, { at: Date.now(), body });
+    chainCache.set(key, { at: Date.now(), body });
     return NextResponse.json(body);
   } catch (err) {
-    console.error("[fno/option-chain]", err);
-    const stale = [...chainCache.entries()].find(([k]) => k.startsWith(`${underlying}:`));
-    if (stale) return NextResponse.json({ ...(stale[1].body as object), stale: true });
-    return NextResponse.json({ status: "error", message: err instanceof Error ? err.message : "Option chain unavailable" }, { status: 502 });
+    console.error("[fno/option-chain]", symbol, err);
+    const prefix = `${symbol}:`;
+    const stale = [...chainCache.entries()]
+      .filter(([k, v]) => k.startsWith(prefix) && (!asked || k === `${symbol}:${asked}`) && Date.now() - v.at < STALE_MAX_MS)
+      .sort((a, b) => b[1].at - a[1].at)[0];
+    if (stale) return NextResponse.json({ ...stale[1].body, stale: true });
+    const message = err instanceof Error ? err.message : "Option chain unavailable";
+    return NextResponse.json({ status: "error", message }, { status: 502 });
   }
 }

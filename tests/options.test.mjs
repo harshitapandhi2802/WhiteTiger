@@ -124,42 +124,43 @@ test("charges: futures STT is 0.05% of sell value", () => {
   assert.equal(c.stt, Math.round(23100 * 75 * 0.0005));
 });
 
-import { parseUpstoxChain, parseExpiries, parseLotSize } from "../src/lib/upstox-chain.ts";
+import fs from "node:fs";
+import { parseNseChain, parseNseExpiries, nseDateToIso, isoToNseDate, nseTimestampMs } from "../src/lib/nse-chain.ts";
 
-test("Upstox chain parser: documented response shape", () => {
-  const leg = (ltp, oi, prev, iv) => ({
-    instrument_key: "x",
-    market_data: { ltp, volume: 1000, oi, close_price: ltp, bid_price: ltp - 0.5, bid_qty: 75, ask_price: ltp + 0.5, ask_qty: 75, prev_oi: prev },
-    option_greeks: { vega: 10, theta: -5, gamma: 0.001, delta: 0.5, iv, pop: 50 },
-  });
-  const row = (strike, c, p) => ({ expiry: "2026-10-27", pcr: 1, strike_price: strike, underlying_key: "NSE_INDEX|Nifty 50", underlying_spot_price: 23140, call_options: c, put_options: p });
-  const json = { status: "success", data: [
-    row(23200, leg(60, 3000, 2500, 12), leg(110, 1000, 1200, 13)),
-    row(23100, leg(110, 2000, 2000, 12.5), leg(70, 2000, 1500, 13.5)),
-    row(23000, leg(180, 1000, 900, 13), leg(35, 3000, 2000, 14)),
-  ] };
-  const c = parseUpstoxChain(json);
-  assert.deepEqual(c.rows.map(r => r.strike), [23000, 23100, 23200]);
-  assert.equal(c.spot, 23140);
-  assert.equal(c.atmStrike, 23100);
-  assert.equal(c.atmIv, 13);
-  assert.equal(c.totalCallOi, 6000);
-  assert.equal(c.totalPutOi, 6000);
-  assert.equal(c.pcr, 1);
-  assert.equal(c.maxPain, 23100);
-  assert.equal(c.rows[2].call.oiChange, 500);
-  assert.equal(parseUpstoxChain({ status: "success", data: [] }).pcr, null);
+const nseFixture = (f) => JSON.parse(fs.readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8"));
+
+test("NSE chain parser: real option-chain-v3 snapshot (NIFTY, 21 Oct 2026)", () => {
+  const c = parseNseChain(nseFixture("nse-option-chain-v3.json"), { now: new Date("2026-10-21T10:10:00Z") });
+  assert.equal(c.spot, 22811.35);
+  assert.equal(c.expiry, "2026-10-27");
+  assert.equal(c.dataTime, "21-Oct-2026 15:40:00");
+  assert.deepEqual(c.rows.map(r => r.strike), [22650, 22700, 22750, 22800, 22850, 22900, 22950]);
+  assert.equal(c.totalCallOi, 473973);  // independently summed
+  assert.equal(c.totalPutOi, 345302);
+  near(c.pcr, 0.7285267304255728, 1e-12, "PCR");
+  assert.equal(c.maxPain, 22800);
+  assert.equal(c.atmStrike, 22800);
+  near(c.atmIv, (9.42 + 19.21) / 2, 1e-12, "ATM IV");
+  const atm = c.rows.find(r => r.strike === 22800);
+  assert.equal(atm.call.oiChange, 82793);
+  // Calculated Greeks: call delta in (0,1), put delta in (−1,0), put-call delta gap ≈ 1 only with equal IVs, so just bounds.
+  assert.ok(atm.call.delta > 0 && atm.call.delta < 1);
+  assert.ok(atm.put.delta < 0 && atm.put.delta > -1);
+  assert.ok(atm.call.theta < 0);
 });
 
-test("Upstox expiries: unique, sorted, valid dates only", () => {
-  assert.deepEqual(
-    parseExpiries({ data: [{ expiry: "2026-11-03" }, { expiry: "2026-10-27" }, { expiry: "2026-10-27" }, { expiry: "bad" }] }),
-    ["2026-10-27", "2026-11-03"],
-  );
+test("NSE chain parser: empty or junk input yields no numbers", () => {
+  const c = parseNseChain({ records: { data: [] } });
+  assert.equal(c.pcr, null);
+  assert.equal(c.maxPain, null);
+  assert.equal(c.spot, null);
+  assert.equal(parseNseChain(null).rows.length, 0);
 });
 
-test("Upstox lot size comes from the contract for that expiry", () => {
-  const json = { data: [{ expiry: "2026-10-27", lot_size: 65 }, { expiry: "2026-11-24", lot_size: 60 }] };
-  assert.equal(parseLotSize(json, "2026-11-24"), 60);
-  assert.equal(parseLotSize(json, "2026-12-29"), null);
+test("NSE dates and expiries", () => {
+  assert.equal(nseDateToIso("27-Oct-2026"), "2026-10-27");
+  assert.equal(nseDateToIso("2026-10-27"), null);
+  assert.equal(isoToNseDate("2026-11-03"), "03-Nov-2026");
+  assert.deepEqual(parseNseExpiries(nseFixture("nse-contract-info.json")).slice(0, 2), ["2026-10-27", "2026-11-03"]);
+  assert.equal(nseTimestampMs("21-Oct-2026 15:40:00"), Date.parse("2026-10-21T10:10:00Z"));
 });

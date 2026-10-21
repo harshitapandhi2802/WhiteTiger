@@ -3,8 +3,8 @@ import { Table2, LineChart, Calculator, Briefcase, Receipt } from "lucide-react"
 
 const CARDS = [
   {
-    href: "/tools/option-chain", icon: <Table2 size={20} />, title: "Option Chain", badge: ["Broker data", "wt-badge-live"],
-    text: "Calls and puts by strike with OI, change in OI, volume, IV and Greeks, plus PCR, max pain and ATM IV for NIFTY, BANK NIFTY, FIN NIFTY, MIDCAP SELECT and SENSEX.",
+    href: "/tools/option-chain", icon: <Table2 size={20} />, title: "Option Chain", badge: ["NSE data", "wt-badge-live"],
+    text: "NSE's chain for NIFTY, BANK NIFTY, FIN NIFTY, MIDCAP SELECT, NIFTY NEXT 50 and F&O stocks: OI, change in OI, volume and IV by strike, plus PCR, max pain and ATM IV.",
   },
   {
     href: "/tools/strategy-builder", icon: <LineChart size={20} />, title: "Strategy Builder", badge: ["Calculator", "wt-badge-calc"],

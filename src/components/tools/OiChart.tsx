@@ -1,6 +1,6 @@
 "use client";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine, Legend, CartesianGrid } from "recharts";
-import type { ChainStrike } from "@/lib/upstox-chain";
+import type { ChainStrike } from "@/lib/nse-chain";
 
 const compact = (v: number) => (v >= 1e7 ? `${(v / 1e7).toFixed(1)}Cr` : v >= 1e5 ? `${(v / 1e5).toFixed(1)}L` : v >= 1e3 ? `${(v / 1e3).toFixed(0)}K` : String(v));
 

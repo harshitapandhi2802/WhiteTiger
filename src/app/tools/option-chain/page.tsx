@@ -3,8 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { RefreshCw, LineChart, PlugZap } from "lucide-react";
-import type { ChainStrike, ParsedChain } from "@/lib/upstox-chain";
+import { RefreshCw, LineChart } from "lucide-react";
+import type { ChainStrike, ParsedChain } from "@/lib/nse-chain";
 import { daysToExpiry } from "@/lib/options";
 import { Tip, num, rupees, tone } from "@/components/tools/ToolsShell";
 import { BUILDER_IMPORT_KEY, type BuilderState } from "@/components/tools/builderHandoff";
@@ -13,10 +13,18 @@ import { newId } from "@/components/tools/workspace";
 const OiChart = dynamic(() => import("@/components/tools/OiChart").then(m => m.OiChart), { ssr: false });
 
 type ChainResponse =
-  | ({ status: "ok"; underlying: string; label: string; step: number; expiry: string; expiries: string[]; lotSize: number | null; source: string; fetchedAt: number; stale?: boolean } & ParsedChain)
-  | { status: "not_connected" | "error"; message: string };
+  | ({ status: "ok"; underlying: string; label: string; expiry: string; expiries: string[]; lotSize: number | null; source: string; fetchedAt: number; dataTimeMs: number | null; stale?: boolean } & ParsedChain)
+  | { status: "error"; message: string };
 
-const UNDERLYINGS = ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX"];
+const UNDERLYINGS = ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "NIFTYNXT50"];
+
+/** True during NSE's F&O session (Mon–Fri, 09:15–15:30 IST; holidays not checked). */
+function marketOpen(now = Date.now()): boolean {
+  const ist = new Date(now + 5.5 * 3_600_000);
+  const day = ist.getUTCDay();
+  const mins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return day >= 1 && day <= 5 && mins >= 9 * 60 + 15 && mins <= 15 * 60 + 30;
+}
 const REFRESH_MS = 30_000;
 
 interface Pick { strike: number; kind: "CE" | "PE"; side: "BUY" | "SELL"; ltp: number; iv: number | null }
@@ -24,12 +32,14 @@ interface Pick { strike: number; kind: "CE" | "PE"; side: "BUY" | "SELL"; ltp: n
 export default function OptionChainPage() {
   const router = useRouter();
   const [underlying, setUnderlying] = useState("NIFTY");
+  const [stockInput, setStockInput] = useState("");
   const [expiry, setExpiry] = useState<string | null>(null);
   const [range, setRange] = useState(12);
   const [greeks, setGreeks] = useState(false);
   const [data, setData] = useState<ChainResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [picks, setPicks] = useState<Pick[]>([]);
+  const [lagging, setLagging] = useState(false); // NSE data > 10 min old during market hours
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,7 +47,9 @@ export default function OptionChainPage() {
       const q = new URLSearchParams({ underlying });
       if (expiry) q.set("expiry", expiry);
       const res = await fetch(`/api/fno/option-chain?${q}`, { cache: "no-store" });
-      setData(await res.json());
+      const body: ChainResponse = await res.json();
+      setData(body);
+      setLagging(body.status === "ok" && !body.stale && body.dataTimeMs !== null && marketOpen() && Date.now() - body.dataTimeMs > 10 * 60_000);
     } catch {
       setData({ status: "error", message: "Couldn't reach White Tiger's server." });
     } finally {
@@ -97,36 +109,32 @@ export default function OptionChainPage() {
     <>
       <h1>Option Chain</h1>
       <p className="wt-lede">
-        Every strike&apos;s calls and puts with open interest, change in OI, volume, implied volatility and Greeks.
-        Click a premium to add that option to a strategy (click again to switch to sell, a third time to remove).
+        NSE&apos;s option chain for indices and F&amp;O stocks: open interest, change in OI, volume and implied volatility
+        for every strike, with PCR, max pain and ATM IV. Click a premium to add that option to a strategy
+        (click again to switch to sell, a third time to remove).
       </p>
 
-      <div className="wt-chips" style={{ marginBottom: 12 }}>
+      <div className="wt-chips" style={{ marginBottom: 12, alignItems: "center" }}>
         {UNDERLYINGS.map(u => (
           <button key={u} className="wt-chip" aria-pressed={underlying === u} onClick={() => { setUnderlying(u); setExpiry(null); setPicks([]); }}>{u}</button>
         ))}
+        <form style={{ display: "flex", gap: 6 }} onSubmit={e => {
+          e.preventDefault();
+          const sym = stockInput.trim().toUpperCase();
+          if (sym) { setUnderlying(sym); setExpiry(null); setPicks([]); }
+        }}>
+          <input aria-label="F&O stock symbol" className="wt-input" style={{ width: 150, padding: "6px 10px" }} placeholder="F&O stock, e.g. RELIANCE"
+            value={stockInput} onChange={e => setStockInput(e.target.value)} />
+          <button className="wt-btn wt-btn-sm" type="submit">Go</button>
+        </form>
       </div>
 
       {data === null && <div className="wt-card"><p className="wt-hint">Loading the option chain…</p></div>}
 
-      {data?.status === "not_connected" && (
-        <div className="wt-card">
-          <h2><PlugZap size={18} color="var(--warning)" />Live option chain not connected yet</h2>
-          <p className="wt-lede" style={{ marginBottom: 12 }}>
-            White Tiger shows option-chain data only from a licensed broker feed, and never fills the table with
-            estimates. Until that feed is switched on, you can still use the tools that run on your own numbers:
-          </p>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link href="/tools/strategy-builder" className="wt-btn wt-btn-primary">Strategy Builder</Link>
-            <Link href="/tools/options-calculator" className="wt-btn">Options Calculator</Link>
-            <Link href="/tools/charges" className="wt-btn">Charges Calculator</Link>
-          </div>
-        </div>
-      )}
-
       {data?.status === "error" && (
         <div className="wt-banner wt-banner-danger">
           The option chain is unavailable right now: {data.message}. Nothing is shown rather than old or estimated data.
+          The other tools work without it: <Link href="/tools/strategy-builder" style={{ color: "inherit", textDecoration: "underline" }}>Strategy Builder</Link>.
           <button className="wt-btn wt-btn-sm" style={{ marginLeft: "auto" }} onClick={load}>Retry</button>
         </div>
       )}
@@ -135,7 +143,12 @@ export default function OptionChainPage() {
         <>
           {ok.stale && (
             <div className="wt-banner wt-banner-warn">
-              The latest refresh failed, so this is the last good snapshot from {new Date(ok.fetchedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" })}. Don&apos;t rely on it for live decisions.
+              The latest refresh from NSE failed, so this is the last good snapshot (fetched {new Date(ok.fetchedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" })} IST). Don&apos;t rely on it for live decisions.
+            </div>
+          )}
+          {lagging && (
+            <div className="wt-banner wt-banner-warn">
+              NSE&apos;s data is from {ok.dataTime} IST, more than 10 minutes old during market hours.
             </div>
           )}
           <div className="wt-card" style={{ marginBottom: 16 }}>
@@ -148,7 +161,7 @@ export default function OptionChainPage() {
               <select id="ocr" className="wt-select" style={{ width: "auto" }} value={range} onChange={e => setRange(+e.target.value)}>
                 <option value={6}>ATM ± 6</option><option value={12}>ATM ± 12</option><option value={20}>ATM ± 20</option><option value={999}>All</option>
               </select>
-              <button className="wt-chip" aria-pressed={greeks} onClick={() => setGreeks(g => !g)}>Greeks</button>
+              <button className="wt-chip" aria-pressed={greeks} onClick={() => setGreeks(g => !g)}>Greeks (calculated)</button>
               <button className="wt-btn wt-btn-sm" onClick={load} disabled={loading} style={{ marginLeft: "auto" }}>
                 <RefreshCw size={12} className={loading ? "animate-spin" : ""} />Refresh
               </button>
@@ -158,12 +171,13 @@ export default function OptionChainPage() {
               <Stat label="PCR (OI)" value={num(ok.pcr)} tip="Put-call ratio: total put open interest ÷ total call open interest for this expiry. It describes positioning, not direction." />
               <Stat label="Max pain" value={ok.maxPain ? num(ok.maxPain, 0) : "—"} tip="The expiry price at which option buyers would collect the least in total, from current open interest. A reference level, not a forecast." />
               <Stat label="ATM IV" value={ok.atmIv ? `${num(ok.atmIv)}%` : "—"} tip="Average implied volatility of the at-the-money call and put, as reported by the broker feed." />
-              <Stat label="Lot size" value={ok.lotSize ? String(ok.lotSize) : "—"} />
+              <Stat label="NSE data time (IST)" value={ok.dataTime ? ok.dataTime.split(" ")[1] : "—"} tip={ok.dataTime ? `NSE timestamp: ${ok.dataTime}` : undefined} />
               <Stat label="Days to expiry" value={num(daysToExpiry(ok.expiry), 1)} />
             </div>
             <p className="wt-hint" style={{ marginTop: 10 }}>
-              Source: {ok.source}. Updated {new Date(ok.fetchedAt).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata" })} IST, refreshing every 30 seconds while this page is open.
-              OI change is against the previous day&apos;s close.
+              Source: {ok.source}, as of {ok.dataTime ?? "—"} IST; refreshes every 30 seconds while this page is open.
+              OI and volume are in contracts, as NSE reports them; OI change is against the previous day.
+              Greeks are calculated by White Tiger from NSE&apos;s IV (Black-Scholes, 6.5% rate); NSE doesn&apos;t publish them.
             </p>
           </div>
 
