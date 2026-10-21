@@ -1107,6 +1107,22 @@ async function handlePOST(req: NextRequest) {
     disclaimer: "AI-generated analysis for educational purposes. Not financial advice. Always verify with official sources before investing.",
   };
 
+  // Live figures can be null (loss-making P/E, no 200-DMA for new listings,
+  // missing ratios). Every comparison and format below goes through these.
+  const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+  const v = {
+    pe: isNum(data.hero.pe) ? data.hero.pe : null,
+    divYield: isNum(data.hero.divYield) ? data.hero.divYield : null,
+    cmp: isNum(data.hero.cmp) ? data.hero.cmp : null,
+    debtEquity: isNum(data.fundamentals.debtEquity) ? data.fundamentals.debtEquity : null,
+    roe: isNum(data.fundamentals.roe) ? data.fundamentals.roe : null,
+    promoter: isNum(data.fundamentals.promoterHolding) ? data.fundamentals.promoterHolding : null,
+    fii: isNum(data.fundamentals.fiiHolding) ? data.fundamentals.fiiHolding : null,
+    sma200: isNum(data.technicals.sma200) ? data.technicals.sma200 : null,
+    rsi: isNum(data.technicals.rsi) ? data.technicals.rsi : null,
+    macd: isNum(data.technicals.macd) ? data.technicals.macd : null,
+  };
+
   // ── 3. RISKS TO THIS ANALYSIS ─────────────────────────────
   const analysisRisks = [
     {
@@ -1121,17 +1137,17 @@ async function handlePOST(req: NextRequest) {
       detail: "AI analysis uses quantitative signals and pattern recognition. It cannot predict black swan events, regulatory changes, or management fraud.",
       severity: "medium",
     },
-    ...(data.hero.pe > 50 ? [{
+    ...(v.pe !== null && v.pe > 50 ? [{
       risk: "Valuation Stretch",
-      detail: `P/E of ${data.hero.pe.toFixed(1)}x is significantly above market average. Any earnings disappointment could trigger sharp correction.`,
+      detail: `P/E of ${v.pe.toFixed(1)}x is significantly above market average. Any earnings disappointment could trigger sharp correction.`,
       severity: "high" as const,
     }] : []),
-    ...(data.fundamentals.debtEquity > 1.5 ? [{
+    ...(v.debtEquity !== null && v.debtEquity > 1.5 ? [{
       risk: "Leverage Concern",
-      detail: `D/E ratio of ${data.fundamentals.debtEquity.toFixed(2)} indicates high leverage. Rising interest rates could pressure margins.`,
+      detail: `D/E ratio of ${v.debtEquity.toFixed(2)} indicates high leverage. Rising interest rates could pressure margins.`,
       severity: "high" as const,
     }] : []),
-    ...(data.fundamentals.promoterHolding < 30 ? [{
+    ...(v.promoter !== null && v.promoter < 30 ? [{
       risk: "Governance Risk",
       detail: `Low promoter holding (${data.fundamentals.promoterHolding}%) may indicate weak management alignment with shareholders.`,
       severity: "medium" as const,
@@ -1225,27 +1241,25 @@ async function handlePOST(req: NextRequest) {
   };
 
   // Build reasoning from actual data
-  if (data.hero.cmp > data.technicals.sma200) analysisReasoning.bullishFactors.push(`Price above 200-DMA (₹${data.technicals.sma200.toLocaleString()}) — long-term uptrend intact`);
-  if (data.hero.pe < 20 && data.fundamentals.roe > 15) analysisReasoning.bullishFactors.push(`Attractive valuation (${data.hero.pe.toFixed(1)}x PE) with strong ROE (${data.fundamentals.roe}%)`);
-  if (data.fundamentals.debtEquity < 0.3) analysisReasoning.bullishFactors.push(`Near debt-free balance sheet (D/E: ${data.fundamentals.debtEquity.toFixed(2)})`);
-  if (data.fundamentals.promoterHolding > 55) analysisReasoning.bullishFactors.push(`Strong promoter conviction (${data.fundamentals.promoterHolding}% holding)`);
-  if (data.fundamentals.fiiHolding > 25) analysisReasoning.bullishFactors.push(`Strong FII interest (${data.fundamentals.fiiHolding}% holding)`);
-  if (data.smartMoney?.accumulationDistribution === "Accumulation") analysisReasoning.bullishFactors.push("Smart money accumulation pattern detected");
-  if (data.technicals.macd > 0) analysisReasoning.bullishFactors.push("MACD positive — momentum favoring buyers");
-  if (data.hero.divYield > 2) analysisReasoning.bullishFactors.push(`Healthy dividend yield (${data.hero.divYield.toFixed(1)}%) providing income floor`);
-  if (data.fairValue.upside > 15) analysisReasoning.bullishFactors.push(`DCF suggests ${data.fairValue.upside.toFixed(0)}% upside to fair value`);
+  // Only live figures feed this list. Generated DCF "upside" and "smart money"
+  // signals are left out: they aren't real data and read like calls.
+  const B = analysisReasoning.bullishFactors, R = analysisReasoning.bearishFactors, N = analysisReasoning.neutralFactors;
+  if (v.cmp !== null && v.sma200 !== null && v.cmp > v.sma200) B.push(`Price above 200-DMA (₹${v.sma200.toLocaleString("en-IN")}) — long-term uptrend intact`);
+  if (v.pe !== null && v.roe !== null && v.pe < 20 && v.roe > 15) B.push(`Attractive valuation (${v.pe.toFixed(1)}x PE) with strong ROE (${v.roe}%)`);
+  if (v.debtEquity !== null && v.debtEquity < 0.3) B.push(`Near debt-free balance sheet (D/E: ${v.debtEquity.toFixed(2)})`);
+  if (v.promoter !== null && v.promoter > 55) B.push(`Strong promoter conviction (${v.promoter}% holding)`);
+  if (v.fii !== null && v.fii > 25) B.push(`Strong FII interest (${v.fii}% holding)`);
+  if (v.macd !== null && v.macd > 0) B.push("MACD positive — momentum favoring buyers");
+  if (v.divYield !== null && v.divYield > 2) B.push(`Healthy dividend yield (${v.divYield.toFixed(1)}%) providing income floor`);
 
-  if (data.hero.pe > 50) analysisReasoning.bearishFactors.push(`Expensive valuation at ${data.hero.pe.toFixed(1)}x PE — limited margin of safety`);
-  if (data.fundamentals.debtEquity > 1.5) analysisReasoning.bearishFactors.push(`High leverage (D/E: ${data.fundamentals.debtEquity.toFixed(2)}) — vulnerable to rate hikes`);
-  if (data.technicals.rsi > 70) analysisReasoning.bearishFactors.push(`RSI at ${data.technicals.rsi} — overbought, pullback risk elevated`);
-  if (data.hero.cmp < data.technicals.sma200) analysisReasoning.bearishFactors.push(`Below 200-DMA — broken long-term trend`);
-  if (data.smartMoney?.accumulationDistribution === "Distribution") analysisReasoning.bearishFactors.push("Institutional distribution pattern detected");
-  if (data.technicals.macd < 0) analysisReasoning.bearishFactors.push("MACD negative — selling pressure dominant");
-  if (data.fairValue.upside < -15) analysisReasoning.bearishFactors.push(`Overvalued by ${Math.abs(data.fairValue.upside).toFixed(0)}% vs DCF fair value`);
+  if (v.pe !== null && v.pe > 50) R.push(`Expensive valuation at ${v.pe.toFixed(1)}x PE — limited margin of safety`);
+  if (v.debtEquity !== null && v.debtEquity > 1.5) R.push(`High leverage (D/E: ${v.debtEquity.toFixed(2)}) — vulnerable to rate hikes`);
+  if (v.rsi !== null && v.rsi > 70) R.push(`RSI at ${v.rsi} — overbought, pullback risk elevated`);
+  if (v.cmp !== null && v.sma200 !== null && v.cmp < v.sma200) R.push(`Below 200-DMA — broken long-term trend`);
+  if (v.macd !== null && v.macd < 0) R.push("MACD negative — selling pressure dominant");
 
-  if (data.technicals.rsi >= 40 && data.technicals.rsi <= 60) analysisReasoning.neutralFactors.push("RSI in neutral zone — no extreme momentum signal");
-  if (data.hero.pe >= 20 && data.hero.pe <= 35) analysisReasoning.neutralFactors.push("Valuation at fair range — neither cheap nor expensive");
-  if (Math.abs(data.fairValue.upside) < 10) analysisReasoning.neutralFactors.push("Price near estimated fair value");
+  if (v.rsi !== null && v.rsi >= 40 && v.rsi <= 60) N.push("RSI in neutral zone — no extreme momentum signal");
+  if (v.pe !== null && v.pe >= 20 && v.pe <= 35) N.push("Valuation at fair range — neither cheap nor expensive");
 
   // ── ASSEMBLE ENHANCED RESPONSE ────────────────────────────
   const enhancedData = {

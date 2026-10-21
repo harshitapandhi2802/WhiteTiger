@@ -217,21 +217,33 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
   const stock = findStock(symbol);
   const [data, setData] = useState<StockData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<{ status: number; message: string } | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [activeNav, setActiveNav] = useState("copilot");
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     if (!stock) { setLoading(false); return; }
     setLoading(true);
+    setLoadError(null);
     fetch("/api/stock-intelligence", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ticker: stock.ticker, companyName: stock.name }),
     })
-      .then(r => (r.ok ? r.json() : null)) // 401 when signed out: show the error state, not a broken page
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [stock?.ticker, stock?.name]); // eslint-disable-line react-hooks/exhaustive-deps
+      .then(async r => {
+        const body = await r.json().catch(() => null);
+        if (r.ok || body?.error === "live_quote_unavailable") { setData(body); return; }
+        // Signed out (401), monthly/daily limit (429) or a server problem: say which.
+        setData(null);
+        setLoadError({
+          status: r.status,
+          message: body?.message || body?.error || "Something went wrong while preparing this analysis.",
+        });
+      })
+      .catch(() => setLoadError({ status: 0, message: "Couldn't reach White Tiger. Check your connection and try again." }))
+      .finally(() => setLoading(false));
+  }, [stock?.ticker, stock?.name, attempt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollTo = (id: string) => {
     setActiveNav(id);
@@ -280,7 +292,23 @@ export default function StockPage({ params }: { params: Promise<{ symbol: string
     );
   }
 
-  if (!data) return <div style={{ minHeight: "100vh", background: "#fff", color: "#111", padding: 40 }}>Error loading data.</div>;
+  if (!data) {
+    const signIn = loadError?.status === 401;
+    const canRetry = !signIn && loadError?.status !== 429;
+    return (
+      <div style={{ minHeight: "100vh", background: "#0a0a1a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12, padding: 24, textAlign: "center" }}>
+        <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>{stock.name}</div>
+        <div style={{ fontSize: "0.85rem", color: "rgba(255,255,255,0.65)", maxWidth: 460, lineHeight: 1.55 }}>
+          {loadError?.message ?? "Something went wrong while preparing this analysis."}
+        </div>
+        <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap", justifyContent: "center" }}>
+          {signIn && <a href="/analyze" style={{ padding: "9px 16px", borderRadius: 9, background: "#4A9EFF", color: "#fff", fontWeight: 700, textDecoration: "none" }}>Sign in with Google</a>}
+          {canRetry && <button onClick={() => setAttempt(a => a + 1)} style={{ padding: "9px 16px", borderRadius: 9, background: "#4A9EFF", color: "#fff", fontWeight: 700, border: "none", cursor: "pointer" }}>Try again</button>}
+          <a href="/analyze" style={{ padding: "9px 16px", color: "#818cf8", fontWeight: 600 }}>Back to search</a>
+        </div>
+      </div>
+    );
+  }
 
   if (data.success === false) {
     return (
