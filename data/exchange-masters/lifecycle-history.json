@@ -1,3 +1,152 @@
 {
- "events": []
+ "events": [
+  {
+   "date": "2026-10-26",
+   "added": [
+    {
+     "isin": "INE483S01038",
+     "name": "AvenuesAI Ltd"
+    },
+    {
+     "isin": "INE566M01025",
+     "name": "Azad India Mobility Ltd"
+    },
+    {
+     "isin": "INE0B9K01033",
+     "name": "Bansal Wire Industries Ltd"
+    },
+    {
+     "isin": "INE224M01013",
+     "name": "Bharatiya Global Infomedia Ltd"
+    },
+    {
+     "isin": "INE28SO01013",
+     "name": "Bonfiglioli Transmissions Ltd"
+    },
+    {
+     "isin": "INE376C01038",
+     "name": "CLC Industries Ltd"
+    },
+    {
+     "isin": "INE981B01011",
+     "name": "CMI Ltd"
+    },
+    {
+     "isin": "INE216H01027",
+     "name": "Educomp Solutions Ltd"
+    },
+    {
+     "isin": "INE0N2201019",
+     "name": "Fusion CX Ltd"
+    },
+    {
+     "isin": "INE18AK01028",
+     "name": "HD Fire Protect Ltd"
+    },
+    {
+     "isin": "INE133A01029",
+     "name": "JSW Dulux Ltd"
+    },
+    {
+     "isin": "INE454M01024",
+     "name": "Nagarjuna Fertilizers and Chemicals Ltd"
+    },
+    {
+     "isin": "INE0LXG20016",
+     "name": "Ola Electric Mobility Ltd-RE"
+    },
+    {
+     "isin": "INE849L01019",
+     "name": "Ortel Communications Ltd"
+    },
+    {
+     "isin": "INE011H01014",
+     "name": "Rajvir Industries Ltd"
+    },
+    {
+     "isin": "INE1UEL01023",
+     "name": "Ravita Engineering Services Ltd"
+    },
+    {
+     "isin": "INE356Y01018",
+     "name": "Sahajanand Medical Technologies Ltd"
+    },
+    {
+     "isin": "INE00Y701026",
+     "name": "Salasar Exteriors and Contour Ltd"
+    },
+    {
+     "isin": "INE429F01012",
+     "name": "SKIL Infrastructure Ltd"
+    },
+    {
+     "isin": "INE0LDG01026",
+     "name": "Tonbo Imaging India Ltd"
+    },
+    {
+     "isin": "INE275F01019",
+     "name": "Univa Foods Ltd"
+    },
+    {
+     "isin": "INE1KAA01025",
+     "name": "Vaibhav Vyapaar Ltd"
+    },
+    {
+     "isin": "INE09PO01019",
+     "name": "Zetwerk Manufacturing Businesses Ltd"
+    }
+   ],
+   "delisted": [
+    {
+     "isin": "INE987B20018",
+     "name": "Natco Pharma Ltd-RE",
+     "lastSymbol": "NATCO-RE"
+    }
+   ],
+   "symbolChanged": [
+    {
+     "isin": "INE726G01019",
+     "from": "ICICIPRULI",
+     "to": "ICICILIFE"
+    },
+    {
+     "isin": "INE534A01028",
+     "from": "GFSTEELS",
+     "to": "TIKONA"
+    }
+   ],
+   "renamed": [
+    {
+     "isin": "INE345B01019",
+     "from": "Cerebra Integrated Technologies Ltd.",
+     "to": "Cerebra Integrated Technologies Ltd"
+    },
+    {
+     "isin": "INE726G01019",
+     "from": "ICICI Prudential Life Insurance Company Ltd",
+     "to": "ICICI Life Insurance Ltd"
+    },
+    {
+     "isin": "INE670C01026",
+     "from": "Iirm Holdings India Ltd",
+     "to": "IIRM Holdings India Ltd"
+    },
+    {
+     "isin": "INE691G01015",
+     "from": "Impex Ferro tech Ltd.",
+     "to": "Impex Ferro Tech Ltd"
+    },
+    {
+     "isin": "INE252A01019",
+     "from": "SPEL Semiconductor Ltd.",
+     "to": "SPEL Semiconductor Ltd"
+    },
+    {
+     "isin": "INE534A01028",
+     "from": "Grand Foundry Ltd",
+     "to": "Tikona Communication Ltd"
+    }
+   ]
+  }
+ ]
 }

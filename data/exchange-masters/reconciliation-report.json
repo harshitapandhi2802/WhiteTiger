@@ -1,30 +1,28 @@
 {
- "generatedAt": "2026-10-14T15:24:18.702Z",
- "warnings": [
-  "BSE master is 45 days old (file dated 2026-08-30); listings after that date are missing until it is re-downloaded manually."
- ],
+ "generatedAt": "2026-10-26T09:13:48.411Z",
+ "warnings": [],
  "counts": {
-  "nseMainRows": 2605,
-  "nseSmeRows": 580,
+  "nseMainRows": 2629,
+  "nseSmeRows": 583,
   "bseActiveRows": 4979,
-  "nseListed": 3185,
+  "nseListed": 3212,
   "bseListed": 4979,
-  "both": 2422,
-  "nseOnly": 763,
-  "bseOnly": 2557,
-  "uniqueCompanies": 5742,
+  "both": 2427,
+  "nseOnly": 785,
+  "bseOnly": 2552,
+  "uniqueCompanies": 5764,
   "withoutIsin": 2,
   "nseSeries": {
-   "BE": 227,
-   "BZ": 30,
-   "EQ": 2348,
-   "SM": 478,
-   "ST": 101,
-   "SZ": 1
+   "BE": 224,
+   "BZ": 42,
+   "EQ": 2363,
+   "SM": 483,
+   "ST": 98,
+   "SZ": 2
   },
   "withOfficialIndustry": 748,
   "withCapClass": 902,
-  "unclassifiedSector": 4840
+  "unclassifiedSector": 4862
  },
  "baseline": {
   "appEntriesBefore": 5128,
@@ -428,58 +426,58 @@
    }
   ],
   "capConflicts": 190,
-  "resolvedViaBseId": 7
+  "resolvedViaBseId": 8
  },
  "lifecycle": {
-  "added": 0,
-  "removed": 0,
-  "symbolChanged": 0,
-  "renamed": 0
+  "added": 23,
+  "removed": 1,
+  "symbolChanged": 2,
+  "renamed": 6
  },
  "sources": {
   "nse_EQUITY_L.csv": {
-   "fileDate": "2026-10-14",
-   "sha256": "83154043b3431346",
-   "rows": 2605
+   "fileDate": "2026-10-26",
+   "sha256": "649b6ce74b19f7d5",
+   "rows": 2629
   },
   "nse_SME_EQUITY_L.csv": {
-   "fileDate": "2026-10-14",
-   "sha256": "39718036197085fb",
-   "rows": 580
+   "fileDate": "2026-10-26",
+   "sha256": "9580bcfce7f79bfe",
+   "rows": 583
   },
   "bse_Equity.csv": {
-   "fileDate": "2026-08-30",
+   "fileDate": "2026-10-26",
    "sha256": "33f33901b336f4bf",
    "rows": 4979
   },
   "idx_nifty100.csv": {
-   "fileDate": "2026-10-14",
+   "fileDate": "2026-10-26",
    "sha256": "0a53ad14c15e9ec2",
    "rows": 100
   },
   "idx_niftymidcap150.csv": {
-   "fileDate": "2026-10-14",
-   "sha256": "3fe5312472d11302",
+   "fileDate": "2026-10-26",
+   "sha256": "c99b7ef386cd421c",
    "rows": 150
   },
   "idx_niftysmallcap250.csv": {
-   "fileDate": "2026-10-14",
-   "sha256": "48ed754ed01486a3",
+   "fileDate": "2026-10-26",
+   "sha256": "389658dd57517f8a",
    "rows": 251
   },
   "idx_niftymicrocap250.csv": {
-   "fileDate": "2026-10-14",
+   "fileDate": "2026-10-26",
    "sha256": "974ff2493bbb8b71",
    "rows": 254
   },
   "idx_nifty500.csv": {
-   "fileDate": "2026-10-14",
-   "sha256": "2959bf206239284e",
+   "fileDate": "2026-10-26",
+   "sha256": "31b764a95cc03ad1",
    "rows": 501
   },
   "idx_niftytotalmarket.csv": {
-   "fileDate": "2026-10-14",
-   "sha256": "692caee1b8e4fd11",
+   "fileDate": "2026-10-26",
+   "sha256": "fe1e9607b53a6db5",
    "rows": 755
   }
  },

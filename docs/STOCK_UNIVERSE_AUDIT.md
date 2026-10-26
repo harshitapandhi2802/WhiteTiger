@@ -1,42 +1,39 @@
 # White Tiger — Stock Universe Audit
 
-Generated 2026-10-14T15:24:18.702Z by `scripts/sync-stock-universe.mjs`. Reproduce with `npm run sync:stocks`.
-
-## Warnings
-- BSE master is 45 days old (file dated 2026-08-30); listings after that date are missing until it is re-downloaded manually.
+Generated 2026-10-26T09:13:48.411Z by `scripts/sync-stock-universe.mjs`. Reproduce with `npm run sync:stocks`.
 
 ## 1. Official universe (dated reference files)
 | Source file | File date | Rows | SHA-256 (16) |
 |---|---|---|---|
-| nse_EQUITY_L.csv | 2026-10-14 | 2605 | `83154043b3431346` |
-| nse_SME_EQUITY_L.csv | 2026-10-14 | 580 | `39718036197085fb` |
-| bse_Equity.csv | 2026-08-30 | 4979 | `33f33901b336f4bf` |
-| idx_nifty100.csv | 2026-10-14 | 100 | `0a53ad14c15e9ec2` |
-| idx_niftymidcap150.csv | 2026-10-14 | 150 | `3fe5312472d11302` |
-| idx_niftysmallcap250.csv | 2026-10-14 | 251 | `48ed754ed01486a3` |
-| idx_niftymicrocap250.csv | 2026-10-14 | 254 | `974ff2493bbb8b71` |
-| idx_nifty500.csv | 2026-10-14 | 501 | `2959bf206239284e` |
-| idx_niftytotalmarket.csv | 2026-10-14 | 755 | `692caee1b8e4fd11` |
+| nse_EQUITY_L.csv | 2026-10-26 | 2629 | `649b6ce74b19f7d5` |
+| nse_SME_EQUITY_L.csv | 2026-10-26 | 583 | `9580bcfce7f79bfe` |
+| bse_Equity.csv | 2026-10-26 | 4979 | `33f33901b336f4bf` |
+| idx_nifty100.csv | 2026-10-26 | 100 | `0a53ad14c15e9ec2` |
+| idx_niftymidcap150.csv | 2026-10-26 | 150 | `c99b7ef386cd421c` |
+| idx_niftysmallcap250.csv | 2026-10-26 | 251 | `389658dd57517f8a` |
+| idx_niftymicrocap250.csv | 2026-10-26 | 254 | `974ff2493bbb8b71` |
+| idx_nifty500.csv | 2026-10-26 | 501 | `31b764a95cc03ad1` |
+| idx_niftytotalmarket.csv | 2026-10-26 | 755 | `fe1e9607b53a6db5` |
 
 | Measure | Count |
 |---|---|
-| NSE main board rows | 2605 |
-| NSE SME (Emerge) rows | 580 |
+| NSE main board rows | 2629 |
+| NSE SME (Emerge) rows | 583 |
 | BSE active equity rows | 4979 |
-| **NSE-listed companies (unique ISIN)** | 3185 |
+| **NSE-listed companies (unique ISIN)** | 3212 |
 | **BSE-listed companies (unique ISIN)** | 4979 |
-| Listed on both | 2422 |
-| NSE only | 763 |
-| BSE only | 2557 |
-| **Unique companies, both exchanges (deduplicated by ISIN)** | **5742** |
+| Listed on both | 2427 |
+| NSE only | 785 |
+| BSE only | 2552 |
+| **Unique companies, both exchanges (deduplicated by ISIN)** | **5764** |
 
 Counting method: each company is one record keyed by ISIN. A company on both exchanges is counted once, carrying its NSE symbol *and* BSE scrip code. Records without a valid ISIN are keyed by exchange code (2 such BSE rows).
 
 ## 2. Before vs after
 | | Before audit | After |
 |---|---|---|
-| Entries in app | 5128 (name-deduped) | 5742 (ISIN-deduped) |
-| Official companies represented | 5094 | 5742 |
+| Entries in app | 5128 (name-deduped) | 5764 (ISIN-deduped) |
+| Official companies represented | 5094 | 5764 |
 | Missing official companies | 648 | 0 |
 | Combined coverage | 88.71% | 100% of the reference files |
 | NSE coverage | 79.18% | 100% |
@@ -131,12 +128,12 @@ Counting method: each company is one record keyed by ISIN. A company on both exc
 ## 4. Classification coverage
 | | Count |
 |---|---|
-| NSE series | BE: 227, BZ: 30, EQ: 2348, SM: 478, ST: 101, SZ: 1 |
+| NSE series | BE: 224, BZ: 42, EQ: 2363, SM: 483, ST: 98, SZ: 2 |
 | With NSE official industry | 748 |
 | With cap class (NSE index membership or verified curated) | 902 |
-| Sector unclassified (shown as "Unclassified", never guessed) | 4840 |
+| Sector unclassified (shown as "Unclassified", never guessed) | 4862 |
 
 ## 5. Lifecycle
 ```json
-{"added":0,"removed":0,"symbolChanged":0,"renamed":0}
+{"added":23,"removed":1,"symbolChanged":2,"renamed":6}
 ```
