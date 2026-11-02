@@ -1,3 +1,779 @@
 {
- "events": []
+ "events": [
+  {
+   "date": "2026-11-02",
+   "added": [
+    {
+     "code": 154855,
+     "name": "UTI Nifty India New Age Consumption Index Fund - Direct Growth Option"
+    },
+    {
+     "code": 154856,
+     "name": "UTI Nifty India New Age Consumption Index Fund - Regular Growth Option"
+    },
+    {
+     "code": 154858,
+     "name": "Aditya Birla Sun Life Fixed Maturity Plan-Series VB (136 Days)"
+    },
+    {
+     "code": 154859,
+     "name": "Aditya Birla Sun Life Fixed Maturity Plan-Series VB (136 Days)"
+    },
+    {
+     "code": 154860,
+     "name": "Aditya Birla Sun Life Fixed Maturity Plan-Series VB (136 Days)"
+    },
+    {
+     "code": 154861,
+     "name": "Aditya Birla Sun Life Fixed Maturity Plan-Series VB (136 Days)"
+    },
+    {
+     "code": 154862,
+     "name": "Kotak Nifty Realty Index Fund - Direct Plan - Growth"
+    },
+    {
+     "code": 154863,
+     "name": "Kotak Nifty Realty Index Fund - Direct Plan - IDCW Payout & Reinvestment"
+    },
+    {
+     "code": 154864,
+     "name": "Kotak Nifty Realty Index Fund - Regular Plan - Growth"
+    },
+    {
+     "code": 154865,
+     "name": "Kotak Nifty Realty Index Fund - Regular Plan - IDCW Payout & Reinvestment"
+    },
+    {
+     "code": 154866,
+     "name": "UTI Financial Services Debt Fund - Direct Plan Growth Option"
+    },
+    {
+     "code": 154867,
+     "name": "UTI Financial Services Debt Fund - Regular Plan Growth Option"
+    },
+    {
+     "code": 154868,
+     "name": "UTI Financial Services Debt Fund - Direct plan payout of IDCW Option"
+    },
+    {
+     "code": 154869,
+     "name": "UTI Financial Services Debt Fund - Regular Plan Payout of IDCW option"
+    },
+    {
+     "code": 154870,
+     "name": "Invesco India Silver ETF"
+    },
+    {
+     "code": 154871,
+     "name": "Invesco India Silver ETF Fund of Fund - Direct Plan - Growth"
+    },
+    {
+     "code": 154872,
+     "name": "Invesco India Silver ETF Fund of Fund- Direct Plan - IDCW"
+    },
+    {
+     "code": 154873,
+     "name": "Invesco India Silver ETF Fund of Fund - Regular Plan - Growth"
+    },
+    {
+     "code": 154874,
+     "name": "Invesco India Silver ETF Fund of Fund - Regular Plan - IDCW"
+    },
+    {
+     "code": 154875,
+     "name": "Edelweiss Nifty Energy ETF - Growth"
+    },
+    {
+     "code": 154876,
+     "name": "Abakkus Dynamic Asset Allocation Fund - Direct Plan - Growth"
+    },
+    {
+     "code": 154877,
+     "name": "Abakkus Dynamic Asset Allocation Fund - Regular Plan - Growth"
+    },
+    {
+     "code": 154878,
+     "name": "Kotak Fixed Maturity Plan Series 336 - Direct Plan - Growth"
+    },
+    {
+     "code": 154879,
+     "name": "Kotak Fixed Maturity Plan Series 336 - Direct Plan - IDCW Payout"
+    },
+    {
+     "code": 154880,
+     "name": "Kotak Fixed Maturity Plan Series 336 - Regular Plan - IDCW Payout"
+    },
+    {
+     "code": 154881,
+     "name": "Kotak Fixed Maturity Plan Series 336 - Regular Plan - Growth"
+    },
+    {
+     "code": 154882,
+     "name": "quant Silver ETF FOF- Growth Option - Direct Plan"
+    },
+    {
+     "code": 154883,
+     "name": "quant Silver ETF FOF- Growth Option - Regular Plan"
+    },
+    {
+     "code": 154884,
+     "name": "quant Silver ETF FOF- IDCW Option - Direct Plan"
+    },
+    {
+     "code": 154885,
+     "name": "quant Silver ETF FOF- IDCW Option - Regular Plan"
+    }
+   ],
+   "removed": [],
+   "renamed": [
+    {
+     "code": 154740,
+     "from": "ICICI Prudential Contra Fund - Direct Plan - Growth",
+     "to": "ICICI Prudential Contra Fund"
+    },
+    {
+     "code": 154741,
+     "from": "ICICI Prudential Contra Fund - Growth",
+     "to": "ICICI Prudential Contra Fund"
+    },
+    {
+     "code": 154742,
+     "from": "ICICI Prudential Contra Fund - IDCW",
+     "to": "ICICI Prudential Contra Fund"
+    },
+    {
+     "code": 154743,
+     "from": "ICICI Prudential Contra Fund - Direct Plan - IDCW",
+     "to": "ICICI Prudential Contra Fund"
+    },
+    {
+     "code": 154762,
+     "from": "Motilal Oswal Nifty REITs & Realty Index Fund - Direct",
+     "to": "Motilal Oswal Nifty REITs & Realty Index Fund"
+    },
+    {
+     "code": 154763,
+     "from": "Motilal Oswal Nifty REITs & Realty Index Fund - Regular",
+     "to": "Motilal Oswal Nifty REITs & Realty Index Fund"
+    },
+    {
+     "code": 154769,
+     "from": "WhiteOak Capital Diversified Equity Small Cap Active FOF Regular Plan Growth",
+     "to": "WhiteOak Capital Diversified Equity Small Cap Active FOF"
+    },
+    {
+     "code": 154770,
+     "from": "WhiteOak Capital Diversified Equity Small Cap Active FOF Direct Plan Growth",
+     "to": "WhiteOak Capital Diversified Equity Small Cap Active FOF"
+    },
+    {
+     "code": 154771,
+     "from": "Aditya Birla Sun Life BSE Total Market Index Fund - Direct Plan - Growth Option",
+     "to": "Aditya Birla Sun Life BSE Total Market Index Fund"
+    },
+    {
+     "code": 154772,
+     "from": "Aditya Birla Sun Life BSE Toatl Market Index Fund - Regular Plan - Growth Option",
+     "to": "Aditya Birla Sun Life BSE Total Market Index Fund"
+    },
+    {
+     "code": 154775,
+     "from": "Mirae Asset Life Cycle Fund 2056 - Direct Plan - Growth",
+     "to": "Mirae Asset Life Cycle Fund 2056"
+    },
+    {
+     "code": 154776,
+     "from": "Mirae Asset Life Cycle Fund 2056 - Direct Plan - IDCW",
+     "to": "Mirae Asset Life Cycle Fund 2056"
+    },
+    {
+     "code": 154777,
+     "from": "Mirae Asset Life Cycle Fund 2056 - Regular Plan - Growth",
+     "to": "Mirae Asset Life Cycle Fund 2056"
+    },
+    {
+     "code": 154778,
+     "from": "Mirae Asset Life Cycle Fund 2056 - Regular Plan - IDCW",
+     "to": "Mirae Asset Life Cycle Fund 2056"
+    },
+    {
+     "code": 154780,
+     "from": "Carnelian Liquid Fund - Regular Plan - Growth",
+     "to": "Carnelian Liquid Fund"
+    },
+    {
+     "code": 154781,
+     "from": "Carnelian Liquid Fund - Regular Plan - Daily IDCW Reinvest",
+     "to": "Carnelian Liquid Fund"
+    },
+    {
+     "code": 154782,
+     "from": "Carnelian Liquid Fund - Direct Plan - Growth",
+     "to": "Carnelian Liquid Fund"
+    },
+    {
+     "code": 154783,
+     "from": "Carnelian Liquid Fund - Direct Plan - Weekly IDCW Reinvest",
+     "to": "Carnelian Liquid Fund"
+    },
+    {
+     "code": 154784,
+     "from": "Carnelian Liquid Fund - Direct Plan - Daily IDCW Reinvest",
+     "to": "Carnelian Liquid Fund"
+    },
+    {
+     "code": 154789,
+     "from": "Nippon India CRISIL -IBX FAR Gilt ETF",
+     "to": "Nippon India CRISIL-IBX FAR Gilt ETF"
+    },
+    {
+     "code": 154790,
+     "from": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-Sec 70 30 Index Fund-Direct Plan-IDCW Option",
+     "to": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-sec 70:30 Index Fund"
+    },
+    {
+     "code": 154791,
+     "from": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-Sec 70 30 Index Fund-IDCW Option",
+     "to": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-sec 70:30 Index Fund"
+    },
+    {
+     "code": 154792,
+     "from": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-Sec 70 30 Index Fund-Growth Option",
+     "to": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-sec 70:30 Index Fund"
+    },
+    {
+     "code": 154793,
+     "from": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-Sec 70 30 Index Fund-Direct Plan-Growth Option",
+     "to": "HDFC Nifty LargeMidcap250 Plus 8-13 yr G-sec 70:30 Index Fund"
+    },
+    {
+     "code": 154798,
+     "from": "Kotak Nifty 500 Index Fund - Direct Plan - Growth",
+     "to": "Kotak Nifty 500 Index Fund"
+    },
+    {
+     "code": 154799,
+     "from": "Kotak Nifty 500 Index Fund - Regular Plan - Growth",
+     "to": "Kotak Nifty 500 Index Fund"
+    },
+    {
+     "code": 154800,
+     "from": "Kotak Nifty 500 Index Fund - Regular Plan - IDCW Payout & Reinvestment",
+     "to": "Kotak Nifty 500 Index Fund"
+    },
+    {
+     "code": 154801,
+     "from": "Kotak Nifty 500 Index Fund - Direct Plan - IDCW Payout & Reinvestment",
+     "to": "Kotak Nifty 500 Index Fund"
+    },
+    {
+     "code": 154802,
+     "from": "JioBlackRock Income Plus Arbitrage Omni FOF - Direct Plan - Growth Option",
+     "to": "JioBlackRock Income Plus Arbitrage Omni FOF"
+    },
+    {
+     "code": 154803,
+     "from": "JioBlackRock Income Plus Arbitrage Omni FOF - Regular Plan - Growth Option",
+     "to": "JioBlackRock Income Plus Arbitrage Omni FOF"
+    },
+    {
+     "code": 154805,
+     "from": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund Direct Growth",
+     "to": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund"
+    },
+    {
+     "code": 154810,
+     "from": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund Regular Growth",
+     "to": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund"
+    },
+    {
+     "code": 154811,
+     "from": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund Direct IDCW",
+     "to": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund"
+    },
+    {
+     "code": 154812,
+     "from": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund Regular IDCW",
+     "to": "Aditya Birla Sun Life Financial Services Sectoral Debt Fund"
+    },
+    {
+     "code": 154814,
+     "from": "quant Nifty 50 Index Fund - Growth Option - Direct Plan",
+     "to": "quant Nifty 50 Index Fund"
+    },
+    {
+     "code": 154815,
+     "from": "quant Nifty 50 Index Fund - IDCW Option - Direct Plan",
+     "to": "quant Nifty 50 Index Fund"
+    },
+    {
+     "code": 154816,
+     "from": "quant Nifty 50 Index Fund - Growth Option - Regular Plan",
+     "to": "quant Nifty 50 Index Fund"
+    },
+    {
+     "code": 154817,
+     "from": "quant Nifty 50 Index Fund - IDCW Option - Regular Plan",
+     "to": "quant Nifty 50 Index Fund"
+    },
+    {
+     "code": 154818,
+     "from": "quant Nifty Midcap 150 Index Fund - Growth Option - Direct Plan",
+     "to": "quant Nifty Midcap 150 Index Fund"
+    },
+    {
+     "code": 154819,
+     "from": "quant Nifty Midcap 150 Index Fund - Growth Option - RegularPlan",
+     "to": "quant Nifty Midcap 150 Index Fund"
+    },
+    {
+     "code": 154820,
+     "from": "quant Nifty Midcap 150 Index Fund - IDCW Option - Regular Plan",
+     "to": "quant Nifty Midcap 150 Index Fund"
+    },
+    {
+     "code": 154821,
+     "from": "quant Nifty Midcap 150 Index Fund - IDCW Option - Direct Plan",
+     "to": "quant Nifty Midcap 150 Index Fund"
+    },
+    {
+     "code": 154822,
+     "from": "quant Nifty 100 Index Fund - Growth Option - Direct Plan",
+     "to": "quant Nifty 100 Index Fund"
+    },
+    {
+     "code": 154823,
+     "from": "quant Nifty 100 Index Fund - Growth Option - Regular Plan",
+     "to": "quant Nifty 100 Index Fund"
+    },
+    {
+     "code": 154824,
+     "from": "quant Nifty 100 Index Fund - IDCW Option - Direct Plan",
+     "to": "quant Nifty 100 Index Fund"
+    },
+    {
+     "code": 154825,
+     "from": "quant Nifty 100 Index Fund - IDCW Option - Regular Plan",
+     "to": "quant Nifty 100 Index Fund"
+    },
+    {
+     "code": 154834,
+     "from": "Mirae Asset Fixed Maturity Plan   Series VI  3 to 6 Months - Direct Plan - Growth",
+     "to": "Mirae Asset Fixed Maturity Plan – Series VI– 3 to 6 Months"
+    },
+    {
+     "code": 154835,
+     "from": "Mirae Asset Fixed Maturity Plan   Series VI  3 to 6 Months - Direct Plan - IDCW",
+     "to": "Mirae Asset Fixed Maturity Plan – Series VI– 3 to 6 Months"
+    },
+    {
+     "code": 154836,
+     "from": "Mirae Asset Fixed Maturity Plan   Series VI  3 to 6 Months - Regular Plan - Growth",
+     "to": "Mirae Asset Fixed Maturity Plan – Series VI– 3 to 6 Months"
+    },
+    {
+     "code": 154837,
+     "from": "Mirae Asset Fixed Maturity Plan   Series VI  3 to 6 Months - Regular Plan - IDCW",
+     "to": "Mirae Asset Fixed Maturity Plan – Series VI– 3 to 6 Months"
+    },
+    {
+     "code": 154842,
+     "from": "WhiteOak Capital Equity Savings Fund Direct Plan IDCW",
+     "to": "WhiteOak Capital Equity Savings Fund"
+    },
+    {
+     "code": 154844,
+     "from": "WhiteOak Capital Balanced Advantage Fund Direct Plan IDCW",
+     "to": "WhiteOak Capital Balanced Advantage Fund"
+    },
+    {
+     "code": 154845,
+     "from": "WhiteOak Capital Balanced Advantage Fund Regular Plan IDCW",
+     "to": "WhiteOak Capital Balanced Advantage Fund"
+    },
+    {
+     "code": 154846,
+     "from": "WhiteOak Capital Balanced Hybrid Fund Direct Plan IDCW",
+     "to": "WhiteOak Capital Balanced Hybrid Fund"
+    },
+    {
+     "code": 154848,
+     "from": "WhiteOak Capital Aggressive Hybrid Fund Direct Plan IDCW",
+     "to": "WhiteOak Capital Aggressive Hybrid Fund"
+    },
+    {
+     "code": 154849,
+     "from": "WhiteOak Capital Aggressive Hybrid Fund Regular Plan IDCW",
+     "to": "WhiteOak Capital Aggressive Hybrid Fund"
+    },
+    {
+     "code": 154850,
+     "from": "WhiteOak Capital Multi Asset Allocation Fund Direct Plan IDCW",
+     "to": "WhiteOak Capital Multi Asset Allocation Fund"
+    },
+    {
+     "code": 154851,
+     "from": "WhiteOak Capital Multi Asset Allocation Fund Regular Plan IDCW",
+     "to": "WhiteOak Capital Multi Asset Allocation Fund"
+    }
+   ],
+   "statusChanged": [
+    {
+     "code": 100678,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 118404,
+     "from": "nav-stale",
+     "to": "active"
+    },
+    {
+     "code": 120771,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 149232,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 149233,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 149234,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 149235,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 151455,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 151456,
+     "from": "active",
+     "to": "nav-stale"
+    },
+    {
+     "code": 154740,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154741,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154742,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154743,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154762,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154763,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154764,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154769,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154770,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154771,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154772,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154774,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154775,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154776,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154777,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154778,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154780,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154781,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154782,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154783,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154784,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154789,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154790,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154791,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154792,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154793,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154798,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154799,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154800,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154801,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154802,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154803,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154804,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154805,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154810,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154811,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154812,
+     "from": "awaiting-first-nav",
+     "to": "nav-stale"
+    },
+    {
+     "code": 154814,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154815,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154816,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154817,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154818,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154819,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154820,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154821,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154822,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154823,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154824,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154825,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154826,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154834,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154835,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154836,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154837,
+     "from": "awaiting-first-nav",
+     "to": "active"
+    },
+    {
+     "code": 154842,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154844,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154845,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154846,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154848,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154849,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154850,
+     "from": "no-nav",
+     "to": "active"
+    },
+    {
+     "code": 154851,
+     "from": "no-nav",
+     "to": "active"
+    }
+   ]
+  }
+ ]
 }
